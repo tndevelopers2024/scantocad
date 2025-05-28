@@ -19,7 +19,7 @@ import SettingsPage from "./components/user/SettingsPage.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <Router>
+    <Router basename={import.meta.env.BASE_URL}>
       <Routes>
         {/* Public routes without layout */}
         <Route path="/login" element={<LoginPage />} />
