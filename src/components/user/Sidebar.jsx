@@ -13,6 +13,8 @@ import {
   FiPlusCircle,
   FiList
 } from 'react-icons/fi';
+import logo from '../../../public/img/logo/logo1.png'; 
+import logo1 from '../../../public/img/logo/logo2.png'; 
 
 const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState({});
@@ -72,13 +74,13 @@ const Sidebar = () => {
       <div className="flex items-center justify-between mb-10 px-2">
     {sidebarOpen ? (
   <img 
-    src="/img/logo/logo1.png" 
+    src={logo} 
     alt="Convertscanstocad" 
     className="mx-auto w-auto h-20 object-contain" 
   />
 ) : (
   <img 
-    src="/img/logo/logo2.png" 
+    src={logo1} 
     alt="Convertscanstocad" 
     className="mx-auto w-auto h-10 object-contain" 
   />

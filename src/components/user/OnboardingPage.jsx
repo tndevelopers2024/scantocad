@@ -1,9 +1,10 @@
 import React from 'react';
-import logo from '../../../public/img/logo/logo1.png'; // Adjust the path as necessary
+import logo from '../../../public/img/logo/logo1.png'; 
+import bg from '../../../public/img/Onbording.png'; 
 const OnboardingPage = () => {
   // You would ideally replace these with actual image paths or SVG components
   return (
-    <section className="onboard">
+    <section className="onboard" style={{ backgroundImage: `url(${bg})` }}>
 
 
     <div className="container flex flex-col md:flex-row items-center justify-center min-h-screen bg-gradient-to-br  p-6">

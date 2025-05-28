@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getMe, getUserNotifications } from "../../api";
-import { FiBell, FiSettings, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { FiBell, FiSettings, FiChevronDown, FiChevronUp, FiUser } from "react-icons/fi";
 
 const Header = () => {
   const [username, setUsername] = useState("");
@@ -117,11 +117,8 @@ const Header = () => {
 
         {/* Profile */}
         <div className="flex items-center gap-2 cursor-pointer">
-          <img
-            src="https://api.dicebear.com/7.x/adventurer/svg?seed=User"
-            alt="avatar"
-            className="w-8 h-8 rounded-full"
-          />
+           <FiUser className="w-6 h-6 rounded-full bg-white" />
+          
           <span className="text-sm text-gray-800 font-medium">{username}</span>
         </div>
       </div>

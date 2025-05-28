@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { login } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
+import logo from '../../public/img/logo/logo1.png'; 
 
 function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -50,7 +51,7 @@ function LoginPage() {
           {/* Logo & Title */}
           <div className="text-center">
             {/* Replace with your logo */}
-            <img src="/public/img/logo/logo1.png" alt="Convertscanstocad" className="mx-auto  w-auto" /> 
+            <img src={logo} alt="Convertscanstocad" className="mx-auto  w-auto" /> 
             <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
               Sign in!
             </h2>

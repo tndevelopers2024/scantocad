@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { register } from '../api';
 import { useNavigate } from 'react-router-dom'; 
+import logo from '../../public/img/logo/logo1.png'; 
 
 const RegisterPage = () => {
   const [firstName, setFirstName] = useState('');
@@ -69,7 +70,7 @@ const navigate = useNavigate();
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-white">
         <div className="w-full max-w-md p-8 shadow-lg">
           <div className="flex flex-col items-center mb-6">
-            <img src="/img/logo/logo1.png" alt="Logo" className="mb-2" />
+            <img src={logo} alt="Logo" className="mb-2" />
             <h1 className="text-2xl font-bold text-gray-800 mt-4">Create an account</h1>
           </div>
 

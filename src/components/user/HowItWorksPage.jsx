@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import logo from '../../../public/img/logo/logo1.png'; 
 const HowItWorksPage = () => {
   const navigate = useNavigate();
 
@@ -12,7 +12,7 @@ const HowItWorksPage = () => {
 
       {/* Logo in top‐left */}
       <div className="absolute top-8 left-8 flex items-center space-x-2">
-        <img src="/public/img/logo/logo.png" alt="ConvertScanToCad logo" className=" h-8" />
+        <img src={logo} alt="ConvertScanToCad logo" className=" h-8" />
       </div>
 
       <main className="relative z-10 bg-[#E6F2FC] rounded-2xl shadow-xl p-12 max-w-3xl w-full text-center">
