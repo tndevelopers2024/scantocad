@@ -1,5 +1,5 @@
 import React from 'react';
-
+import logo from '../../../public/img/logo/logo1.png'; // Adjust the path as necessary
 const OnboardingPage = () => {
   // You would ideally replace these with actual image paths or SVG components
   return (
@@ -9,7 +9,7 @@ const OnboardingPage = () => {
     <div className="container flex flex-col md:flex-row items-center justify-center min-h-screen bg-gradient-to-br  p-6">
       {/* Left Section: Text and Buttons */}
       <div className="flex  flex-col items-center justify-center w-full md:w-1/2 text-center md:text-left mb-8 md:mb-0 pr-0 md:pr-10">
-        <img src={import.meta.env.BASE_URL+`public/img/logo/logo.png`} alt="Convertscanstocad Logo" className="mx-auto md:mx-0 mb-6 " />
+        <img src={logo} alt="Convertscanstocad Logo" className="mx-auto md:mx-0 mb-6 " />
         <h1 className="text-4xl text-center md:text-5xl font-extrabold text-gray-800 mb-6 leading-tight">
           Transform your scans into precise CAD models.
         </h1>
