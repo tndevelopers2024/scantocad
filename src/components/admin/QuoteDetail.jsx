@@ -1,0 +1,464 @@
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { getQuotationById, raiseQuote, completeQuotation } from "../../api";
+import STLViewer from "../../contexts/STLViewer";
+import { motion } from "framer-motion";
+import { FiDownload, FiX, FiClock, FiCheckCircle, FiFile, FiUser, FiMail, FiInfo } from "react-icons/fi";
+
+const statusConfig = {
+  requested: {
+    color: "bg-yellow-100 text-yellow-800",
+    icon: <FiClock className="mr-1" />,
+  },
+  quoted: {
+    color: "bg-blue-100 text-blue-800",
+    icon: <FiFile className="mr-1" />,
+  },
+  approved: {
+    color: "bg-green-100 text-green-800",
+    icon: <FiCheckCircle className="mr-1" />,
+  },
+  rejected: {
+    color: "bg-red-100 text-red-800",
+    icon: <FiX className="mr-1" />,
+  },
+  completed: {
+    color: "bg-purple-100 text-purple-800",
+    icon: <FiCheckCircle className="mr-1" />,
+  },
+};
+
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
+export default function QuoteDetail() {
+  const { id } = useParams();
+  const [quote, setQuote] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [requiredHour, setRequiredHour] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [message, setMessage] = useState({ text: "", type: "" });
+  const [showSTLViewer, setShowSTLViewer] = useState(false);
+  const [completedFile, setCompletedFile] = useState(null);
+  const [fileError, setFileError] = useState("");
+
+  useEffect(() => {
+    setLoading(true);
+    getQuotationById(id)
+      .then((res) => {
+        setQuote(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setMessage({ text: "Failed to load quote", type: "error" });
+        setLoading(false);
+      });
+  }, [id]);
+
+  const handleRaiseQuote = async () => {
+    if (!requiredHour) {
+      return setMessage({ text: "Required hour is mandatory", type: "error" });
+    }
+    setSubmitting(true);
+    try {
+      const res = await raiseQuote(id, requiredHour);
+      setQuote(res.data);
+      setMessage({ text: "Quote raised successfully!", type: "success" });
+    } catch (err) {
+      console.error(err);
+      setMessage({ text: "Failed to raise quote", type: "error" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      setFileError("File exceeds 50MB limit");
+      return;
+    }
+
+    // Validate file extension
+    const allowedExtensions = ['.stl', '.obj', '.ply', '.3mf', '.zip', '.rar'];
+    const fileExtension = file.name.toLowerCase().match(/\.[0-9a-z]+$/)?.[0];
+    
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      setFileError(
+        'Invalid file type. Only 3D model files (STL, OBJ, PLY, 3MF) or archives (ZIP, RAR) are accepted'
+      );
+      return;
+    }
+
+    setFileError("");
+    setCompletedFile(file);
+  };
+
+  const handleCompleteQuotation = async () => {
+    if (!completedFile) {
+      return setMessage({ text: "Please upload the completed file", type: "error" });
+    }
+
+    setCompleting(true);
+    try {
+      const formData = new FormData();
+      formData.append("completedFile", completedFile);
+
+      const res = await completeQuotation(id, formData);
+      setQuote(res.data);
+      setMessage({ text: "Quotation marked as completed successfully!", type: "success" });
+    } catch (err) {
+      console.error(err);
+      setMessage({ text: "Failed to complete quotation", type: "error" });
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const isSTLFile = quote?.file?.toLowerCase().endsWith(".stl");
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    </div>
+  );
+
+  if (!quote) return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="text-center p-6 max-w-md bg-white rounded-xl shadow-md">
+        <FiX className="mx-auto h-12 w-12 text-red-500" />
+        <h3 className="mt-2 text-lg font-medium text-gray-900">Quote not found</h3>
+        <p className="mt-1 text-gray-500">The requested quotation could not be loaded.</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+        transition={{ duration: 0.5 }}
+        className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden"
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold">{quote.projectName}</h1>
+              <div className="flex items-center mt-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusConfig[quote.status?.toLowerCase()]?.color || "bg-gray-100 text-gray-800"}`}>
+                  {statusConfig[quote.status?.toLowerCase()]?.icon}
+                  {capitalize(quote.status)}
+                </span>
+                <span className="ml-3 text-indigo-100">
+                  Created: {new Date(quote.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors"
+            >
+              <FiX className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="p-6 md:p-8">
+          {/* Quote Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <DetailCard
+              icon={<FiInfo className="text-indigo-500" />}
+              title="Project Details"
+              items={[
+                { label: "Description", value: quote.description || "Not provided" },
+                { label: "Required Hours", value: quote.requiredHour || "Not estimated yet" },
+              ]}
+            />
+
+            <DetailCard
+              icon={<FiUser className="text-indigo-500" />}
+              title="Customer Information"
+              items={[
+                { label: "Name", value: quote.user?.name || "N/A" },
+                { label: "Email", value: quote.user?.email || "N/A" },
+                { label: "Contact", value: quote.user?.phone || "Not provided" },
+              ]}
+            />
+          </div>
+
+          {/* Files Section */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <FiFile className="mr-2 text-indigo-500" />
+              Files
+            </h3>
+            
+            <div className="space-y-4">
+              <FileCard
+                title="Original File"
+                filename={quote.file?.split("/").pop()}
+                url={getAbsoluteUrl(quote.file)}
+                onPreview={() => isSTLFile && setShowSTLViewer(true)}
+                canPreview={isSTLFile}
+              />
+              
+              {quote.completedFile && (
+                <FileCard
+                  title="Completed File"
+                  filename={quote.completedFile?.split("/").pop()}
+                  url={getAbsoluteUrl(quote.completedFile)}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Action Sections */}
+          {quote.status === "requested" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="bg-blue-50 rounded-lg p-6 mb-6 border border-blue-100"
+            >
+              <h3 className="text-lg font-semibold text-blue-800 mb-4">Raise Quote</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Estimated Hours Required
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Enter hours"
+                    value={requiredHour}
+                    onChange={(e) => setRequiredHour(e.target.value)}
+                    className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div className="flex items-center">
+                  <button
+                    onClick={handleRaiseQuote}
+                    disabled={submitting}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70 flex items-center"
+                  >
+                    {submitting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      "Submit Quote"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {quote.status === "approved" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="bg-green-50 rounded-lg p-6 mb-6 border border-green-100"
+            >
+              <h3 className="text-lg font-semibold text-green-800 mb-4">Complete Quotation</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Upload Completed Files
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                    <div className="space-y-1 text-center">
+                      <div className="flex text-sm text-gray-600">
+                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none">
+                          <span>Upload a file</span>
+                          <input 
+                            type="file" 
+                            className="sr-only" 
+                            onChange={handleFileChange}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        STL, OBJ, PLY, 3MF, ZIP, RAR up to 50MB
+                      </p>
+                    </div>
+                  </div>
+                  {fileError && (
+                    <p className="mt-1 text-sm text-red-600">{fileError}</p>
+                  )}
+                  {completedFile && (
+                    <div className="mt-2 p-3 bg-white rounded-lg border border-gray-200 flex justify-between items-center">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{completedFile.name}</p>
+                        <p className="text-xs text-gray-500">{(completedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                      <button 
+                        onClick={() => setCompletedFile(null)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <FiX />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={handleCompleteQuotation}
+                  disabled={completing || !completedFile}
+                  className={`px-6 py-2 text-white rounded-lg transition-colors flex items-center ${
+                    completing 
+                      ? "bg-green-400" 
+                      : !completedFile 
+                        ? "bg-gray-400 cursor-not-allowed" 
+                        : "bg-green-600 hover:bg-green-700"
+                  }`}
+                >
+                  {completing ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    "Mark as Completed"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Status Messages */}
+          {message.text && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`p-4 rounded-lg ${
+                message.type === "error" 
+                  ? "bg-red-50 text-red-800" 
+                  : "bg-green-50 text-green-800"
+              }`}
+            >
+              <div className="flex items-center">
+                {message.type === "error" ? (
+                  <FiX className="mr-2 flex-shrink-0" />
+                ) : (
+                  <FiCheckCircle className="mr-2 flex-shrink-0" />
+                )}
+                <span>{message.text}</span>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* STL Viewer Modal */}
+      {showSTLViewer && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col"
+          >
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-xl font-semibold">3D Model Viewer</h3>
+              <button
+                onClick={() => setShowSTLViewer(false)}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <FiX className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <STLViewer file={getAbsoluteUrl(quote.file)} />
+            </div>
+            <div className="p-4 border-t flex justify-end">
+              <a
+                href={getAbsoluteUrl(quote.file)}
+                download
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center"
+              >
+                <FiDownload className="mr-2" />
+                Download File
+              </a>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+const DetailCard = ({ icon, title, items }) => (
+  <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+    <div className="flex items-center mb-3">
+      {icon}
+      <h3 className="ml-2 font-semibold text-gray-800">{title}</h3>
+    </div>
+    <div className="space-y-2">
+      {items.map((item, index) => (
+        <div key={index}>
+          <p className="text-sm text-gray-500">{item.label}</p>
+          <p className="text-gray-900">{item.value}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const FileCard = ({ title, filename, url, onPreview, canPreview = false }) => (
+  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
+    <div>
+      <p className="text-sm text-gray-500">{title}</p>
+      <p className="text-gray-900 font-medium">{filename}</p>
+    </div>
+    <div className="flex space-x-2">
+      {canPreview && (
+        <button
+          onClick={onPreview}
+          className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded text-sm hover:bg-indigo-100 transition-colors"
+        >
+          Preview
+        </button>
+      )}
+      <a
+        href={url}
+        download
+        className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition-colors flex items-center"
+      >
+        <FiDownload className="mr-1" />
+        Download
+      </a>
+    </div>
+  </div>
+);
+
+const getAbsoluteUrl = (path) => {
+  if (!path) return "#";
+  if (path.startsWith("http")) return path;
+  return `https://5000-firebase-scantocadbackendgit-1747203690155.cluster-ancjwrkgr5dvux4qug5rbzyc2y.cloudworkstations.dev${path}`;
+};
+
+const capitalize = (str) =>
+  str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
