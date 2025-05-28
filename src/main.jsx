@@ -1,11 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import App from "./App.jsx";
 import LoginPage from "./components/LoginPage.jsx";
 import RegisterPage from "./components/RegisterPage.jsx";
 import AdminRegisterPage from "./components/AdminRegisterPage.jsx";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import OnboardingPage from "./components/user/OnboardingPage.jsx";
 import NewQuoteRequest from "./components/user/NewQuoteRequest.jsx";
 import HowItWorksPage from "./components/user/HowItWorksPage.jsx";
@@ -20,7 +19,7 @@ import SettingsPage from "./components/user/SettingsPage.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <BrowserRouter>
+    <Router>
       <Routes>
         {/* Public routes without layout */}
         <Route path="/login" element={<LoginPage />} />
@@ -41,6 +40,6 @@ createRoot(document.getElementById("root")).render(
           <Route path="/account" element={<SettingsPage />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </Router>
   </StrictMode>
 );
