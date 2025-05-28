@@ -1,9 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getQuotationById, raiseQuote, completeQuotation } from "../../api";
+import {
+  getQuotationById,
+  raiseQuote,
+  completeQuotation,
+  updateOngoing,
+} from "../../api";
 import STLViewer from "../../contexts/STLViewer";
 import { motion } from "framer-motion";
-import { FiDownload, FiX, FiClock, FiCheckCircle, FiFile, FiUser, FiMail, FiInfo } from "react-icons/fi";
+import {
+  FiDownload,
+  FiX,
+  FiClock,
+  FiCheckCircle,
+  FiFile,
+  FiUser,
+  FiMail,
+  FiInfo,
+} from "react-icons/fi";
 
 const statusConfig = {
   requested: {
@@ -76,6 +90,19 @@ export default function QuoteDetail() {
     }
   };
 
+  const handleOngoing = async () => {
+    try {
+      const res = await updateOngoing(id);
+      setQuote(res.data);
+      setMessage({ text: "Quote Ongoing successfully!", type: "success" });
+    } catch (err) {
+      console.error(err);
+      setMessage({ text: "Failed to Ongoing quote", type: "error" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -87,12 +114,12 @@ export default function QuoteDetail() {
     }
 
     // Validate file extension
-    const allowedExtensions = ['.stl', '.obj', '.ply', '.3mf', '.zip', '.rar'];
+    const allowedExtensions = [".stl", ".obj", ".ply", ".3mf", ".zip", ".rar"];
     const fileExtension = file.name.toLowerCase().match(/\.[0-9a-z]+$/)?.[0];
-    
+
     if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
       setFileError(
-        'Invalid file type. Only 3D model files (STL, OBJ, PLY, 3MF) or archives (ZIP, RAR) are accepted'
+        "Invalid file type. Only 3D model files (STL, OBJ, PLY, 3MF) or archives (ZIP, RAR) are accepted"
       );
       return;
     }
@@ -103,7 +130,10 @@ export default function QuoteDetail() {
 
   const handleCompleteQuotation = async () => {
     if (!completedFile) {
-      return setMessage({ text: "Please upload the completed file", type: "error" });
+      return setMessage({
+        text: "Please upload the completed file",
+        type: "error",
+      });
     }
 
     setCompleting(true);
@@ -113,7 +143,10 @@ export default function QuoteDetail() {
 
       const res = await completeQuotation(id, formData);
       setQuote(res.data);
-      setMessage({ text: "Quotation marked as completed successfully!", type: "success" });
+      setMessage({
+        text: "Quotation marked as completed successfully!",
+        type: "success",
+      });
     } catch (err) {
       console.error(err);
       setMessage({ text: "Failed to complete quotation", type: "error" });
@@ -124,21 +157,27 @@ export default function QuoteDetail() {
 
   const isSTLFile = quote?.file?.toLowerCase().endsWith(".stl");
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-    </div>
-  );
-
-  if (!quote) return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="text-center p-6 max-w-md bg-white rounded-xl shadow-md">
-        <FiX className="mx-auto h-12 w-12 text-red-500" />
-        <h3 className="mt-2 text-lg font-medium text-gray-900">Quote not found</h3>
-        <p className="mt-1 text-gray-500">The requested quotation could not be loaded.</p>
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
-    </div>
-  );
+    );
+
+  if (!quote)
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center p-6 max-w-md bg-white rounded-xl shadow-md">
+          <FiX className="mx-auto h-12 w-12 text-red-500" />
+          <h3 className="mt-2 text-lg font-medium text-gray-900">
+            Quote not found
+          </h3>
+          <p className="mt-1 text-gray-500">
+            The requested quotation could not be loaded.
+          </p>
+        </div>
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
@@ -153,9 +192,16 @@ export default function QuoteDetail() {
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">{quote.projectName}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold">
+                {quote.projectName}
+              </h1>
               <div className="flex items-center mt-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusConfig[quote.status?.toLowerCase()]?.color || "bg-gray-100 text-gray-800"}`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    statusConfig[quote.status?.toLowerCase()]?.color ||
+                    "bg-gray-100 text-gray-800"
+                  }`}
+                >
                   {statusConfig[quote.status?.toLowerCase()]?.icon}
                   {capitalize(quote.status)}
                 </span>
@@ -181,8 +227,14 @@ export default function QuoteDetail() {
               icon={<FiInfo className="text-indigo-500" />}
               title="Project Details"
               items={[
-                { label: "Description", value: quote.description || "Not provided" },
-                { label: "Required Hours", value: quote.requiredHour || "Not estimated yet" },
+                {
+                  label: "Description",
+                  value: quote.description || "Not provided",
+                },
+                {
+                  label: "Required Hours",
+                  value: quote.requiredHour || "Not estimated yet",
+                },
               ]}
             />
 
@@ -192,7 +244,10 @@ export default function QuoteDetail() {
               items={[
                 { label: "Name", value: quote.user?.name || "N/A" },
                 { label: "Email", value: quote.user?.email || "N/A" },
-                { label: "Contact", value: quote.user?.phone || "Not provided" },
+                {
+                  label: "Contact",
+                  value: quote.user?.phone || "Not provided",
+                },
               ]}
             />
           </div>
@@ -203,7 +258,7 @@ export default function QuoteDetail() {
               <FiFile className="mr-2 text-indigo-500" />
               Files
             </h3>
-            
+
             <div className="space-y-4">
               <FileCard
                 title="Original File"
@@ -212,7 +267,7 @@ export default function QuoteDetail() {
                 onPreview={() => isSTLFile && setShowSTLViewer(true)}
                 canPreview={isSTLFile}
               />
-              
+
               {quote.completedFile && (
                 <FileCard
                   title="Completed File"
@@ -231,7 +286,9 @@ export default function QuoteDetail() {
               transition={{ delay: 0.2 }}
               className="bg-blue-50 rounded-lg p-6 mb-6 border border-blue-100"
             >
-              <h3 className="text-lg font-semibold text-blue-800 mb-4">Raise Quote</h3>
+              <h3 className="text-lg font-semibold text-blue-800 mb-4">
+                Raise Quote
+              </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -254,9 +311,25 @@ export default function QuoteDetail() {
                   >
                     {submitting ? (
                       <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
                         </svg>
                         Processing...
                       </>
@@ -269,14 +342,65 @@ export default function QuoteDetail() {
             </motion.div>
           )}
 
-          {quote.status === "approved" && (
+    {quote.status === "approved" && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ delay: 0.2 }}
+    className="bg-purple-50 rounded-lg p-6 mb-6 border border-purple-100"
+  >
+    <h3 className="text-lg font-semibold text-purple-800 mb-4">
+      Make Quotation to Ongoing
+    </h3>
+    <div className="flex items-center">
+      <button
+        onClick={handleOngoing}
+        disabled={submitting}
+        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70 flex items-center"
+      >
+        {submitting ? (
+          <>
+            <svg
+              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Processing...
+          </>
+        ) : (
+          "Submit Quote"
+        )}
+      </button>
+    </div>
+  </motion.div>
+)}
+
+
+          {quote.status === "ongoing" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
               className="bg-green-50 rounded-lg p-6 mb-6 border border-green-100"
             >
-              <h3 className="text-lg font-semibold text-green-800 mb-4">Complete Quotation</h3>
+              <h3 className="text-lg font-semibold text-green-800 mb-4">
+                Complete Quotation
+              </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -287,9 +411,9 @@ export default function QuoteDetail() {
                       <div className="flex text-sm text-gray-600">
                         <label className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none">
                           <span>Upload a file</span>
-                          <input 
-                            type="file" 
-                            className="sr-only" 
+                          <input
+                            type="file"
+                            className="sr-only"
                             onChange={handleFileChange}
                           />
                         </label>
@@ -306,10 +430,14 @@ export default function QuoteDetail() {
                   {completedFile && (
                     <div className="mt-2 p-3 bg-white rounded-lg border border-gray-200 flex justify-between items-center">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{completedFile.name}</p>
-                        <p className="text-xs text-gray-500">{(completedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {completedFile.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {(completedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => setCompletedFile(null)}
                         className="text-red-500 hover:text-red-700"
                       >
@@ -322,18 +450,34 @@ export default function QuoteDetail() {
                   onClick={handleCompleteQuotation}
                   disabled={completing || !completedFile}
                   className={`px-6 py-2 text-white rounded-lg transition-colors flex items-center ${
-                    completing 
-                      ? "bg-green-400" 
-                      : !completedFile 
-                        ? "bg-gray-400 cursor-not-allowed" 
-                        : "bg-green-600 hover:bg-green-700"
+                    completing
+                      ? "bg-green-400"
+                      : !completedFile
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
                   }`}
                 >
                   {completing ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Processing...
                     </>
@@ -351,8 +495,8 @@ export default function QuoteDetail() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className={`p-4 rounded-lg ${
-                message.type === "error" 
-                  ? "bg-red-50 text-red-800" 
+                message.type === "error"
+                  ? "bg-red-50 text-red-800"
                   : "bg-green-50 text-green-800"
               }`}
             >

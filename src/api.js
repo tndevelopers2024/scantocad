@@ -213,6 +213,26 @@ export const updateUserDecision = async (id, status) => {
   }
 };
 
+export const updateOngoing = async (id) => {
+  try {
+    
+    const response = await axios.put(
+      `${BASE_URL}/quotations/${id}/ongoing`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Updating Quotation ongoing failed:', error);
+    throw error;
+  }
+};
+
+
 export const completeQuotation = async (id, formData) => {
   try {
     const response = await axios.put(
