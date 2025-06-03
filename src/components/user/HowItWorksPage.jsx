@@ -12,7 +12,7 @@ const HowItWorksPage = () => {
 
       {/* Logo in top‐left */}
       <div className="absolute top-8 left-8 flex items-center space-x-2">
-        <img src={logo} alt="ConvertScanToCad logo" className=" h-8" />
+        <img src={logo} alt="ConvertScanToCad logo" className=" h-24" />
       </div>
 
       <main className="relative z-10 bg-[#E6F2FC] rounded-2xl shadow-xl p-12 max-w-3xl w-full text-center">
@@ -79,7 +79,7 @@ const HowItWorksPage = () => {
         </div>
 
         <button
-          onClick={() => navigate('/new-quote')}
+          onClick={() => navigate('/request-quote')}
           className="mt-12 bg-[#1C88ED] hover:bg-[#2980B9] text-white font-bold py-3 px-8 rounded-full shadow-lg transition"
         >
           Request New Quote

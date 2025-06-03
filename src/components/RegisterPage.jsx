@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { register } from '../api';
+import { register, verifyEmail, resendVerification } from '../api';
 import { useNavigate } from 'react-router-dom'; 
 import logo from '../../public/img/logo/logo1.png'; 
+import Lottie from 'lottie-react';
 
 const RegisterPage = () => {
   const [firstName, setFirstName] = useState('');
@@ -10,8 +11,14 @@ const RegisterPage = () => {
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('client');
-const navigate = useNavigate(); 
+  const [role, setRole] = useState('user');
+  const [step, setStep] = useState(1); // 1: registration form, 2: OTP verification
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  
+  const navigate = useNavigate();
 
   // Company fields
   const [companyName, setCompanyName] = useState('');
@@ -22,39 +29,93 @@ const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setError('');
+    setMessage('');
+
     if (password !== confirmPassword) {
-      console.error("Passwords don't match");
+      setError("Passwords don't match");
       return;
     }
 
     const name = `${firstName.trim()} ${lastName.trim()}`.trim();
 
     try {
-      const response = await register({
+      setLoading(true);
+      
+      const userData = {
         name,
         email,
         password,
         phone: mobileNumber,
         role,
-        company: {
+      };
+
+      if (role === 'company') {
+        userData.company = {
           name: companyName,
           address: companyAddress,
           website: companyWebsite,
           industry: companyIndustry,
           gstNumber: companyGst
-        }
-      });
+        };
+      }
+
+      const response = await register(userData);
+
+      if (response.success) {
+        setMessage('Verification email sent. Please check your inbox.');
+        setStep(2); // Move to OTP verification step
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+
+    try {
+      setLoading(true);
+      const response = await verifyEmail(otp);
 
       if (response.success) {
         localStorage.setItem('token', response.token);
         localStorage.setItem('userId', response.user.id);
-        console.log('Registration successful:', response);
-         navigate('/how-it-works');
+        localStorage.setItem('userRole', response.user.role);
+   setStep(3);
       } else {
-        console.error('Registration failed:', response);
+        setError('Verification failed. Please try again.');
       }
     } catch (err) {
-      console.error('Registration error:', err);
+      setError(err.response?.data?.message || 'Verification error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError('');
+    setMessage('');
+
+    try {
+      setLoading(true);
+      const response = await resendVerification( email );
+
+      if (response.success) {
+        setMessage('New verification email sent. Please check your inbox.');
+      } else {
+        setError('Failed to resend verification email.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Resend error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,11 +132,26 @@ const navigate = useNavigate();
         <div className="w-full max-w-md p-8 shadow-lg">
           <div className="flex flex-col items-center mb-6">
             <img src={logo} alt="Logo" className="mb-2" />
-            <h1 className="text-2xl font-bold text-gray-800 mt-4">Create an account</h1>
+            <h1 className="text-2xl font-bold text-gray-800 mt-4">
+              {step === 1 ? 'Create an account' : 'Verify your email'}
+            </h1>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-4">
-            {/* Name */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+              {error}
+            </div>
+          )}
+
+          {message && (
+            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
+              {message}
+            </div>
+          )}
+
+          {step === 1 ? (
+            <form onSubmit={handleRegister} className="space-y-4">
+               {/* Name */}
             <div className="flex gap-4">
               <input
                 type="text"
@@ -137,64 +213,130 @@ const navigate = useNavigate();
               onChange={e => setRole(e.target.value)}
               className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
             >
-              <option value="user">User</option>
-              <option value="client">Client</option>
+              <option value="user">Individual</option>
+              <option value="company">Company</option>
             </select>
 
-            {/* Company Section */}
-            <div className="pt-4 border-t border-gray-200">
-              <h2 className="text-lg font-semibold mb-2">Company Details ( Optional )</h2>
-              <input
-                type="text"
-                placeholder="Company name"
-                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
-                value={companyName}
-                onChange={e => setCompanyName(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="Address"
-                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
-                value={companyAddress}
-                onChange={e => setCompanyAddress(e.target.value)}
-              />
-              <input
-                type="url"
-                placeholder="Website"
-                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
-                value={companyWebsite}
-                onChange={e => setCompanyWebsite(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="Industry"
-                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
-                value={companyIndustry}
-                onChange={e => setCompanyIndustry(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="GST Number"
-                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
-                value={companyGst}
-                onChange={e => setCompanyGst(e.target.value)}
-              />
-            </div>
+            {/* Company Section - Only shown when role is 'company' */}
+            {role === 'company' && (
+              <div className="pt-4 border-t border-gray-200">
+                <h2 className="text-lg font-semibold mb-2">Company Details</h2>
+                <input
+                  type="text"
+                  required
+                  placeholder="Company name"
+                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
+                  value={companyName}
+                  onChange={e => setCompanyName(e.target.value)}
+                />
+                <input
+                  type="text"
+                  required
+                  placeholder="Address"
+                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
+                  value={companyAddress}
+                  onChange={e => setCompanyAddress(e.target.value)}
+                />
+                <input
+                  type="url"
+                  placeholder="Website"
+                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
+                  value={companyWebsite}
+                  onChange={e => setCompanyWebsite(e.target.value)}
+                />
+                <input
+                  type="text"
+                  required
+                  placeholder="Industry"
+                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
+                  value={companyIndustry}
+                  onChange={e => setCompanyIndustry(e.target.value)}
+                />
+                <input
+                  type="text"
+                  required
+                  placeholder="GST Number"
+                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  value={companyGst}
+                  onChange={e => setCompanyGst(e.target.value)}
+                />
+              </div>
+            )}
 
-            <button
-              type="submit"
-              className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-            >
-              Register Now
-            </button>
-          </form>
 
-          <p className="mt-6 text-center text-gray-600">
-            Already have an account?{' '}
-            <a href="/login" className="text-blue-600 hover:underline">
-              Sign in
-            </a>
-          </p>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                {loading ? 'Processing...' : 'Register Now'}
+              </button>
+            </form>
+          ) : step === 2 ? (
+            <form onSubmit={handleVerify} className="space-y-4">
+              <div>
+                <p className="mb-4">We've sent a verification code to {email}</p>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter OTP"
+                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                {loading ? 'Verifying...' : 'Verify Email'}
+              </button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={loading}
+                  className="text-blue-600 hover:underline disabled:opacity-50"
+                >
+                  Resend OTP
+                </button>
+              </div>
+            </form>
+          ): (
+ <div className="flex flex-col items-center justify-center text-center space-y-6">
+    {/* Success Animation - optional: use Lottie or CSS animation */}
+    <div className="w-24 h-24 flex items-center justify-center rounded-full bg-green-100 animate-ping-slow">
+      <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <h2 className="text-2xl font-bold text-green-700">Registration Successful!</h2>
+    <p className="text-gray-600">Your email has been verified. You’re all set to get started.</p>
+
+    <button
+      onClick={() => navigate('/how-it-works')}
+      className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+    >
+      Explore Application
+    </button>
+  </div>
+)}
+
+          {step === 1 && (
+            <p className="mt-6 text-center text-gray-600">
+              Already have an account?{' '}
+              <a href="/login" className="text-blue-600 hover:underline">
+                Sign in
+              </a>
+            </p>
+          )}
+
+          
+
         </div>
       </div>
     </div>

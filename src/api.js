@@ -1,6 +1,54 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://5000-firebase-scantocadbackendgit-1747203690155.cluster-ancjwrkgr5dvux4qug5rbzyc2y.cloudworkstations.dev/api/v1';
+const BASE_URL = 'http://localhost:5000/api/v1';
+
+export { 
+  initializeSocket, 
+  getSocket, 
+  connectSocket, 
+  disconnectSocket 
+} from './socket';
+
+export const register = async ({ name, email, password, phone, role, company }) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/auth/register`, {
+      name,
+      email,
+      password,
+      phone,
+      role,
+      company // should be an object with keys: name, address, website, industry, gstNumber
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Registration failed:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const verifyEmail = async (token) => {
+  if (typeof token !== 'string') {
+    throw new Error('Token must be a string');
+  }
+
+  try {
+    const response = await axios.get(`${BASE_URL}/auth/verify-email/${token}`);
+    return response.data;
+  } catch (error) {
+    console.error('Email verification failed:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const resendVerification = async (email) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/auth/resend-verification`, { email });
+    return response.data;
+  } catch (error) {
+    console.error('Resend verification failed:', error.response?.data || error.message);
+    throw error;
+  }
+};
 
 export const login = async (email, password) => {
   try {
@@ -11,26 +59,52 @@ export const login = async (email, password) => {
     return response.data;
   } catch (error) {
     console.error('Login failed:', error);
-    throw error; // Re-throw the error for handling in the component
+    throw error;
+  }
+};
+
+export const avaiableHour = async (id) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/users/${id}/hours`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch user avaiable hour:', error);
+    throw error;
   }
 };
 
 export const getMe = async () => {
   try {
     const response = await axios.get(`${BASE_URL}/auth/me`, {
-       headers: {
-        // Content-Type is automatically set to multipart/form-data when using FormData
+      headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Login failed:', error);
-    throw error; // Re-throw the error for handling in the component
+    console.error('Failed to fetch user:', error);
+    throw error;
   }
 };
 
-// Update user details
+export const getAllUsers = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/users`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+    throw error;
+  }
+};
+
 export const updateDetails = async (userData) => {
   try {
     const response = await axios.put(`${BASE_URL}/auth/updatedetails`, userData, {
@@ -45,7 +119,6 @@ export const updateDetails = async (userData) => {
   }
 };
 
-// Update password
 export const updatePassword = async (currentPassword, newPassword) => {
   try {
     const response = await axios.put(`${BASE_URL}/auth/updatepassword`, {
@@ -63,7 +136,6 @@ export const updatePassword = async (currentPassword, newPassword) => {
   }
 };
 
-// Logout user
 export const logout = async () => {
   try {
     const response = await axios.get(`${BASE_URL}/auth/logout`, {
@@ -93,22 +165,6 @@ export const requestQuote = async (formData) => {
   }
 };
 
-export const register = async ({ name, email, password, phone, role, company }) => {
-  try {
-    const response = await axios.post(`${BASE_URL}/auth/register`, {
-      name,
-      email,
-      password,
-      phone,
-      role,
-      company // should be an object with keys: name, address, website, industry, gstNumber
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Registration failed:', error.response?.data || error.message);
-    throw error;
-  }
-};
 
 
 export const getQuotations = async () => {
@@ -124,6 +180,35 @@ export const getQuotations = async () => {
     throw error;
   }
 };
+
+export const getUserById = async (id) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/users/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+    throw error;
+  }
+};
+
+export const getUserQuotationById = async (id) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/quotations/user/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Fetching quotations failed:', error);
+    throw error;
+  }
+};
+
 
 export const getQuotationById = async (id) => {
   try {
@@ -144,6 +229,25 @@ export const raiseQuote = async (id, requiredHour) => {
     const response = await axios.put(
       `${BASE_URL}/quotations/${id}/quote`,
       { requiredHour },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Raising quote failed:', error);
+    throw error;
+  }
+};
+
+export const updateEstimatedHours = async (id, tempHours) => {
+  try {
+    const response = await axios.put(
+      `${BASE_URL}/quotations/${id}/update-hour/`,
+      { requiredHour:tempHours },
       {
         headers: {
           'Content-Type': 'application/json',
@@ -213,14 +317,33 @@ export const updateUserDecision = async (id, status) => {
   }
 };
 
-export const updateOngoing = async (id) => {
+export const updateUserDecisionPO = async (id, status) => {
   try {
     
     const response = await axios.put(
-      `${BASE_URL}/quotations/${id}/ongoing`,
+      `${BASE_URL}/quotations/${id}/decisionpo`,
+      { status },
       {
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Updating user decision failed:', error);
+    throw error;
+  }
+};
+
+export const updateOngoing = async (id) => {
+  try {
+    const response = await axios.put(
+      `${BASE_URL}/quotations/${id}/ongoing`,
+      {}, // Empty request body
+      {
+        headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       }
@@ -252,7 +375,37 @@ export const completeQuotation = async (id, formData) => {
   }
 };
 
-// Notification API calls
+export const deleteQuote = async (id) => {
+  try {
+    const response = await axios.delete(`${BASE_URL}/quotations/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Request quote failed:', error);
+    throw error; // Re-throw the error for handling in the component
+  }
+};
+
+// api.js
+export const updateQuote = async (formData, id) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/quotations/${id}`, formData, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Update quote failed:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+
+
 
 // Get all notifications for the logged-in user
 export const getUserNotifications = async () => {
@@ -302,6 +455,85 @@ export const deleteUserNotification = async (id) => {
     return response.data;
   } catch (error) {
     console.error('Deleting notification failed:', error);
+    throw error;
+  }
+};
+
+// Add this new function for updating PO status
+export const updatePoStatus = async (quotationId, poStatus) => {
+  try {
+ 
+
+    const response = await axios.put(
+      `${BASE_URL}/quotations/${quotationId}/po-status`,
+      { poStatus },
+      {
+                headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Update PO status failed:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Rate Config functions
+export const getCurrentRate = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/rateconfig/current`, {
+      headers: {
+         'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to get current rate:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getAllRates = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/rateconfig`, {
+      headers: {
+         'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to get all rates:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const updateRate = async (id, rateData) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/rateconfig/${id}`, rateData, {
+      headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to update rate:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const createRate = async (rateData) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/rateconfig`, rateData, {
+      headers: {
+         'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create rate:', error.response?.data || error.message);
     throw error;
   }
 };

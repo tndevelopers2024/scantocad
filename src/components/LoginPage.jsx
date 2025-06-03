@@ -25,7 +25,7 @@ function LoginPage() {
         localStorage.setItem('token', response.token);
         localStorage.setItem('userId', response.user.id);
         localStorage.setItem('userRole', response.role);
-        navigate(response.role === 'admin' ? '/admin/dashboard' : '/new-quote');
+        navigate(response.role === 'admin' ? '/admin/dashboard' : '/request-quote');
       } else {
         setError(response.message || 'Login failed. Please try again.');
       }
@@ -57,22 +57,7 @@ function LoginPage() {
             </h2>
           </div>
 
-          {/* Google Sign-in */}
-          <button
-            type="button"
-            className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            <FcGoogle className="w-5 h-5 mr-2" />
-            Sign in with Google
-          </button>
-
-          {/* OR Divider */}
-          <div className="flex items-center">
-            <div className="flex-grow border-t border-gray-300"></div>
-            <span className="px-4 text-gray-500 text-sm">OR</span>
-            <div className="flex-grow border-t border-gray-300"></div>
-          </div>
-
+          
           {/* Error Message */}
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">

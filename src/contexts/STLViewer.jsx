@@ -1,49 +1,55 @@
-// components/STLViewer.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { STLLoader } from "three/examples/jsm/Addons.js";
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader"; // More specific import path
 import * as THREE from "three";
+
+// Loader component
+const Loader = () => (
+  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10 text-white text-lg">
+    Loading 3D model...
+  </div>
+);
 
 const STLViewer = ({ file }) => {
   const [fileUrl, setFileUrl] = useState(null);
 
   useEffect(() => {
+    let blobUrl = null;
+
     if (!file) {
       setFileUrl(null);
       return;
     }
 
-    // Case 1: File is a File object (from upload)
     if (file instanceof File) {
-      const blobUrl = URL.createObjectURL(file);
+      blobUrl = URL.createObjectURL(file);
       setFileUrl(blobUrl);
-      return () => URL.revokeObjectURL(blobUrl); // Cleanup
-    }
-
-    // Case 2: File is a URL string (from API)
-    if (typeof file === 'string') {
-      // If it's already a full URL, use it directly
-      if (file.startsWith('http') || file.startsWith('blob')) {
+    } else if (typeof file === "string") {
+      if (file.startsWith("http") || file.startsWith("blob")) {
         setFileUrl(file);
       } else {
-        // If it's a relative path, convert to absolute URL
         setFileUrl(getAbsoluteUrl(file));
       }
-      return;
     }
+
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
   }, [file]);
 
   if (!file) return null;
 
   return (
-    <div className="w-full h-[500px] overflow-hidden shadow-lg bg-gray-800">
-      <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[5, 5, 5]} intensity={1} />
-        {fileUrl && <STLModel file={fileUrl} />}
-        <OrbitControls autoRotate autoRotateSpeed={1.5} />
-      </Canvas>
+    <div className="relative w-full h-[500px] overflow-hidden shadow-lg bg-gray-800">
+      <Suspense fallback={<Loader />}>
+        <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
+          <ambientLight intensity={0.7} />
+          <directionalLight position={[5, 5, 5]} intensity={1} />
+          {fileUrl && <STLModel file={fileUrl} />}
+          <OrbitControls autoRotate autoRotateSpeed={1.5} />
+        </Canvas>
+      </Suspense>
     </div>
   );
 };
@@ -51,7 +57,11 @@ const STLViewer = ({ file }) => {
 const STLModel = ({ file }) => {
   const geometry = useLoader(STLLoader, file);
 
-  geometry.computeBoundingBox();
+  // Safe bounding box computation
+  if (!geometry.boundingBox) {
+    geometry.computeBoundingBox();
+  }
+
   const bbox = geometry.boundingBox;
   const center = new THREE.Vector3();
   bbox.getCenter(center);
@@ -69,12 +79,10 @@ const STLModel = ({ file }) => {
   );
 };
 
-// Helper function to convert relative paths to absolute URLs
 const getAbsoluteUrl = (path) => {
   if (!path) return "";
   if (path.startsWith("http") || path.startsWith("blob")) return path;
-  // Adjust this base URL as needed for your environment
-  return `${window.location.origin}${path.startsWith('/') ? '' : '/'}${path}`;
+  return `${window.location.origin}${path.startsWith("/") ? "" : "/"}${path}`;
 };
 
 export default STLViewer;

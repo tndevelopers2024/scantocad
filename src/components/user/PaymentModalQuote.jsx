@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { 
-  FiX, FiPlus, FiMinus, FiUpload, FiCheck, FiCreditCard, FiDollarSign,
-  FiFileText, FiLoader, FiArrowRight, FiCheckCircle, FiAlertCircle, FiArrowLeft
+  FiX, FiPlus, FiMinus, FiCheck, FiCreditCard, FiDollarSign,
+  FiLoader, FiArrowRight, FiCheckCircle, FiAlertCircle, FiArrowLeft
 } from 'react-icons/fi';
 import { FaPaypal, FaRupeeSign } from 'react-icons/fa';
 import { SiRazorpay } from 'react-icons/si';
@@ -11,37 +11,22 @@ import { getCurrentRate } from '../../api';
 const StepPaymentModal = ({ 
   isOpen, 
   onClose, 
-  onPaymentSuccess,
-  requiredHours,
-  quotationId,
+  onPaymentSuccess, 
+  requiredHours = 3,
 }) => {
-  const [step, setStep] = useState(1);
+    const [step, setStep] = useState(1);
   const [hours, setHours] = useState(requiredHours);
   const [activeGateway, setActiveGateway] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingScript, setLoadingScript] = useState(false);
-  const [purchaseOrderFile, setPurchaseOrderFile] = useState(null);
-  const [fileError, setFileError] = useState(null);
-  const [purchaseOrderStatus, setPurchaseOrderStatus] = useState(null);
-  console.log(quotationId);
-  const totalPrice = hours * ratePerHour;
-  const backendBaseUrl = 'http://localhost:5000/api/v1/payments';
-  const token = localStorage.getItem('token');
   const [ratePerHour, setRatePerHour] = useState(0);
   const [loadingRate, setLoadingRate] = useState(true);
   const [rateError, setRateError] = useState(null);
   const [currency, setCurrency] = useState('INR'); 
 
-  // File validation constants
-  const maxFileSize = 10 * 1024 * 1024; // 10MB
-  const allowedFileTypes = [
-    'application/pdf', 
-    'image/jpeg', 
-    'image/png', 
-    'application/msword', 
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  ];
-  const allowedExtensions = ['.pdf', '.doc', '.docx', '.jpeg', '.jpg', '.png'];
+  const totalPrice = hours * ratePerHour;
+  const backendBaseUrl = 'http://localhost:5000/api/v1/payments';
+  const token = localStorage.getItem('token');
 
   // Reset state when modal closes
   useEffect(() => {
@@ -49,14 +34,10 @@ const StepPaymentModal = ({
       setStep(1);
       setHours(requiredHours);
       setActiveGateway(null);
-      setPurchaseOrderFile(null);
-      setFileError(null);
-      setPurchaseOrderStatus(null);
     }
   }, [isOpen, requiredHours]);
 
-
-    useEffect(() => {
+  useEffect(() => {
     const fetchRate = async () => {
       if (isOpen) {
         try {
@@ -80,7 +61,7 @@ const StepPaymentModal = ({
 
     fetchRate();
   }, [isOpen]);
-  
+
   const handleIncrement = () => setHours(prev => prev + 1);
   const handleDecrement = () => setHours(prev => (prev > 1 ? prev - 1 : 1));
 
@@ -119,7 +100,6 @@ const StepPaymentModal = ({
           gateway,
           amount: totalPrice,
           hours,
-          quotationId,
           ...verificationData
         })
       });
@@ -132,86 +112,6 @@ const StepPaymentModal = ({
       setStep(3); // Move to success step
     } catch (error) {
       handlePaymentError(error);
-    }
-  };
-
-  const validateFile = (file) => {
-    setFileError(null);
-    
-    // Check file type
-    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    if (!allowedExtensions.includes(fileExtension)) {
-      setFileError('Invalid file type. Accepted formats: PDF, DOC, DOCX, JPEG, JPG, PNG');
-      return false;
-    }
-
-    // Check MIME type
-    if (!allowedFileTypes.includes(file.type)) {
-      setFileError('Invalid file type. Accepted formats: PDF, DOC, DOCX, JPEG, JPG, PNG');
-      return false;
-    }
-
-    // Check file size
-    if (file.size > maxFileSize) {
-      setFileError('File size exceeds 10MB limit');
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (validateFile(file)) {
-      setPurchaseOrderFile(file);
-      setFileError(null);
-    } else {
-      setPurchaseOrderFile(null);
-      e.target.value = ''; // Clear the file input
-    }
-  };
-
-  const handlePurchaseOrderSubmit = async () => {
-    if (!purchaseOrderFile) {
-      setFileError('Please upload a purchase order file');
-      return;
-    }
-
-    setIsProcessing(true);
-    setPurchaseOrderStatus(null);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', purchaseOrderFile);
-      formData.append('amount', totalPrice);
-      formData.append('hours', hours);
-      formData.append('quotationId', quotationId);
-      
-      const response = await fetch(`${backendBaseUrl}/purchase-order`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to submit purchase order");
-      }
-      
-      setPurchaseOrderStatus('success');
-      onPaymentSuccess();
-      setStep(3); // Move to success step
-    } catch (error) {
-      console.error('Purchase order submission error:', error);
-      setPurchaseOrderStatus('error');
-      handlePaymentError(error);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -237,7 +137,6 @@ const StepPaymentModal = ({
         body: JSON.stringify({ 
           amount: amountInPaise, // Send amount in paise
           hours, 
-          quotationId,
           gateway: 'razorpay',
           currency: 'INR' // Explicitly specify currency
         })
@@ -269,8 +168,7 @@ const StepPaymentModal = ({
         },
         notes: {
           hours: hours.toString(),
-          price: totalPrice.toString(),
-          quotationId: quotationId
+          price: totalPrice.toString()
         }
       };
   
@@ -314,7 +212,6 @@ const StepPaymentModal = ({
             body: JSON.stringify({ 
               amount: totalPrice, 
               hours, 
-              quotationId,
               gateway: 'paypal' 
             })
           });
@@ -343,6 +240,8 @@ const StepPaymentModal = ({
         .catch(err => handlePaymentError(err));
     }
   }, [activeGateway, step]);
+
+  
 
   if (!isOpen) return null;
 
@@ -403,10 +302,7 @@ const StepPaymentModal = ({
         {/* Step 1: Select Hours */}
         {step === 1 && (
           <div className="space-y-6">
-            <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm flex items-start">
-              <FiAlertCircle className="mt-0.5 mr-2 flex-shrink-0" />
-              <span>No available credit. You need {requiredHours} additional hours. To proceed, add {requiredHours} hours or submit a purchase order.</span>
-            </div>
+           
 
             <div className="text-center">
               <h3 className="text-lg font-semibold text-gray-800 mb-1">Add credit hours</h3>
@@ -431,8 +327,9 @@ const StepPaymentModal = ({
                 <FiPlus />
               </button>
             </div>
-            <div className="flex justify-center items-center gap-4 ">
-              <div className=" p-4 rounded-lg text-center">
+
+            <div className="flex justify-center items-center gap-4">
+              <div className="p-4 rounded-lg text-center">
                 <div className="text-sm text-gray-500 mb-1">Total price</div>
                 <div className="text-2xl font-bold text-gray-800 flex items-center justify-center">
                   <FaRupeeSign className="mr-1" /> {totalPrice.toLocaleString()}
@@ -454,73 +351,6 @@ const StepPaymentModal = ({
                   </>
                 )}
               </button>
-            </div>
-            <div className="flex flex-col space-y-3">
-              <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-gray-200"></div>
-                <span className="flex-shrink mx-4 text-gray-400 text-sm">OR</span>
-                <div className="flex-grow border-t border-gray-200"></div>
-              </div>
-              
-              <div>
-                <label className="group">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all">
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      onChange={handleFileUpload}
-                      accept=".pdf,.doc,.docx,.jpeg,.jpg,.png"
-                      disabled={isProcessing}
-                    />
-                    <div className="flex flex-col items-center justify-center">
-                      <FiUpload className="text-gray-400 group-hover:text-blue-500 mb-2 text-xl" />
-                      <div className="font-medium text-gray-700">Upload Purchase Order</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {purchaseOrderFile ? (
-                          <span className="text-green-600 flex items-center">
-                            <FiCheck className="mr-1" /> {purchaseOrderFile.name}
-                          </span>
-                        ) : (
-                          'PDF, DOC, JPG, PNG (Max 10MB)'
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </label>
-                
-                {fileError && (
-                  <div className="text-red-500 text-sm text-center mt-2 flex items-center justify-center">
-                    <FiAlertCircle className="mr-1" /> {fileError}
-                  </div>
-                )}
-                
-                {purchaseOrderStatus === 'error' && (
-                  <div className="text-red-500 text-sm text-center mt-2 flex items-center justify-center">
-                    <FiAlertCircle className="mr-1" /> Failed to submit purchase order. Please try again.
-                  </div>
-                )}
-                
-                <button
-                  onClick={handlePurchaseOrderSubmit}
-                  className={`w-full mt-3 px-5 py-3 rounded-lg font-medium flex items-center justify-center transition-all ${
-                    purchaseOrderFile 
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                      : 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                  }`}
-                  disabled={isProcessing || !purchaseOrderFile}
-                >
-                  {isProcessing ? (
-                    <>
-                      <FiLoader className="animate-spin mr-2" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <FiFileText className="mr-2" /> Submit Purchase Order
-                    </>
-                  )}
-                </button>
-              </div>
             </div>
           </div>
         )}
@@ -601,32 +431,38 @@ const StepPaymentModal = ({
         )}
 
         {/* Step 3: Confirmation */}
-        {step === 3 && (
-          <div className="text-center space-y-6">
-            <div className="bg-green-50 text-green-600 p-4 rounded-full inline-flex items-center justify-center">
-              <FiCheckCircle size={48} />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800">Payment Successful!</h3>
-            <p className="text-gray-600">
-              You've successfully purchased <span className="font-semibold">{hours} hours</span> of credit.
-            </p>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="font-medium mb-1">Transaction Details</div>
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Amount Paid:</span>
-                <span className="font-medium flex items-center">
-                  <FaRupeeSign className="mr-1" /> {totalPrice.toLocaleString()}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-full bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md"
-            >
-              Close
-            </button>
-          </div>
-        )}
+{step === 3 && (
+  <div className="text-center space-y-6">
+    <div className="bg-green-50 text-green-600 p-4 rounded-full inline-flex items-center justify-center">
+      <FiCheckCircle size={48} />
+    </div>
+    <h3 className="text-2xl font-bold text-gray-800">Payment Successful!</h3>
+    <p className="text-gray-600">
+      You've successfully purchased <span className="font-semibold">{hours} hours</span> of credit.
+    </p>
+    <div className="bg-gray-50 p-4 rounded-lg">
+      <div className="font-medium mb-1">Transaction Details</div>
+      <div className="flex justify-between text-sm text-gray-600">
+        <span>Amount Paid:</span>
+        <span className="font-medium flex items-center">
+          <FaRupeeSign className="mr-1" /> {totalPrice.toLocaleString()}
+        </span>
+      </div>
+      <div className="flex justify-between text-sm text-gray-600 mt-2">
+        <span>Total Available Hours:</span>
+        <span className="font-medium">
+          {hours} hours
+        </span>
+      </div>
+    </div>
+    <button
+      onClick={onClose}
+      className="w-full bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md"
+    >
+      Close
+    </button>
+  </div>
+)}
       </div>
     </div>
   );
@@ -637,7 +473,6 @@ StepPaymentModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onPaymentSuccess: PropTypes.func.isRequired,
   requiredHours: PropTypes.number,
-  quotationId: PropTypes.string.isRequired,
   ratePerHour: PropTypes.number
 };
 

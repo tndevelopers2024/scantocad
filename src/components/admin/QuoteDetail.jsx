@@ -5,6 +5,8 @@ import {
   raiseQuote,
   completeQuotation,
   updateOngoing,
+  updatePoStatus,
+  updateEstimatedHours
 } from "../../api";
 import STLViewer from "../../contexts/STLViewer";
 import { motion } from "framer-motion";
@@ -17,6 +19,9 @@ import {
   FiUser,
   FiMail,
   FiInfo,
+  FiThumbsUp,
+  FiThumbsDown,
+   FiEdit, 
 } from "react-icons/fi";
 
 const statusConfig = {
@@ -42,6 +47,21 @@ const statusConfig = {
   },
 };
 
+const poStatusConfig = {
+  requested: {
+    color: "bg-yellow-100 text-yellow-800",
+    icon: <FiClock className="mr-1" />,
+  },
+  approved: {
+    color: "bg-green-100 text-green-800",
+    icon: <FiThumbsUp className="mr-1" />,
+  },
+  rejected: {
+    color: "bg-red-100 text-red-800",
+    icon: <FiThumbsDown className="mr-1" />,
+  },
+};
+
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
@@ -58,6 +78,9 @@ export default function QuoteDetail() {
   const [showSTLViewer, setShowSTLViewer] = useState(false);
   const [completedFile, setCompletedFile] = useState(null);
   const [fileError, setFileError] = useState("");
+  const [updatingPoStatus, setUpdatingPoStatus] = useState(false);
+ const [isEditingHours, setIsEditingHours] = useState(false);
+  const [tempHours, setTempHours] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -89,6 +112,27 @@ export default function QuoteDetail() {
       setSubmitting(false);
     }
   };
+
+  const handleUpdateHours = async () => {
+  if (!tempHours) {
+    return setMessage({ text: "Required hour cannot be empty", type: "error" });
+  }
+
+  setSubmitting(true);
+  try {
+    const res = await updateEstimatedHours(id, tempHours );
+    setQuote(res.data);
+    setRequiredHour(tempHours);
+    setIsEditingHours(false);
+    setMessage({ text: "Estimated hours updated successfully!", type: "success" });
+  } catch (err) {
+    console.error(err);
+    setMessage({ text: "Failed to update hours", type: "error" });
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   const handleOngoing = async () => {
     try {
@@ -144,7 +188,7 @@ export default function QuoteDetail() {
       const res = await completeQuotation(id, formData);
       setQuote(res.data);
       setMessage({
-        text: "Quotation marked as completed successfully!",
+        text: "Quotation as completed successfully!",
         type: "success",
       });
     } catch (err) {
@@ -154,6 +198,24 @@ export default function QuoteDetail() {
       setCompleting(false);
     }
   };
+
+   const handleUpdatePoStatus = async (status) => {
+    setUpdatingPoStatus(true);
+    try {
+      const res = await updatePoStatus(id, status);
+      setQuote(res.data);
+      setMessage({
+        text: `PO ${status} successfully!`,
+        type: "success",
+      });
+    } catch (err) {
+      console.error(err);
+      setMessage({ text: `Failed to ${status} PO`, type: "error" });
+    } finally {
+      setUpdatingPoStatus(false);
+    }
+  };
+
 
   const isSTLFile = quote?.file?.toLowerCase().endsWith(".stl");
 
@@ -180,13 +242,13 @@ export default function QuoteDetail() {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br p-4 md:p-8">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={fadeIn}
         transition={{ duration: 0.5 }}
-        className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden"
+        className=" mx-auto bg-white rounded-xl shadow-md overflow-hidden"
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
@@ -197,7 +259,7 @@ export default function QuoteDetail() {
               </h1>
               <div className="flex items-center mt-2">
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center ${
                     statusConfig[quote.status?.toLowerCase()]?.color ||
                     "bg-gray-100 text-gray-800"
                   }`}
@@ -223,20 +285,82 @@ export default function QuoteDetail() {
         <div className="p-6 md:p-8">
           {/* Quote Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <DetailCard
-              icon={<FiInfo className="text-indigo-500" />}
-              title="Project Details"
-              items={[
-                {
-                  label: "Description",
-                  value: quote.description || "Not provided",
-                },
-                {
-                  label: "Required Hours",
-                  value: quote.requiredHour || "Not estimated yet",
-                },
-              ]}
-            />
+     <DetailCard
+  icon={<FiInfo className="text-indigo-500" />}
+  title="Project Details"
+  items={[
+    {
+      label: "Description",
+      value: quote.description || "Not provided",
+    },
+    {
+      label: "Technical Details",
+      value: quote.technicalInfo || "Not specified",
+    },
+    {
+      label: "Live Transfer Format",
+      value: quote.deliverables ? (
+        <ul>
+          {quote.deliverables.split(',').map((item, index) => (
+            <li key={index}>{item.trim()}</li>
+          ))}
+        </ul>
+      ) : (
+        "Not specified"
+      ),
+    },
+    quote.requiredHour
+      ? {
+          label: "Required Hours",
+          value:
+            isEditingHours && quote.status === "quoted" ? (
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  min="1"
+                  value={tempHours}
+                  onChange={(e) => setTempHours(e.target.value)}
+                  className="w-24 px-2 py-1 border border-gray-300 rounded mr-2"
+                />
+                <button
+                  onClick={handleUpdateHours}
+                  disabled={submitting}
+                  className="px-2 py-1 bg-green-500 text-white rounded text-sm disabled:opacity-50"
+                >
+                  {submitting ? "Saving..." : "Save"}
+                </button>
+                <button
+                  onClick={() => setIsEditingHours(false)}
+                  className="ml-2 px-2 py-1 bg-gray-200 rounded text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center">
+                {quote.requiredHour || "Not estimated yet"}
+                {quote.status !== "completed" && (
+                  <button
+                    onClick={() => {
+                      setTempHours(quote.requiredHour || "");
+                      setIsEditingHours(true);
+                    }}
+                    className="ml-2 text-indigo-600 hover:text-indigo-800"
+                    title="Edit hours"
+                  >
+                    <FiEdit size={14} />
+                  </button>
+                )}
+              </div>
+            ),
+        }
+      : {
+          label: "Required Hours",
+          value: "Not estimated yet",
+        },
+  ].filter(Boolean)} // Filter out any null/false entries
+/>
+
 
             <DetailCard
               icon={<FiUser className="text-indigo-500" />}
@@ -342,12 +466,161 @@ export default function QuoteDetail() {
             </motion.div>
           )}
 
+        {quote.poStatus && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ delay: 0.2 }}
+    className={`rounded-lg p-6 mb-6 border ${
+      quote.poStatus === "requested"
+        ? "bg-yellow-50 border-yellow-100"
+        : quote.poStatus === "approved"
+        ? "bg-green-50 border-green-100"
+        : "bg-red-50 border-red-100"
+    }`}
+  >
+    <div className="flex justify-between items-start">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">
+          {quote.poStatus === "requested"
+            ? "Purchase Order Approval"
+            : quote.poStatus === "approved"
+            ? "Purchase Order"
+            : "Purchase Order Rejected"}
+        </h3>
+        <div className="flex items-center">
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center ${
+              poStatusConfig[quote.poStatus?.toLowerCase()]?.color ||
+              "bg-gray-100 text-gray-800"
+            }`}
+          >
+            {poStatusConfig[quote.poStatus?.toLowerCase()]?.icon}
+            {capitalize(quote.poStatus)}
+          </span>
+          {quote.poStatus === "rejected" && (
+            <p className="ml-3 text-sm text-red-600">
+              This purchase order has been rejected
+            </p>
+          )}
+        </div>
+      </div>
+
+      {quote.poStatus === "requested" && (
+        <div className="flex space-x-2">
+          <button
+            onClick={() => handleUpdatePoStatus("approved")}
+            disabled={updatingPoStatus}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-70 flex items-center"
+          >
+            {updatingPoStatus ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              <>
+                <FiThumbsUp className="mr-1" />
+                Approve PO
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => handleUpdatePoStatus("rejected")}
+            disabled={updatingPoStatus}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-70 flex items-center"
+          >
+            {updatingPoStatus ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              <>
+                <FiThumbsDown className="mr-1" />
+                Reject PO
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+
+    {quote.payment?.purchaseOrderFile && (
+      <div className="mt-4">
+        {quote.poStatus === "approved" ? (
+          <FileCard
+            title="Purchase Order File"
+            filename={quote.payment?.purchaseOrderFile?.split("/").pop()}
+            url={getAbsoluteUrl(quote.payment?.purchaseOrderFile)}
+          />
+        ) : quote.poStatus === "requested" ? (
+          <FileCard
+            title="Purchase Order File (Pending Approval)"
+            filename={quote.payment?.purchaseOrderFile?.split("/").pop()}
+            url={getAbsoluteUrl(quote.payment?.purchaseOrderFile)}
+          />
+        ) : (
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <p className="text-gray-700">
+              <span className="font-medium">Original PO File:</span>{" "}
+              {quote.payment?.purchaseOrderFile?.split("/").pop()}
+            </p>
+            <p className="text-sm text-red-500 mt-1">
+              This file is no longer available for download as the PO was
+              rejected.
+            </p>
+          </div>
+        )}
+      </div>
+    )}
+  </motion.div>
+)}
+
     {quote.status === "approved" && (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     transition={{ delay: 0.2 }}
-    className="bg-purple-50 rounded-lg p-6 mb-6 border border-purple-100"
+    className="bg-purple-50 flex justify-between items-center rounded-lg p-6 mb-6 border border-purple-100"
   >
     <h3 className="text-lg font-semibold text-purple-800 mb-4">
       Make Quotation to Ongoing
@@ -356,7 +629,7 @@ export default function QuoteDetail() {
       <button
         onClick={handleOngoing}
         disabled={submitting}
-        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70 flex items-center"
+        className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-800 transition-colors disabled:opacity-70 flex items-center"
       >
         {submitting ? (
           <>
@@ -383,7 +656,7 @@ export default function QuoteDetail() {
             Processing...
           </>
         ) : (
-          "Submit Quote"
+          "Make it Ongoing"   
         )}
       </button>
     </div>
@@ -391,7 +664,7 @@ export default function QuoteDetail() {
 )}
 
 
-          {quote.status === "ongoing" && (
+  {quote.status === "ongoing" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -420,7 +693,7 @@ export default function QuoteDetail() {
                         <p className="pl-1">or drag and drop</p>
                       </div>
                       <p className="text-xs text-gray-500">
-                        STL, OBJ, PLY, 3MF, ZIP, RAR up to 50MB
+                        STL, OBJ, PLY, 3MF, ZIP, RAR up to 1GB
                       </p>
                     </div>
                   </div>
@@ -434,7 +707,7 @@ export default function QuoteDetail() {
                           {completedFile.name}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {(completedFile.size / 1024 / 1024).toFixed(2)} MB
+                          {(completedFile.size / 1024 / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
                       <button
@@ -601,7 +874,7 @@ const FileCard = ({ title, filename, url, onPreview, canPreview = false }) => (
 const getAbsoluteUrl = (path) => {
   if (!path) return "#";
   if (path.startsWith("http")) return path;
-  return `https://5000-firebase-scantocadbackendgit-1747203690155.cluster-ancjwrkgr5dvux4qug5rbzyc2y.cloudworkstations.dev${path}`;
+  return `http://localhost:5000${path}`;
 };
 
 const capitalize = (str) =>

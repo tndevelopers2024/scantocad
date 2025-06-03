@@ -1,20 +1,21 @@
-import { NavLink } from 'react-router-dom';
-import { useState } from 'react';
-import { 
-  FiHome, 
+import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import {
+  FiHome,
   FiUser,
   FiFileText,
   FiSettings,
   FiBriefcase,
   FiClock,
-  FiChevronDown, 
-  FiChevronRight, 
+  FiChevronDown,
+  FiChevronRight,
   FiChevronLeft,
   FiPlusCircle,
-  FiList
-} from 'react-icons/fi';
-import logo from '../../../public/img/logo/logo1.png'; 
-import logo1 from '../../../public/img/logo/logo2.png'; 
+  FiList,
+  FiLogOut,
+} from "react-icons/fi";
+import logo from "../../../public/img/logo/logo1.png";
+import logo1 from "../../../public/img/logo/logo2.png";
 
 const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState({});
@@ -24,69 +25,79 @@ const Sidebar = () => {
   // Navigation data in JSON format
   const navItems = [
     {
-      id: 'create-quote',
-      title: 'Create Quote',
-      path: '/new-quote',
-      icon: FiPlusCircle
+      id: "request-quote",
+      title: "Request Quote",
+      path: "/request-quote",
+      icon: FiPlusCircle,
     },
     {
-      id: 'quotations',
-      title: 'Quotations',
-      path: '/quotations',
-      icon: FiFileText
+      id: "my-quotations",
+      title: "My Quotations",
+      path: "/my-quotations",
+      icon: FiFileText,
     },
     {
-      id: 'works',
-      title: 'Works',
-      path: '/works',
-      icon: FiBriefcase
+      id: "my-orders",
+      title: "My Orders",
+      path: "/my-orders",
+      icon: FiBriefcase,
     },
     {
-      id: 'recent-updates',
-      title: 'Recent Updates',
-      path: '/recent-updates',
-      icon: FiClock
+      id: "recent-updates",
+      title: "Recent Updates",
+      path: "/recent-updates",
+      icon: FiClock,
     },
     {
-      id: 'account',
-      title: 'Account',
-      path: '/account',
-      icon: FiUser
-    }
+      id: "my-profile",
+      title: "My Profile",
+      path: "/my-profile",
+      icon: FiUser,
+    },
+    {
+      id: "logout",
+      title: "Logout",
+      path: "/logout",
+      icon: FiLogOut, // use the logout icon
+    },
   ];
 
   const toggleMenu = (menuId) => {
-    setExpandedMenus(prev => ({
+    setExpandedMenus((prev) => ({
       ...prev,
-      [menuId]: !prev[menuId]
+      [menuId]: !prev[menuId],
     }));
   };
 
   const getIconColor = (itemId, isActive) => {
-    if (isActive) return 'text-white';
-    if (hoveredItem === itemId) return 'text-[#2990F1]';
-    return 'text-[#818181]';
+    if (isActive) return "text-white";
+    if (hoveredItem === itemId) return "text-[#2990F1]";
+    return "text-[#818181]";
   };
 
   return (
-    <div className={`flex flex-col sticky top-0 h-screen bg-white border-r border-gray-200 shadow-sm ${sidebarOpen ? 'w-64' : 'w-20'} px-4 py-8 transition-all duration-300`}>
+    <div
+      className={`flex flex-col sticky top-0 h-screen bg-white border-r border-gray-200 shadow-sm ${
+        sidebarOpen ? "w-64" : "w-20"
+      } px-4 py-8 transition-all duration-300`}
+    >
       {/* Logo and Toggle */}
       <div className="flex items-center justify-between mb-10 px-2">
-    {sidebarOpen ? (
-  <img 
-    src={logo} 
-    alt="Convertscanstocad" 
-    className="mx-auto w-auto h-20 object-contain" 
-  />
-) : (
-  <img 
-    src={logo1} 
-    alt="Convertscanstocad" 
-    className="mx-auto w-auto h-10 object-contain" 
-  />
-)}
+        {sidebarOpen ? (
+          <img
+            src={logo}
+            alt="Convertscanstocad"
+            className="mx-auto w-auto h-20 object-contain"
+          />
+        ) : (
+          <img
+            src={logo1}
+            alt="Convertscanstocad"
+            className="mx-auto w-auto h-10 object-contain"
+          />
+        )}
 
-        <button 
+        <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="absolute right-[-12px] text-[#fff] p-1 rounded-full bg-[#2990F1] hover:bg-gray-100 hover:text-[#2990F1] transition-colors"
         >
@@ -104,13 +115,13 @@ const Sidebar = () => {
           <div key={item.id}>
             {item.path ? (
               // Single menu item with link
-              <NavLink 
-                to={item.path} 
-                className={({ isActive }) => 
+              <NavLink
+                to={item.path}
+                className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive 
-                      ? 'bg-[#2990F1] shadow-md' 
-                      : 'hover:bg-[#2990F1]/10 hover:shadow-sm'
+                    isActive
+                      ? "bg-[#2990F1] shadow-md"
+                      : "hover:bg-[#2990F1]/10 hover:shadow-sm"
                   }`
                 }
                 onMouseEnter={() => setHoveredItem(item.id)}
@@ -120,14 +131,21 @@ const Sidebar = () => {
                   const Icon = item.icon;
                   return (
                     <>
-                      <Icon 
-                        size={20} 
-                        className={`${getIconColor(item.id, isActive)} transition-colors`} 
+                      <Icon
+                        size={20}
+                        className={`${getIconColor(
+                          item.id,
+                          isActive
+                        )} transition-colors`}
                       />
                       {sidebarOpen && (
-                        <span className={`font-medium text-sm ${
-                          isActive ? 'text-white' : 'text-[#818181] hover:text-[#2990F1]'
-                        }`}>
+                        <span
+                          className={`font-medium text-sm ${
+                            isActive
+                              ? "text-white"
+                              : "text-[#818181] hover:text-[#2990F1]"
+                          }`}
+                        >
                           {item.title}
                         </span>
                       )}
@@ -140,9 +158,9 @@ const Sidebar = () => {
               <>
                 <button
                   className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors ${
-                    expandedMenus[item.id] 
-                      ? 'bg-[#2990F1] shadow-md' 
-                      : 'hover:bg-[#2990F1]/10 hover:shadow-sm'
+                    expandedMenus[item.id]
+                      ? "bg-[#2990F1] shadow-md"
+                      : "hover:bg-[#2990F1]/10 hover:shadow-sm"
                   }`}
                   onClick={() => toggleMenu(item.id)}
                   onMouseEnter={() => setHoveredItem(item.id)}
@@ -153,26 +171,35 @@ const Sidebar = () => {
                       const Icon = item.icon;
                       const isActive = expandedMenus[item.id];
                       return (
-                        <Icon 
-                          size={20} 
-                          className={`${getIconColor(item.id, isActive)} transition-colors`} 
+                        <Icon
+                          size={20}
+                          className={`${getIconColor(
+                            item.id,
+                            isActive
+                          )} transition-colors`}
                         />
                       );
                     })()}
                     {sidebarOpen && (
-                      <span className={`font-medium text-sm ${
-                        expandedMenus[item.id] ? 'text-white' : 'text-[#818181] hover:text-[#2990F1]'
-                      }`}>
+                      <span
+                        className={`font-medium text-sm ${
+                          expandedMenus[item.id]
+                            ? "text-white"
+                            : "text-[#818181] hover:text-[#2990F1]"
+                        }`}
+                      >
                         {item.title}
                       </span>
                     )}
                   </div>
                   {sidebarOpen && item.subItems && (
-                    <FiChevronDown 
-                      size={16} 
+                    <FiChevronDown
+                      size={16}
                       className={`transition-all ${
-                        expandedMenus[item.id] ? 'rotate-180 text-white' : getIconColor(item.id, false)
-                      }`} 
+                        expandedMenus[item.id]
+                          ? "rotate-180 text-white"
+                          : getIconColor(item.id, false)
+                      }`}
                     />
                   )}
                 </button>
@@ -180,14 +207,14 @@ const Sidebar = () => {
                 {sidebarOpen && expandedMenus[item.id] && item.subItems && (
                   <div className="ml-8 mt-2 space-y-2">
                     {item.subItems.map((subItem) => (
-                      <NavLink 
+                      <NavLink
                         key={subItem.id}
-                        to={subItem.path} 
-                        className={({ isActive }) => 
+                        to={subItem.path}
+                        className={({ isActive }) =>
                           `flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-colors ${
-                            isActive 
-                              ? 'bg-[#2990F1] shadow-md' 
-                              : 'hover:bg-[#2990F1]/10 hover:shadow-sm'
+                            isActive
+                              ? "bg-[#2990F1] shadow-md"
+                              : "hover:bg-[#2990F1]/10 hover:shadow-sm"
                           }`
                         }
                         onMouseEnter={() => setHoveredItem(subItem.id)}
@@ -197,13 +224,20 @@ const Sidebar = () => {
                           const SubIcon = subItem.icon;
                           return (
                             <>
-                              <SubIcon 
-                                size={16} 
-                                className={`${getIconColor(subItem.id, isActive)} transition-colors`} 
+                              <SubIcon
+                                size={16}
+                                className={`${getIconColor(
+                                  subItem.id,
+                                  isActive
+                                )} transition-colors`}
                               />
-                              <span className={`transition-colors ${
-                                isActive ? 'text-white' : 'text-[#818181] hover:text-[#2990F1]'
-                              }`}>
+                              <span
+                                className={`transition-colors ${
+                                  isActive
+                                    ? "text-white"
+                                    : "text-[#818181] hover:text-[#2990F1]"
+                                }`}
+                              >
                                 {subItem.title}
                               </span>
                             </>

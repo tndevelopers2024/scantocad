@@ -37,7 +37,7 @@ const FileCard = ({ title, fileUrl, onPreview, previewable = false, className = 
 const getAbsoluteUrl = (path) => {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  return `https://5000-firebase-scantocadbackendgit-1747203690155.cluster-ancjwrkgr5dvux4qug5rbzyc2y.cloudworkstations.dev${path}`;
+  return `http://localhost:5000${path}`;
 };
 
 export default FileCard;

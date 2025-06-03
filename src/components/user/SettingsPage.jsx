@@ -161,7 +161,7 @@ const SettingsPage = () => {
                   icon={<FaPhone className="text-gray-400" />}
                 />
                 <InputField 
-                  label="Weekly Hours" 
+                  label="Available hours" 
                   name="Hours" 
                   value={formData.Hours} 
                   onChange={handleChange} 

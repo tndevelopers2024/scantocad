@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import StepPaymentModal from './PaymentModal';
+import StepPaymentModal from './PaymentModalQuote';
 import useCreditHours from '../../contexts/useCreditHours';
 import { 
 FiPlus
@@ -67,7 +67,7 @@ const CreditHours = () => {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         onPaymentSuccess={() => {
-          /* refresh credit hours, etc */
+          
         }}
         requiredHours={3}
         ratePerHour={1000}
