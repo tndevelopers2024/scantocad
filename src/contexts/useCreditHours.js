@@ -19,7 +19,7 @@ const useCreditHours = () => {
         }
 
         const response = await fetch(
-          `http://localhost:5000/api/v1/users/${userId}/hours`,
+          `https://5000-firebase-scantocadbackendgit-1748956005344.cluster-nzwlpk54dvagsxetkvxzbvslyi.cloudworkstations.dev/api/v1/users/${userId}/hours`,
           {
             method: 'GET',
             headers: {

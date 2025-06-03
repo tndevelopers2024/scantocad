@@ -70,7 +70,6 @@ const CreditHours = () => {
           
         }}
         requiredHours={3}
-        ratePerHour={1000}
       />
     </>
   );

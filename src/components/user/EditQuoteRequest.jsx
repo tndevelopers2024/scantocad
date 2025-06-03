@@ -88,7 +88,7 @@ const EditQuoteRequest = () => {
         
         // Set file URL if exists
         if (quote.file) {
-          setFileUrl(`http://localhost:5000${quote.file}`);
+          setFileUrl(`https://5000-firebase-scantocadbackendgit-1748956005344.cluster-nzwlpk54dvagsxetkvxzbvslyi.cloudworkstations.dev${quote.file}`);
         }
         
         setIsLoading(false);
