@@ -23,14 +23,15 @@ const StepPaymentModal = ({
   const [purchaseOrderFile, setPurchaseOrderFile] = useState(null);
   const [fileError, setFileError] = useState(null);
   const [purchaseOrderStatus, setPurchaseOrderStatus] = useState(null);
-  console.log(quotationId);
-  const totalPrice = hours * ratePerHour;
   const backendBaseUrl = 'http://localhost:5000/api/v1/payments';
   const token = localStorage.getItem('token');
   const [ratePerHour, setRatePerHour] = useState(0);
   const [loadingRate, setLoadingRate] = useState(true);
   const [rateError, setRateError] = useState(null);
   const [currency, setCurrency] = useState('INR'); 
+
+  // Calculate total price after ratePerHour is defined
+  const totalPrice = hours * ratePerHour; 
 
   // File validation constants
   const maxFileSize = 10 * 1024 * 1024; // 10MB

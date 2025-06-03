@@ -44,6 +44,7 @@
     --container-padding: 1rem;
 }
 
+
 body {
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
@@ -51,7 +52,9 @@ body {
   color: var(--color-text);
 }
 /* global.css continued */
-
+button,a{
+  cursor: pointer;
+}
 .btn {
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--radius-md);
