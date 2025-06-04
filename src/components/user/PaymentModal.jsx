@@ -12,7 +12,7 @@ const StepPaymentModal = ({
   isOpen, 
   onClose, 
   onPaymentSuccess,
-  requiredHours,
+  requiredHours = 1,
   quotationId,
 }) => {
   const [step, setStep] = useState(1);

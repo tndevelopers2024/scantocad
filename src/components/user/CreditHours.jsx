@@ -66,10 +66,8 @@ const CreditHours = () => {
       <StepPaymentModal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
-        onPaymentSuccess={() => {
-          
+        onPaymentSuccess={() => {       
         }}
-        requiredHours={3}
       />
     </>
   );
