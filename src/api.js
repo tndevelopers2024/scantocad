@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://5000-firebase-scantocadbackendgit-1748956005344.cluster-nzwlpk54dvagsxetkvxzbvslyi.cloudworkstations.dev/api/v1';
+const BASE_URL = 'https://ardpgimerchd.org/api/v1';
 
 export { 
   initializeSocket, 

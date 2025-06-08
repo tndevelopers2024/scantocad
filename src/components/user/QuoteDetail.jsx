@@ -633,5 +633,5 @@ export default function QuoteDetail() {
 const getAbsoluteUrl = (path) => {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  return `https://5000-firebase-scantocadbackendgit-1748956005344.cluster-nzwlpk54dvagsxetkvxzbvslyi.cloudworkstations.dev${path}`;
+  return `https://ardpgimerchd.org${path}`;
 };
