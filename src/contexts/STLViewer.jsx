@@ -6,21 +6,7 @@ import * as THREE from "three";
 
 const Loader = ({ progress = 0 }) => (
   <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 bg-opacity-90 z-10 text-white">
-    <div className="relative w-64 h-4 bg-gray-700 rounded-full overflow-hidden mb-4">
-      <div 
-        className="absolute top-0 left-0 h-full bg-blue-500 transition-all duration-300 ease-out"
-        style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-      />
-    </div>
-    <div className="mt-4 flex space-x-2">
-      {[1, 2, 3].map((i) => (
-        <div 
-          key={i}
-          className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
-          style={{ animationDelay: `${i * 0.2}s` }}
-        />
-      ))}
-    </div>
+     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
   </div>
 );
 
