@@ -44,9 +44,78 @@ const NewQuoteRequest = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationType, setNotificationType] = useState("success");
   const [notificationMessage, setNotificationMessage] = useState("");
+  const [errors, setErrors] = useState({
+    projectName: '',
+    description: '',
+    technicalInfo: '',
+    liveTransferFormat: '',
+    file: ''
+  });
+
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = {
+      projectName: '',
+      description: '',
+      technicalInfo: '',
+      liveTransferFormat: '',
+      file: ''
+    };
+
+    // Validate project name
+    if (!projectName.trim()) {
+      newErrors.projectName = 'Project name is required';
+      isValid = false;
+    } else if (projectName.length > 100) {
+      newErrors.projectName = 'Project name must be less than 100 characters';
+      isValid = false;
+    }
+
+    // Validate description
+    if (!description.trim()) {
+      newErrors.description = 'Description is required';
+      isValid = false;
+    } else if (description.length > 500) {
+      newErrors.description = 'Description must be less than 500 characters';
+      isValid = false;
+    }
+
+    // Validate at least one technical info is selected
+    if (!Object.values(technicalInfo).some(val => val)) {
+      newErrors.technicalInfo = 'At least one technical information option must be selected';
+      isValid = false;
+    }
+
+    // Validate live transfer format
+    if (!deliverables.liveTransferFormat) {
+      newErrors.liveTransferFormat = 'Live transfer format is required';
+      isValid = false;
+    }
+
+    // Validate file
+    if (!selectedFile) {
+      newErrors.file = 'File upload is required';
+      isValid = false;
+    } else if (selectedFile.size > 50 * 1024 * 1024) { // 50MB limit
+      newErrors.file = 'File size must be less than 50MB';
+      isValid = false;
+    } else if (!selectedFile.name.toLowerCase().endsWith('.stl')) {
+      newErrors.file = 'Only STL files are accepted';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
 
   const handleFileChange = e => {
-    setSelectedFile(e.target.files[0]);
+    const file = e.target.files[0];
+    setSelectedFile(file);
+    
+    // Clear file error when new file is selected
+    if (file) {
+      setErrors(prev => ({ ...prev, file: '' }));
+    }
   };
 
   const showTempNotification = (message, type = "success") => {
@@ -59,48 +128,48 @@ const NewQuoteRequest = () => {
     }, 5000);
   };
 
-const handleSubmit = async e => {
-  e.preventDefault();
+  const handleSubmit = async e => {
+    e.preventDefault();
 
-  if (!selectedFile) {
-    showTempNotification("Please upload a file first", "error");
-    return;
-  }
+    if (!validateForm()) {
+      showTempNotification("Please fix the errors in the form", "error");
+      return;
+    }
 
-  setIsSubmitting(true);
+    setIsSubmitting(true);
 
-  const formData = new FormData();
-  formData.append('projectName', projectName);
-  formData.append('description', description);
+    const formData = new FormData();
+    formData.append('projectName', projectName);
+    formData.append('description', description);
 
-  const technicalInfoString = Object.entries(technicalInfo)
-    .filter(([_, value]) => value)
-    .map(([key]) => key)
-    .join(', ');
+    const technicalInfoString = Object.entries(technicalInfo)
+      .filter(([_, value]) => value)
+      .map(([key]) => key)
+      .join(', ');
 
-  const deliverablesString = `Live Transfer: ${deliverables.liveTransferFormat}, CAD Neutral Files: ${deliverables.cadNeutralFiles ? 'Yes' : 'No'}`;
+    const deliverablesString = `Live Transfer: ${deliverables.liveTransferFormat}, CAD Neutral Files: ${deliverables.cadNeutralFiles ? 'Yes' : 'No'}`;
 
-  formData.append('technicalInfo', technicalInfoString);
-  formData.append('deliverables', deliverablesString);
+    formData.append('technicalInfo', technicalInfoString);
+    formData.append('deliverables', deliverablesString);
 
-  if (selectedFile) formData.append('file', selectedFile);
+    if (selectedFile) formData.append('file', selectedFile);
 
-  try {
-    await requestQuote(formData);
-    showTempNotification("Quote request submitted successfully!");
+    try {
+      await requestQuote(formData);
+      showTempNotification("Quote request submitted successfully!");
 
-    // Delay navigation to give time for the success message to show
-    setTimeout(() => {
-      navigate('/my-quotations');
-    }, 4000);
+      // Delay navigation to give time for the success message to show
+      setTimeout(() => {
+        navigate('/my-quotations');
+      }, 4000);
 
-  } catch (err) {
-    console.error(err);
-    showTempNotification("Failed to submit quote request. Please try again.", "error");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+    } catch (err) {
+      console.error(err);
+      showTempNotification("Failed to submit quote request. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="mx-auto p-6 space-y-8">
@@ -116,7 +185,7 @@ const handleSubmit = async e => {
       </AnimatePresence>
 
       {/* Show loader when submitting */}
-      {isSubmitting && <Loader message='Please wait! Your request is in progress!' />}
+      {isSubmitting && <Loader message='This may take a while upto 3-5 mins. Please do not navigate or close this window.' />}
 
       <div className="flex justify-end items-center mb-6">
         <CreditHours />
@@ -135,10 +204,16 @@ const handleSubmit = async e => {
                 <input
                   type="text"
                   value={projectName}
-                  onChange={e => setProjectName(e.target.value)}
+                  onChange={e => {
+                    setProjectName(e.target.value);
+                    setErrors(prev => ({ ...prev, projectName: '' }));
+                  }}
                   required
-                  className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-400 focus:border-blue-400"
+                  className={`mt-1 w-full px-4 py-2 border ${errors.projectName ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-blue-400 focus:border-blue-400`}
                 />
+                {errors.projectName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.projectName}</p>
+                )}
               </div>
 
               {/* Description */}
@@ -146,11 +221,17 @@ const handleSubmit = async e => {
                 <label className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
                   value={description}
-                  onChange={e => setDescription(e.target.value)}
+                  onChange={e => {
+                    setDescription(e.target.value);
+                    setErrors(prev => ({ ...prev, description: '' }));
+                  }}
                   rows={4}
                   placeholder="Enter project description or special notes..."
-                  className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-400 focus:border-blue-400"
+                  className={`mt-1 w-full px-4 py-2 border ${errors.description ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-blue-400 focus:border-blue-400`}
                 />
+                {errors.description && (
+                  <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                )}
               </div>
 
               {/* Technical Info */}
@@ -164,9 +245,10 @@ const handleSubmit = async e => {
                       <input
                         type="checkbox"
                         checked={val}
-                        onChange={e =>
-                          setTechnicalInfo({ ...technicalInfo, [key]: e.target.checked })
-                        }
+                        onChange={e => {
+                          setTechnicalInfo({ ...technicalInfo, [key]: e.target.checked });
+                          setErrors(prev => ({ ...prev, technicalInfo: '' }));
+                        }}
                         className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                       />
                       <span className="text-gray-700 text-sm">
@@ -177,6 +259,9 @@ const handleSubmit = async e => {
                     </label>
                   ))}
                 </div>
+                {errors.technicalInfo && (
+                  <p className="mt-1 text-sm text-red-600">{errors.technicalInfo}</p>
+                )}
               </div>
 
               {/* Deliverables */}
@@ -188,13 +273,14 @@ const handleSubmit = async e => {
                   <select
                     required
                     value={deliverables.liveTransferFormat}
-                    onChange={e =>
+                    onChange={e => {
                       setDeliverables({
                         ...deliverables,
                         liveTransferFormat: e.target.value,
-                      })
-                    }
-                    className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-400 focus:border-blue-400"
+                      });
+                      setErrors(prev => ({ ...prev, liveTransferFormat: '' }));
+                    }}
+                    className={`mt-1 w-full px-4 py-2 border ${errors.liveTransferFormat ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-blue-400 focus:border-blue-400`}
                   >
                     <option value="">---select option---</option>
                     <option value="solidworks">Solidworks - .sldprt</option>
@@ -202,6 +288,9 @@ const handleSubmit = async e => {
                     <option value="inventor">Inventor - .iam,ipt</option>
                     <option value="others">Others</option>
                   </select>
+                  {errors.liveTransferFormat && (
+                    <p className="mt-1 text-sm text-red-600">{errors.liveTransferFormat}</p>
+                  )}
                 </div>
                 <label className="inline-flex items-center space-x-2">
                   <input
@@ -226,7 +315,7 @@ const handleSubmit = async e => {
                 </label>
                 <label
                   htmlFor="file-upload"
-                  className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:bg-blue-50 transition"
+                  className={`flex flex-col items-center justify-center h-40 border-2 border-dashed ${errors.file ? 'border-red-500' : 'border-blue-300'} rounded-lg cursor-pointer hover:bg-blue-50 transition`}
                 >
                   <FiUploadCloud className="text-3xl text-blue-400 mb-2" />
                   <span className="text-sm text-blue-500">Click here to upload your file</span>
@@ -240,8 +329,11 @@ const handleSubmit = async e => {
                 </label>
                 {selectedFile && (
                   <p className="mt-2 text-sm text-gray-600">
-                    Selected: <span className="font-medium">{selectedFile.name}</span>
+                    Selected: <span className="font-medium">{selectedFile.name}</span> ({Math.round(selectedFile.size / 1024)} KB)
                   </p>
+                )}
+                {errors.file && (
+                  <p className="mt-1 text-sm text-red-600">{errors.file}</p>
                 )}
               </div>
 
@@ -250,9 +342,9 @@ const handleSubmit = async e => {
                 <button
                   type="button"
                   onClick={() => setShowModal(true)}
-                  disabled={!selectedFile}
+                  disabled={!selectedFile || !!errors.file}
                   className={`flex-1 px-6 py-2 rounded-md border border-blue-400 text-blue-600 font-medium
-                    ${!selectedFile ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-50'}`}
+                    ${!selectedFile || errors.file ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-50'}`}
                 >
                   Preview file
                 </button>

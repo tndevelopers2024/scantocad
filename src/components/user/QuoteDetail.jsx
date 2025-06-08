@@ -3,6 +3,8 @@ import { getQuotationById, getUserHours, updateUserDecision, updateUserDecisionP
 import STLViewer from "../../contexts/STLViewer";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSocket } from "../../contexts/SocketProvider";
+
 import {
   FiDownload,
   FiX,
@@ -39,28 +41,67 @@ export default function QuoteDetail() {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationType, setNotificationType] = useState("success");
   const [notificationMessage, setNotificationMessage] = useState("");
+  const { socket } = useSocket();
+
+  const fetchQuote = async () => {
+    try {
+      const res = await getQuotationById(id);
+      setQuote(res.data);
+      setLoading(false);
+
+      if (res?.data?.status === "quoted") {
+        getUserHours()
+          .then((data) => {
+            if (data?.data?.hours) {
+              setAvailableHours(data.data.hours);
+            }
+          })
+          .catch(console.error);
+      }
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    getQuotationById(id)
-      .then((res) => {
-        setQuote(res.data);
-        setLoading(false);
-
-        if (res?.data?.status === "quoted") {
-          getUserHours()
-            .then((data) => {
-              if (data?.data?.hours) {
-                setAvailableHours(data.data.hours);
-              }
-            })
-            .catch(console.error);
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
+    fetchQuote();
   }, [id]);
+
+ useEffect(() => {
+  if (!socket) {
+    console.warn("Socket not available");
+    return;
+  }
+
+  console.log("Socket connected:", socket.connected);
+
+  const events = [
+    "quotation:raised",
+    "quotation:updated",
+    "quotation:decision",
+    "quotation:completed",
+    "quotation:ongoing",
+    "quotation:hour-updated",
+    "quotation:userUpdated",
+  ];
+
+  const handleUpdate = () => {
+    console.log("Socket event received");
+    fetchQuote();
+    showTempNotification("Quote updated", "info");
+  };
+
+  events.forEach(event => {
+    socket.on(event, handleUpdate);
+  });
+
+  return () => {
+    events.forEach(event => {
+      socket.off(event, handleUpdate);
+    });
+  };
+}, [socket, id]);
 
   const showTempNotification = (message, type = "success") => {
     setNotificationMessage(message);
@@ -154,7 +195,7 @@ export default function QuoteDetail() {
             >
               <button
                 onClick={() => navigate(-1)}
-                className="flex mb-2 bg-[#2990f1] px-[10px] py-[5px] text-white rounded-md items-center text-gray-600 hover:text-white hover:bg-blue-700 mt-1"
+                className="flex mb-2 bg-[#2990f1] px-[10px] py-[5px]  rounded-md items-center text-white hover:text-white hover:bg-blue-700 mt-1"
               >
                 <FiArrowLeft className="" />
                 <span className="ml-1">Back</span>
@@ -361,7 +402,7 @@ export default function QuoteDetail() {
       <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-md shadow">
       <div className="flex justify-between items-center">
         <p className="text-green-700">
-          Your purchase order was approved. You can Now approve your Quote .
+          Your purchase order was approved. Now admin get to start your project.
         </p>
        
       </div>
@@ -581,25 +622,34 @@ export default function QuoteDetail() {
       </motion.div>
 
       {/* STL Viewer Modal */}
-      <StepPaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        requiredHours={quote.requiredHour - availableHours}
-        quotationId={id}
-        onPaymentSuccess={() => {
-          setShowPaymentModal(false);
-          showTempNotification("Payment successful! Your hours have been updated.", "success");
-          // Optionally, refresh available hours
-          getUserHours()
-            .then((data) => {
-              if (data?.data?.hours) {
-                setAvailableHours(data.data.hours);
-              }
-            })
-            .catch(console.error);
+     <StepPaymentModal
+  isOpen={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  requiredHours={quote.requiredHour - availableHours}
+  quotationId={id}
+  onPaymentSuccess={() => {
+    setShowPaymentModal(false);
+    showTempNotification("Payment successful! Your hours have been updated.", "success");
+    // Refresh available hours
+    getUserHours()
+      .then((data) => {
+        if (data?.data?.hours) {
+          setAvailableHours(data.data.hours);
         }
-        }
-      />
+      })
+      .catch(console.error);
+  }}
+  onPOUploadSuccess={() => {
+    setShowPaymentModal(false);
+    showTempNotification("PO uploaded successfully! Please wait for Admin to respond to your PO.", "success");
+    // You might want to refresh the quote data here
+    getQuotationById(id)
+      .then((res) => {
+        setQuote(res.data);
+      })
+      .catch(console.error);
+  }}
+/>
 
       <AnimatePresence>
         {showSTLViewer && (
@@ -633,5 +683,5 @@ export default function QuoteDetail() {
 const getAbsoluteUrl = (path) => {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  return `https://ardpgimerchd.org${path}`;
+  return `http://localhost:5000${path}`;
 };

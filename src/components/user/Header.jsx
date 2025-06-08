@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { getMe, getUserNotifications, markNotificationAsRead } from "../../api";
 import { FiBell, FiSettings, FiChevronDown, FiChevronUp, FiUser, FiLogOut, FiHelpCircle } from "react-icons/fi";
 import { useSocket } from "../../contexts/SocketProvider";
 import { Link } from "react-router-dom";
+import debounce from 'lodash/debounce';
 
 const Header = () => {
   const [username, setUsername] = useState("");
@@ -10,10 +11,12 @@ const Header = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { socket } = useSocket();
 
   const notificationRef = useRef(null);
   const settingsRef = useRef(null);
+  const isFetchingRef = useRef(false); // To prevent overlapping fetches
 
   // Fetch user info
   useEffect(() => {
@@ -30,52 +33,54 @@ const Header = () => {
     fetchUser();
   }, []);
 
-  // Handle adding new notifications
-  const addNotification = useCallback((payload, title) => {
-    const payloads = Array.isArray(payload) ? payload : [payload];
-    const newNotifs = payloads.map((p) => ({
-      _id: p.quotationId || Date.now().toString(), // Use quotationId if available, otherwise generate an ID
-      title,
-      message: p.message,
-      isRead: false,
-      createdAt: new Date().toISOString(),
-    }));
-    setNotifications((prev) => [...newNotifs, ...prev]);
+  // Main notifications fetch with guard
+  const fetchNotifications = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    setIsLoading(true);
+    try {
+      const res = await getUserNotifications();
+      const newUnread = res?.data?.filter((n) => !n.isRead) || [];
+
+      setNotifications((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(newUnread)) {
+          return newUnread;
+        }
+        return prev;
+      });
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+      isFetchingRef.current = false;
+    }
   }, []);
 
-  // Fetch notifications and setup WebSocket listeners
+  // Debounced fetchNotifications for socket events
+  const debouncedFetchNotifications = useMemo(() => debounce(fetchNotifications, 1000), [fetchNotifications]);
+
+  // Attach socket event listeners
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const res = await getUserNotifications();
-        const unread = res?.data?.filter((n) => !n.isRead) || [];
-        setNotifications(unread);
-      } catch (err) {
-        console.error("Failed to fetch notifications:", err);
-        setNotifications([]);
-      }
-    };
-
-    fetchNotifications();
-
     if (!socket) return;
 
-    const handleQuotationRaised = (payload) => addNotification(payload, "Quotation Raised");
-    const handleQuotationDecision = (payload) => addNotification(payload, "Quotation Status Updated");
-    const handleQuotationOngoing = (payload) => addNotification(payload, "Quotation Ongoing");
-    const handleQuotationCompleted = (payload) => addNotification(payload, "Quotation Completed");
-    const handleNotificationRead = (update) => {
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === update.id ? { ...n, isRead: true } : n))
-      );
-    };
+    const events = [
+       "quotation:requested",
+      "quotation:raised",
+      "quotation:decision",
+      "quotation:ongoing",
+      "quotation:completed",
+      "quotation:userUpdated",
+      "quotation:rejected",
+      "quotation:hour-updated",
+      "notification:read"
+    ];
 
     const attachListeners = () => {
-      socket.on("quotation:raised", handleQuotationRaised);
-      socket.on("quotation:decision", handleQuotationDecision);
-      socket.on("quotation:ongoing", handleQuotationOngoing);
-      socket.on("quotation:completed", handleQuotationCompleted);
-      socket.on("notification:read", handleNotificationRead);
+      events.forEach((event) => {
+        socket.off(event, debouncedFetchNotifications);
+        socket.on(event, debouncedFetchNotifications);
+      });
     };
 
     if (socket.connected) {
@@ -85,16 +90,27 @@ const Header = () => {
     }
 
     return () => {
-      socket.off("quotation:raised", handleQuotationRaised);
-      socket.off("quotation:decision", handleQuotationDecision);
-      socket.off("quotation:ongoing", handleQuotationOngoing);
-      socket.off("quotation:completed", handleQuotationCompleted);
-      socket.off("notification:read", handleNotificationRead);
+      events.forEach((event) => {
+        socket.off(event, debouncedFetchNotifications);
+      });
       socket.off("connect", attachListeners);
     };
-  }, [socket, addNotification]);
+  }, [socket, debouncedFetchNotifications]);
 
-  // Click outside handler
+  // Initial fetch and refresh when dropdown is open
+  useEffect(() => {
+    fetchNotifications(); // Initial fetch
+
+    const interval = setInterval(() => {
+      if (showNotification) {
+        fetchNotifications();
+      }
+    }, 30000); // every 30s
+
+    return () => clearInterval(interval);
+  }, [fetchNotifications, showNotification]);
+
+  // Click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
@@ -110,21 +126,37 @@ const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const toggleExpand = async (id) => {
-    if (expandedId !== id) {
-      try {
-        await markNotificationAsRead(id);
-        setNotifications((prev) =>
-          prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
-        );
-      } catch (err) {
-        console.error("Failed to mark notification as read:", err);
-      }
-    }
-    setExpandedId(expandedId === id ? null : id);
-  };
+  // Toggle expanded notification (debounced read)
+  const debouncedToggle = useMemo(
+    () =>
+      debounce(async (id) => {
+        if (expandedId !== id) {
+          try {
+            await markNotificationAsRead(id);
+            setNotifications((prev) =>
+              prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+            );
+          } catch (err) {
+            console.error("Failed to mark notification as read:", err);
+          }
+        }
+        setExpandedId((prevId) => (prevId === id ? null : id));
+      }, 300),
+    [expandedId]
+  );
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedToggle.cancel();
+      debouncedFetchNotifications.cancel();
+    };
+  }, [debouncedToggle, debouncedFetchNotifications]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.isRead).length,
+    [notifications]
+  );
 
   return (
     <header className="flex justify-end items-center px-6 py-4 relative">
@@ -148,20 +180,25 @@ const Header = () => {
 
           {/* Notification Dropdown */}
           {showNotification && (
-            <div className="absolute top-8 right-0 bg-white shadow-lg rounded-xl w-72 p-4 z-50 max-h-80 overflow-auto">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Notifications
-              </h3>
+            <div className="absolute top-8 right-0 bg-white shadow-lg rounded-xl w-[500px] p-4 z-50 max-h-80 overflow-auto">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+                {isLoading && (
+                  <span className="text-xs text-gray-500">Loading...</span>
+                )}
+              </div>
 
               {notifications.length === 0 ? (
-                <p className="text-gray-500 text-sm">No unread notifications.</p>
+                <p className="text-gray-500 text-sm">
+                  {isLoading ? "Loading notifications..." : "No unread notifications."}
+                </p>
               ) : (
                 <ul className="divide-y divide-gray-200">
                   {notifications.map((n) => (
                     <li
                       key={n._id}
                       className={`py-2 cursor-pointer ${n.isRead ? "opacity-75" : ""}`}
-                      onClick={() => toggleExpand(n._id)}
+                      onClick={() => debouncedToggle(n._id)}
                     >
                       <div className="flex justify-between items-center">
                         <span className={`font-medium ${n.isRead ? "text-gray-600" : "text-gray-800"} truncate max-w-[60%]`}>
@@ -193,15 +230,14 @@ const Header = () => {
 
         {/* Settings and Profile */}
         <div className="relative" ref={settingsRef}>
-          <button 
-            className="p-1" 
+          <button
+            className="p-1"
             aria-label="Settings"
-            onClick={() => setShowSettings(prev => !prev)}
+            onClick={() => setShowSettings((prev) => !prev)}
           >
             <FiSettings className="text-xl text-gray-700" />
           </button>
-          
-          {/* Settings Dropdown */}
+
           {showSettings && (
             <div className="absolute top-8 right-0 bg-white shadow-lg rounded-xl w-48 p-2 z-50">
               <Link
@@ -223,7 +259,7 @@ const Header = () => {
             </div>
           )}
         </div>
-        
+
         <button className="flex items-center gap-2" aria-label="User profile">
           <FiUser className="w-6 h-6 rounded-full bg-white" />
           <span className="text-sm text-gray-800 font-medium">{username}</span>

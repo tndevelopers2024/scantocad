@@ -12,10 +12,10 @@ const HorizontalTimeline = ({ status }) => {
       : [{ id: "approved", title: "Accept or Reject Quote", icon: <FiCheck />, description: "Quote approved or rejected" }];
 
   const steps = [
-    { id: "requested", title: "Request quote", icon: <FiFile />, description: "Project request submitted" },
-    { id: "quoted", title: "Receive Quotation", icon: <FiMail />, description: "Quote details sent" },
+    { id: "requested", title: "Quote Requested", icon: <FiFile />, description: "Project request submitted" },
+    { id: "quoted", title: "Receive Quotation", icon: <FiMail />, description: "Quote shared by Admin" },
     ...showDecisionStep,
-    { id: "ongoing", title: "Quote Progress", icon: <FiUser />, description: "Quote in progress" },
+    { id: "ongoing", title: "Work in Progress", icon: <FiUser />, description: "Quote in progress" },
     { id: "completed", title: "Receive Files", icon: <FiDownload />, description: "CAD file delivered" },
   ];
 

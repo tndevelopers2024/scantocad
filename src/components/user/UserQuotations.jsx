@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import Notification from "../../contexts/Notification";
 import { motion, AnimatePresence } from "framer-motion";
 import Loader from '../../contexts/Loader';
+import { useSocket } from "../../contexts/SocketProvider";
+
 import { 
   FiClock, 
   FiDollarSign, 
@@ -47,6 +49,7 @@ export default function UserQuotations() {
   const [quotesPerPage] = useState(10);
   const [sortOrder, setSortOrder] = useState("newest");
   const navigate = useNavigate();
+    const { socket } = useSocket();
   const dropdownRefs = useRef({});
   const [notification, setNotification] = useState({
     show: false,
@@ -83,7 +86,7 @@ export default function UserQuotations() {
     };
   }, [openDropdown]);
 
-  useEffect(() => {
+  const fetchQuotations = () => {
     setIsLoading(true);
     getQuotationsByuser()
       .then(res => {
@@ -98,7 +101,49 @@ export default function UserQuotations() {
         console.error(err);
         setIsLoading(false);
       });
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    fetchQuotations();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // Add socket event listeners
+  useEffect(() => {
+    if (!socket) return;
+
+    const events = [
+      "quotation:requested",
+      "quotation:raised",
+      "quotation:decision",
+      "quotation:ongoing",
+      "quotation:completed",
+      "quotation:userUpdated",
+      "quotation:rejected",
+      "quotation:hour-updated",
+    ];
+
+    const eventHandlers = events.map(event => {
+      const handler = () => {
+        fetchQuotations();
+        // Show a subtle notification when data updates
+        showTempNotification("Quotations updated", "info");
+      };
+      socket.on(event, handler);
+      return { event, handler };
+    });
+
+    return () => {
+      eventHandlers.forEach(({ event, handler }) => {
+        socket.off(event, handler);
+      });
+    };
+  }, [socket]);
 
   // Filter quotes based on status
   const filteredQuotes = quotes.filter(q =>

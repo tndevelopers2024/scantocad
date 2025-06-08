@@ -25,7 +25,7 @@ const StepPaymentModal = ({
   const [currency, setCurrency] = useState('INR'); 
 
   const totalPrice = hours * ratePerHour;
-  const backendBaseUrl = 'https://ardpgimerchd.org/api/v1/payments';
+  const backendBaseUrl = 'http://localhost:5000/api/v1/payments';
   const token = localStorage.getItem('token');
 
   // Reset state when modal closes

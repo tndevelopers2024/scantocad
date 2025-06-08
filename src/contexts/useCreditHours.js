@@ -19,7 +19,7 @@ const useCreditHours = () => {
         }
 
         const response = await fetch(
-          `https://ardpgimerchd.org/api/v1/users/${userId}/hours`,
+          `http://localhost:5000/api/v1/users/${userId}/hours`,
           {
             method: 'GET',
             headers: {

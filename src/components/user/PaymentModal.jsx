@@ -12,6 +12,7 @@ const StepPaymentModal = ({
   isOpen, 
   onClose, 
   onPaymentSuccess,
+  onPOUploadSuccess,
   requiredHours = 1,
   quotationId,
 }) => {
@@ -23,7 +24,7 @@ const StepPaymentModal = ({
   const [purchaseOrderFile, setPurchaseOrderFile] = useState(null);
   const [fileError, setFileError] = useState(null);
   const [purchaseOrderStatus, setPurchaseOrderStatus] = useState(null);
-  const backendBaseUrl = 'https://ardpgimerchd.org/api/v1/payments';
+  const backendBaseUrl = 'http://localhost:5000/api/v1/payments';
   const token = localStorage.getItem('token');
   const [ratePerHour, setRatePerHour] = useState(0);
   const [loadingRate, setLoadingRate] = useState(true);
@@ -174,47 +175,47 @@ const StepPaymentModal = ({
     }
   };
 
-  const handlePurchaseOrderSubmit = async () => {
-    if (!purchaseOrderFile) {
-      setFileError('Please upload a purchase order file');
-      return;
+ const handlePurchaseOrderSubmit = async () => {
+  if (!purchaseOrderFile) {
+    setFileError('Please upload a purchase order file');
+    return;
+  }
+
+  setIsProcessing(true);
+  setPurchaseOrderStatus(null);
+
+  try {
+    const formData = new FormData();
+    formData.append('file', purchaseOrderFile);
+    formData.append('amount', totalPrice);
+    formData.append('hours', hours);
+    formData.append('quotationId', quotationId);
+    
+    const response = await fetch(`${backendBaseUrl}/purchase-order`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Failed to submit purchase order");
     }
-
-    setIsProcessing(true);
-    setPurchaseOrderStatus(null);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', purchaseOrderFile);
-      formData.append('amount', totalPrice);
-      formData.append('hours', hours);
-      formData.append('quotationId', quotationId);
-      
-      const response = await fetch(`${backendBaseUrl}/purchase-order`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to submit purchase order");
-      }
-      
-      setPurchaseOrderStatus('success');
-      onPaymentSuccess();
-      setStep(3); // Move to success step
-    } catch (error) {
-      console.error('Purchase order submission error:', error);
-      setPurchaseOrderStatus('error');
-      handlePaymentError(error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+    
+    setPurchaseOrderStatus('success');
+    onPOUploadSuccess(); // Changed from onPaymentSuccess to onPOUploadSuccess
+    setStep(3); // Move to success step
+  } catch (error) {
+    console.error('Purchase order submission error:', error);
+    setPurchaseOrderStatus('error');
+    handlePaymentError(error);
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   const startRazorpayPayment = async () => {
     if (!token) {
@@ -602,32 +603,38 @@ const StepPaymentModal = ({
         )}
 
         {/* Step 3: Confirmation */}
-        {step === 3 && (
-          <div className="text-center space-y-6">
-            <div className="bg-green-50 text-green-600 p-4 rounded-full inline-flex items-center justify-center">
-              <FiCheckCircle size={48} />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800">Payment Successful!</h3>
-            <p className="text-gray-600">
-              You've successfully purchased <span className="font-semibold">{hours} hours</span> of credit.
-            </p>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="font-medium mb-1">Transaction Details</div>
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Amount Paid:</span>
-                <span className="font-medium flex items-center">
-                  <FaRupeeSign className="mr-1" /> {totalPrice.toLocaleString()}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-full bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md"
-            >
-              Close
-            </button>
-          </div>
-        )}
+{step === 3 && (
+  <div className="text-center space-y-6">
+    <div className="bg-green-50 text-green-600 p-4 rounded-full inline-flex items-center justify-center">
+      <FiCheckCircle size={48} />
+    </div>
+    <h3 className="text-2xl font-bold text-gray-800">
+      {purchaseOrderStatus === 'success' 
+        ? 'PO Submitted Successfully!' 
+        : 'Payment Successful!'}
+    </h3>
+    <p className="text-gray-600">
+      {purchaseOrderStatus === 'success' 
+        ? 'Your purchase order has been submitted. Please wait for admin approval.'
+        : `You've successfully purchased ${hours} hours of credit.`}
+    </p>
+    <div className="bg-gray-50 p-4 rounded-lg">
+      <div className="font-medium mb-1">Transaction Details</div>
+      <div className="flex justify-between text-sm text-gray-600">
+        <span>{purchaseOrderStatus === 'success' ? 'PO Amount:' : 'Amount Paid:'}</span>
+        <span className="font-medium flex items-center">
+          <FaRupeeSign className="mr-1" /> {totalPrice.toLocaleString()}
+        </span>
+      </div>
+    </div>
+    <button
+      onClick={onClose}
+      className="w-full bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md"
+    >
+      Close
+    </button>
+  </div>
+)}
       </div>
     </div>
   );
@@ -637,6 +644,7 @@ StepPaymentModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onPaymentSuccess: PropTypes.func.isRequired,
+  onPOUploadSuccess: PropTypes.func.isRequired, // Added this line
   requiredHours: PropTypes.number,
   quotationId: PropTypes.string.isRequired,
   ratePerHour: PropTypes.number

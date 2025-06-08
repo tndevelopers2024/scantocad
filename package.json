@@ -17,6 +17,7 @@
     "dotenv": "^16.5.0",
     "framer-motion": "^12.12.1",
     "localforage": "^1.10.0",
+    "lodash": "^4.17.21",
     "lottie-react": "^2.4.1",
     "match-sorter": "^8.0.1",
     "prop-types": "^15.8.1",

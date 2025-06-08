@@ -15,7 +15,7 @@ function PurchaseOrderUploadForm() {
 
     try {
       const response = await fetch(
-        'https://ardpgimerchd.org/api/v1/payments/upload-po',
+        'http://localhost:5000/api/v1/payments/upload-po',
         {
           method: 'POST',
           headers: {

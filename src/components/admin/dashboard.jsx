@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getQuotations, getAllUsers } from "../../api";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useSocket } from "../../contexts/SocketProvider";
 
 // Enhanced status label styles with icons
 const statusConfig = {
@@ -45,16 +46,16 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
+const { socket } = useSocket();
 
   const QUOTATIONS_PER_PAGE = 10;
 
-  useEffect(() => {
+const fetchQuotations = () => {
     setIsLoading(true);
     getQuotations()
       .then((res) => {
-        // Sort quotes by createdAt date in descending order (newest first)
-        const sortedQuotes = (res.data || []).sort((a, b) => 
-          new Date(b.createdAt) - new Date(a.createdAt)
+        const sortedQuotes = (res.data || []).sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
         setQuotes(sortedQuotes);
         setIsLoading(false);
@@ -63,7 +64,43 @@ export default function Dashboard() {
         console.error(err);
         setIsLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchQuotations();
   }, []);
+
+  // ✅ Socket event listener
+  useEffect(() => {
+    if (!socket) return;
+
+    const events = [
+      "quotation:requested",
+      "quotation:raised",
+      "quotation:updated",
+      "quotation:decision",
+      "quotation:completed",
+      "quotation:ongoing",
+      "quotation:hour-updated",
+      "quotation:userUpdated",
+    ];
+
+    const handleUpdate = () => {
+      console.log("Quotation event received");
+      fetchQuotations();
+    };
+
+    events.forEach((event) => {
+      socket.on(event, handleUpdate);
+    });
+
+    return () => {
+      events.forEach((event) => {
+        socket.off(event, handleUpdate);
+      });
+    };
+  }, [socket]);
+
 
   const countByStatus = (status) =>
     quotes.filter((q) => q.status?.toLowerCase() === status).length;

@@ -10,6 +10,7 @@ import {
 } from "../../api";
 import STLViewer from "../../contexts/STLViewer";
 import { motion } from "framer-motion";
+import { useSocket } from "../../contexts/SocketProvider"; 
 import {
   FiDownload,
   FiX,
@@ -81,20 +82,58 @@ export default function QuoteDetail() {
   const [updatingPoStatus, setUpdatingPoStatus] = useState(false);
  const [isEditingHours, setIsEditingHours] = useState(false);
   const [tempHours, setTempHours] = useState("");
+  const { socket } = useSocket(); 
+
+
+  const fetchQuote = async () => {
+    try {
+      const res = await getQuotationById(id);
+      setQuote(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setLoading(true);
-    getQuotationById(id)
-      .then((res) => {
-        setQuote(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setMessage({ text: "Failed to load quote", type: "error" });
-        setLoading(false);
-      });
+    fetchQuote();
   }, [id]);
+
+  // ✅ Socket Logic
+  useEffect(() => {
+    if (!socket) {
+      console.warn("Socket not available");
+      return;
+    }
+
+    console.log("Socket connected:", socket.connected);
+
+    const events = [
+      "quotation:raised",
+      "quotation:updated",
+      "quotation:decision",
+      "quotation:completed",
+      "quotation:ongoing",
+      "quotation:hour-updated",
+      "quotation:userUpdated",
+    ];
+
+    const handleUpdate = () => {
+      console.log("Socket event received");
+      fetchQuote();
+    };
+
+    events.forEach((event) => {
+      socket.on(event, handleUpdate);
+    });
+
+    return () => {
+      events.forEach((event) => {
+        socket.off(event, handleUpdate);
+      });
+    };
+  }, [socket, id]);
 
   const handleRaiseQuote = async () => {
     if (!requiredHour) {
@@ -138,7 +177,7 @@ export default function QuoteDetail() {
     try {
       const res = await updateOngoing(id);
       setQuote(res.data);
-      setMessage({ text: "Quote Ongoing successfully!", type: "success" });
+      setMessage({ text: "Notification sent to customer that work has been started!", type: "success" });
     } catch (err) {
       console.error(err);
       setMessage({ text: "Failed to Ongoing quote", type: "error" });
@@ -152,8 +191,8 @@ export default function QuoteDetail() {
     if (!file) return;
 
     // Validate file size (50MB limit)
-    if (file.size > 50 * 1024 * 1024) {
-      setFileError("File exceeds 50MB limit");
+    if (file.size > 1024 * 1024 * 1024) {
+      setFileError("File exceeds 1GB limit");
       return;
     }
 
@@ -672,7 +711,7 @@ export default function QuoteDetail() {
               className="bg-green-50 rounded-lg p-6 mb-6 border border-green-100"
             >
               <h3 className="text-lg font-semibold text-green-800 mb-4">
-                Complete Quotation
+            Upload CAD file
               </h3>
               <div className="space-y-4">
                 <div>
@@ -833,11 +872,11 @@ const DetailCard = ({ icon, title, items }) => (
       {icon}
       <h3 className="ml-2 font-semibold text-gray-800">{title}</h3>
     </div>
-    <div className="space-y-2">
+    <div className="space-y-3">
       {items.map((item, index) => (
         <div key={index}>
-          <p className="text-sm text-gray-500">{item.label}</p>
-          <p className="text-gray-900">{item.value}</p>
+          <p className="text-md text-black">{item.label} :</p>
+          <p className="text-gray-500">{item.value}</p>
         </div>
       ))}
     </div>
@@ -874,7 +913,7 @@ const FileCard = ({ title, filename, url, onPreview, canPreview = false }) => (
 const getAbsoluteUrl = (path) => {
   if (!path) return "#";
   if (path.startsWith("http")) return path;
-  return `https://ardpgimerchd.org${path}`;
+  return `http://localhost:5000${path}`;
 };
 
 const capitalize = (str) =>

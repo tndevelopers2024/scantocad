@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { getQuotationsByuser } from "../../api";
 import { useNavigate } from "react-router-dom";
 import Loader from '../../contexts/Loader';
+import { useSocket } from "../../contexts/SocketProvider";
+import Notification from "../../contexts/Notification"; // Import Notification for update alerts
+import { motion, AnimatePresence } from "framer-motion"; // For notification animations
 
 const statusColor = {
   ongoing: "bg-indigo-100 text-indigo-800",
@@ -20,11 +23,29 @@ export default function UserCompletedQuotations() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [quotesPerPage] = useState(10); // Number of quotes per page
-  const [sortOrder, setSortOrder] = useState("newest"); // 'newest' or 'oldest'
+  const [quotesPerPage] = useState(10);
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: "info"
+  });
   const navigate = useNavigate();
+   const { socket } = useSocket();
 
-  useEffect(() => {
+  const showTempNotification = (message, type = "info") => {
+    setNotification({
+      show: true,
+      message,
+      type
+    });
+    
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
+
+  const fetchQuotations = () => {
     setIsLoading(true);
     getQuotationsByuser()
       .then((res) => {
@@ -35,7 +56,38 @@ export default function UserCompletedQuotations() {
         console.error(err);
         setIsLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchQuotations();
   }, []);
+
+  // Socket event listeners for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const events = [
+      "quotation:completed",
+      "quotation:ongoing",
+      "quotation:hour-updated",
+      "quotation:userUpdated"
+    ];
+
+    const handleUpdate = () => {
+      fetchQuotations();
+      showTempNotification("Quotations updated", "info");
+    };
+
+    events.forEach(event => {
+      socket.on(event, handleUpdate);
+    });
+
+    return () => {
+      events.forEach(event => {
+        socket.off(event, handleUpdate);
+      });
+    };
+  }, [socket]);
 
   // Filter quotes based on status
   const filteredQuotes = statusFilter === "all"
@@ -59,6 +111,17 @@ export default function UserCompletedQuotations() {
 
   return (
     <div className="p-6 min-h-screen">
+      {/* Notification for updates */}
+      <AnimatePresence>
+        {notification.show && (
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            onClose={() => setNotification(prev => ({ ...prev, show: false }))}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="max-w-7xl mx-auto">
         {/* Header & Filters */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
@@ -76,7 +139,7 @@ export default function UserCompletedQuotations() {
                 value={sortOrder}
                 onChange={(e) => {
                   setSortOrder(e.target.value);
-                  setCurrentPage(1); // Reset to first page when changing sort order
+                  setCurrentPage(1);
                 }}
                 className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
@@ -89,7 +152,7 @@ export default function UserCompletedQuotations() {
                 key={status}
                 onClick={() => {
                   setStatusFilter(status);
-                  setCurrentPage(1); // Reset to first page when changing filter
+                  setCurrentPage(1);
                 }}
                 className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors duration-200 ${
                   statusFilter === status
