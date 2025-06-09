@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header'; // Optional
-
+import Footer from '../Footer';
 const Layout = () => {
   return (
     <div className="flex min-h-screen bg-white">
@@ -12,6 +12,8 @@ const Layout = () => {
         <main className="flex-1 p-6 ">
           <Outlet />
         </main>
+
+        <Footer />
       </div>
     </div>
   );
