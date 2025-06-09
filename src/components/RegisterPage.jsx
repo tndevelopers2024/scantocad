@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { register, verifyEmail, resendVerification } from '../api';
-import { useNavigate } from 'react-router-dom'; 
-import logo from '../../public/img/logo/logo1.png'; 
+import { useNavigate } from 'react-router-dom';
+import logo from '../../public/img/logo/logo1.png';
 import Lottie from 'lottie-react';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 const RegisterPage = () => {
   const [firstName, setFirstName] = useState('');
@@ -17,7 +18,8 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  
+  const [showPassword, setShowPassword] = useState(false);
+   const [showConformPassword, setShowConfromPassword] = useState(false);
   const navigate = useNavigate();
 
   // Company fields
@@ -41,7 +43,7 @@ const RegisterPage = () => {
 
     try {
       setLoading(true);
-      
+
       const userData = {
         name,
         email,
@@ -88,7 +90,7 @@ const RegisterPage = () => {
         localStorage.setItem('token', response.token);
         localStorage.setItem('userId', response.user.id);
         localStorage.setItem('userRole', response.user.role);
-   setStep(3);
+        setStep(3);
       } else {
         setError('Verification failed. Please try again.');
       }
@@ -105,7 +107,7 @@ const RegisterPage = () => {
 
     try {
       setLoading(true);
-      const response = await resendVerification( email );
+      const response = await resendVerification(email);
 
       if (response.success) {
         setMessage('New verification email sent. Please check your inbox.');
@@ -151,117 +153,137 @@ const RegisterPage = () => {
 
           {step === 1 ? (
             <form onSubmit={handleRegister} className="space-y-4">
-               {/* Name */}
-            <div className="flex gap-4">
-              <input
-                type="text"
-                required
-                placeholder="First name"
-                className="w-1/2 px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
-                value={firstName}
-                onChange={e => setFirstName(e.target.value)}
-              />
-              <input
-                type="text"
-                required
-                placeholder="Last name"
-                className="w-1/2 px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
-                value={lastName}
-                onChange={e => setLastName(e.target.value)}
-              />
-            </div>
-
-            {/* Email & Phone */}
-            <input
-              type="email"
-              required
-              placeholder="Email"
-              className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            <input
-              type="tel"
-              required
-              placeholder="Mobile number"
-              className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
-              value={mobileNumber}
-              onChange={e => setMobileNumber(e.target.value)}
-            />
-
-            {/* Password */}
-            <input
-              type="password"
-              required
-              placeholder="Password"
-              className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-            <input
-              type="password"
-              required
-              placeholder="Confirm password"
-              className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-            />
-
-            {/* Role */}
-            <select
-              value={role}
-              onChange={e => setRole(e.target.value)}
-              className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="user">Individual</option>
-              <option value="company">Company</option>
-            </select>
-
-            {/* Company Section - Only shown when role is 'company' */}
-            {role === 'company' && (
-              <div className="pt-4 border-t border-gray-200">
-                <h2 className="text-lg font-semibold mb-2">Company Details</h2>
+              {/* Name */}
+              <div className="flex gap-4">
                 <input
                   type="text"
                   required
-                  placeholder="Company name"
-                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
-                  value={companyName}
-                  onChange={e => setCompanyName(e.target.value)}
+                  placeholder="First name"
+                  className="w-1/2 px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  value={firstName}
+                  onChange={e => setFirstName(e.target.value)}
                 />
                 <input
                   type="text"
                   required
-                  placeholder="Address"
-                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
-                  value={companyAddress}
-                  onChange={e => setCompanyAddress(e.target.value)}
-                />
-                <input
-                  type="url"
-                  placeholder="Website"
-                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
-                  value={companyWebsite}
-                  onChange={e => setCompanyWebsite(e.target.value)}
-                />
-                <input
-                  type="text"
-                  required
-                  placeholder="Industry"
-                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
-                  value={companyIndustry}
-                  onChange={e => setCompanyIndustry(e.target.value)}
-                />
-                <input
-                  type="text"
-                  required
-                  placeholder="GST Number"
-                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
-                  value={companyGst}
-                  onChange={e => setCompanyGst(e.target.value)}
+                  placeholder="Last name"
+                  className="w-1/2 px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  value={lastName}
+                  onChange={e => setLastName(e.target.value)}
                 />
               </div>
-            )}
+
+              {/* Email & Phone */}
+              <input
+                type="email"
+                required
+                placeholder="Email"
+                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+              <input
+                type="tel"
+                required
+                placeholder="Mobile number"
+                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                value={mobileNumber}
+                onChange={e => setMobileNumber(e.target.value)}
+              />
+
+              {/* Password */}
+              <div className="relative">
+
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  placeholder="Password"
+                  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                />
+                <div
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 cursor-pointer"
+                  onClick={() => setShowPassword(prev => !prev)}
+                >
+                  {showPassword ? <FiEyeOff /> : <FiEye />}
+                </div>
+              </div>
+
+              <div className="relative">
+                
+              <input
+                type={showConformPassword ? 'text' : 'password'}
+                required
+                placeholder="Confirm password"
+                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+              />
+                <div
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 cursor-pointer"
+                  onClick={() => setShowConfromPassword(prev => !prev)}
+                >
+                  {showConformPassword ? <FiEyeOff /> : <FiEye />}
+                </div>
+              </div>
+              
+
+              {/* Role */}
+              <select
+                value={role}
+                onChange={e => setRole(e.target.value)}
+                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="user">Individual</option>
+                <option value="company">Company</option>
+              </select>
+
+              {/* Company Section - Only shown when role is 'company' */}
+              {role === 'company' && (
+                <div className="pt-4 border-t border-gray-200">
+                  <h2 className="text-lg font-semibold mb-2">Company Details</h2>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Company name"
+                    className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
+                    value={companyName}
+                    onChange={e => setCompanyName(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Address"
+                    className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
+                    value={companyAddress}
+                    onChange={e => setCompanyAddress(e.target.value)}
+                  />
+                  <input
+                    type="url"
+                    placeholder="Website"
+                    className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
+                    value={companyWebsite}
+                    onChange={e => setCompanyWebsite(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Industry"
+                    className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
+                    value={companyIndustry}
+                    onChange={e => setCompanyIndustry(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="GST Number"
+                    className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    value={companyGst}
+                    onChange={e => setCompanyGst(e.target.value)}
+                  />
+                </div>
+              )}
 
 
               <button
@@ -305,26 +327,26 @@ const RegisterPage = () => {
                 </button>
               </div>
             </form>
-          ): (
- <div className="flex flex-col items-center justify-center text-center space-y-6">
-    {/* Success Animation - optional: use Lottie or CSS animation */}
-    <div className="w-24 h-24 flex items-center justify-center rounded-full bg-green-100 animate-ping-slow">
-      <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-      </svg>
-    </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center space-y-6">
+              {/* Success Animation - optional: use Lottie or CSS animation */}
+              <div className="w-24 h-24 flex items-center justify-center rounded-full bg-green-100 animate-ping-slow">
+                <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
 
-    <h2 className="text-2xl font-bold text-green-700">Registration Successful!</h2>
-    <p className="text-gray-600">Your email has been verified. You’re all set to get started.</p>
+              <h2 className="text-2xl font-bold text-green-700">Registration Successful!</h2>
+              <p className="text-gray-600">Your email has been verified. You’re all set to get started.</p>
 
-    <button
-      onClick={() => navigate('/how-it-works')}
-      className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-    >
-     Lets Start!
-    </button>
-  </div>
-)}
+              <button
+                onClick={() => navigate('/how-it-works')}
+                className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              >
+                Lets Start!
+              </button>
+            </div>
+          )}
 
           {step === 1 && (
             <p className="mt-6 text-center text-gray-600">
@@ -335,7 +357,7 @@ const RegisterPage = () => {
             </p>
           )}
 
-          
+
 
         </div>
       </div>

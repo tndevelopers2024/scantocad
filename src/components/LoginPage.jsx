@@ -3,12 +3,14 @@ import { login } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import logo from '../../public/img/logo/logo1.png'; 
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = e => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -86,16 +88,24 @@ function LoginPage() {
               <label htmlFor="password" className="block text-md font-medium text-gray-700">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-3 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter password"
-              />
+             <div className="relative">
+  <input
+    id="password"
+    name="password"
+    type={showPassword ? 'text' : 'password'}
+    required
+    value={formData.password}
+    onChange={handleChange}
+    className="mt-1 block w-full px-3 py-3 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10"
+    placeholder="Enter password"
+  />
+  <div
+    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 cursor-pointer"
+    onClick={() => setShowPassword(prev => !prev)}
+  >
+    {showPassword ? <FiEyeOff /> : <FiEye />}
+  </div>
+</div>
             </div>
 
             <div className="flex justify-between items-center text-sm">
@@ -103,9 +113,9 @@ function LoginPage() {
                 <input type="checkbox" className="h-4 w-4 text-blue-600 border-gray-300 rounded" />
                 <span className="ml-2 text-gray-600">Remember me</span>
               </label>
-              <a href="/forgot-password" className="text-blue-600 hover:underline">
+              {/* <a href="/forgot-password" className="text-blue-600 hover:underline">
                 Forgot your password?
-              </a>
+              </a> */}
             </div>
 
             <button
@@ -114,7 +124,7 @@ function LoginPage() {
               className={`w-full flex justify-center py-4 px-4 border border-transparent rounded-md shadow-sm text-md font-medium text-white 
                 ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#1C88ED] hover:bg-blue-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
-              {isLoading ? 'Signing in...' : 'Let’s start'}
+              {isLoading ? 'Signing in...' : 'Login'}
             </button>
           </form>
 

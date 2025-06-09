@@ -124,7 +124,7 @@ const STLViewer = ({ file }) => {
   };
 
   return (
-    <div className="relative w-full h-[500px] overflow-hidden shadow-lg bg-gray-800">
+    <div className="relative w-full h-full overflow-hidden shadow-lg bg-gray-800">
       {isLoading && <Loader progress={loadingProgress} />}
       
       {contextLost ? (

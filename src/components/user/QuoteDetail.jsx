@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getQuotationById, getUserHours, updateUserDecision, updateUserDecisionPO } from "../../api";
+import { getQuotationById, getUserHours, updateUserDecision, rejectWithMessage, updateUserDecisionPO } from "../../api";
 import STLViewer from "../../contexts/STLViewer";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
@@ -41,7 +41,11 @@ export default function QuoteDetail() {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationType, setNotificationType] = useState("success");
   const [notificationMessage, setNotificationMessage] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [showRejectionReasonInput, setShowRejectionReasonInput] = useState(false);
   const { socket } = useSocket();
+  const [rejectionDetails, setRejectionDetails] = useState("");
+
 
   const fetchQuote = async () => {
     try {
@@ -68,40 +72,40 @@ export default function QuoteDetail() {
     fetchQuote();
   }, [id]);
 
- useEffect(() => {
-  if (!socket) {
-    console.warn("Socket not available");
-    return;
-  }
+  useEffect(() => {
+    if (!socket) {
+      console.warn("Socket not available");
+      return;
+    }
 
-  console.log("Socket connected:", socket.connected);
+    console.log("Socket connected:", socket.connected);
 
-  const events = [
-    "quotation:raised",
-    "quotation:updated",
-    "quotation:decision",
-    "quotation:completed",
-    "quotation:ongoing",
-    "quotation:hour-updated",
-    "quotation:userUpdated",
-  ];
+    const events = [
+      "quotation:raised",
+      "quotation:updated",
+      "quotation:decision",
+      "quotation:completed",
+      "quotation:ongoing",
+      "quotation:hour-updated",
+      "quotation:userUpdated",
+    ];
 
-  const handleUpdate = () => {
-    console.log("Socket event received");
-    fetchQuote();
-    showTempNotification("Quote updated", "info");
-  };
+    const handleUpdate = () => {
+      console.log("Socket event received");
+      fetchQuote();
+      showTempNotification("Quote updated", "info");
+    };
 
-  events.forEach(event => {
-    socket.on(event, handleUpdate);
-  });
-
-  return () => {
     events.forEach(event => {
-      socket.off(event, handleUpdate);
+      socket.on(event, handleUpdate);
     });
-  };
-}, [socket, id]);
+
+    return () => {
+      events.forEach(event => {
+        socket.off(event, handleUpdate);
+      });
+    };
+  }, [socket, id]);
 
   const showTempNotification = (message, type = "success") => {
     setNotificationMessage(message);
@@ -120,13 +124,17 @@ export default function QuoteDetail() {
     setDecisionMessage("");
 
     try {
-      // First, submit the decision
-      await updateUserDecision(id, status);
+      if (status === "rejected") {
+        // If rejecting, show the rejection message input
+        setShowRejectionReasonInput(true);
+        setSubmitting(false);
+        return;
+      }
 
-      // Then, fetch the latest quote data
+      // For approval, proceed as before
+      await updateUserDecision(id, status);
       const res = await getQuotationById(id);
       setQuote(res.data);
-
       showTempNotification(`Quote successfully ${status}`, "success");
     } catch (error) {
       console.error("Decision failed:", error);
@@ -136,7 +144,55 @@ export default function QuoteDetail() {
     }
   };
 
-   const handleDecisionPO = async (status) => {
+  const handleApproveAfterRejection = async () => {
+  setSubmitting(true);
+  try {
+    await updateUserDecision(id, "approved");
+    const res = await getQuotationById(id);
+    setQuote(res.data);
+    showTempNotification("Quote successfully approved", "success");
+  } catch (error) {
+    console.error("Approval failed:", error);
+    showTempNotification("Failed to approve quote.", "error");
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+const handleRejectionWithMessage = async () => {
+  const message =
+    rejectionReason === "other"
+      ? rejectionDetails.trim()
+      : rejectionReason.trim();
+
+  setSubmitting(true);
+  try {
+    const response = await rejectWithMessage(id, {
+  rejectionReason,
+  rejectionMessage: message,
+});
+
+
+    if (response.success) {
+      const res = await getQuotationById(id);
+      setQuote(res.data);
+      setShowRejectionReasonInput(false);
+      setRejectionReason("");
+      setRejectionDetails("");
+      showTempNotification("Quote rejected with message", "success");
+    } else {
+      showTempNotification(response.error || "Failed to submit rejection.", "error");
+    }
+  } catch (error) {
+    const errorMessage = error.response?.data?.error || "Failed to submit rejection.";
+    showTempNotification(errorMessage, "error");
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+
+  const handleDecisionPO = async (status) => {
     if (!["approved", "rejected"].includes(status)) return;
 
     setSubmitting(true);
@@ -185,9 +241,7 @@ export default function QuoteDetail() {
       >
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-
           <div className="flex items-start space-x-4">
-
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -195,10 +249,10 @@ export default function QuoteDetail() {
             >
               <button
                 onClick={() => navigate(-1)}
-                className="flex mb-2 bg-[#2990f1] px-[10px] py-[5px]  rounded-md items-center text-white hover:text-white hover:bg-blue-700 mt-1"
+                className="flex mb-2 bg-[#2990f1] px-[10px] py-[8px] rounded-full items-center text-white hover:text-white hover:bg-blue-700 mt-1"
               >
                 <FiArrowLeft className="" />
-                <span className="ml-1">Back</span>
+                
               </button>
               <h1 className="text-3xl font-bold text-gray-900">
                 {quote.projectName}
@@ -221,16 +275,18 @@ export default function QuoteDetail() {
             <button
               onClick={() => setShowSTLViewer(true)}
               disabled={!isSTLFile}
-              className={`flex items-center px-4 py-2 rounded-lg shadow-sm ${isSTLFile
+              className={`flex items-center px-4 py-2 rounded-lg shadow-sm ${
+                isSTLFile
                   ? "bg-blue-600 hover:bg-blue-700 text-white"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
+              }`}
             >
               <FiFile className="mr-2" />
               {isSTLFile ? "View 3D Model" : "View File"}
             </button>
           </motion.div>
         </div>
+
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
@@ -245,19 +301,21 @@ export default function QuoteDetail() {
               <div className="flex border-b border-gray-200">
                 <button
                   onClick={() => setActiveTab("details")}
-                  className={`px-4 py-3 font-medium text-sm ${activeTab === "details"
+                  className={`px-4 py-3 font-medium text-sm ${
+                    activeTab === "details"
                       ? "text-blue-600 border-b-2 border-blue-600"
                       : "text-gray-500 hover:text-gray-700"
-                    }`}
+                  }`}
                 >
                   Project Details
                 </button>
                 <button
                   onClick={() => setActiveTab("files")}
-                  className={`px-4 py-3 font-medium text-sm ${activeTab === "files"
+                  className={`px-4 py-3 font-medium text-sm ${
+                    activeTab === "files"
                       ? "text-blue-600 border-b-2 border-blue-600"
                       : "text-gray-500 hover:text-gray-700"
-                    }`}
+                  }`}
                 >
                   Files & Attachments
                 </button>
@@ -344,8 +402,9 @@ export default function QuoteDetail() {
                               <div>
                                 <h4 className="text-sm font-medium text-gray-500">Your Available Hours</h4>
                                 <p
-                                  className={`text-lg font-semibold ${availableHours >= quote.requiredHour ? "text-green-600" : "text-red-600"
-                                    }`}
+                                  className={`text-lg font-semibold ${
+                                    availableHours >= quote.requiredHour ? "text-green-600" : "text-red-600"
+                                  }`}
                                 >
                                   {availableHours}
                                 </p>
@@ -353,7 +412,6 @@ export default function QuoteDetail() {
                             )}
                           </div>
                         </DetailCard>
-
                       </motion.div>
                     </motion.div>
                   )}
@@ -391,197 +449,263 @@ export default function QuoteDetail() {
               </div>
             </motion.div>
 
-            
-  {quote.poStatus === "approved" && (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      className=""
-    >
-      <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-md shadow">
-      <div className="flex justify-between items-center">
-        <p className="text-green-700">
-          Your purchase order was approved. Now admin get to start your project.
-        </p>
-       
-      </div>
-    </div>
-    </motion.div>
-  )}
+            {/* PO Status Message */}
+            {quote.poStatus === "approved" && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className=""
+              >
+                <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-md shadow">
+                  <div className="flex justify-between items-center">
+                    <p className="text-green-700">
+                      Your Purchase Order is approved. Admin about to start the project and will notify here.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Rejection Message Display */}
+            {quote.status === "rejected" && quote.rejectionReason && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow"
+              >
+                <h4 className="font-medium text-red-800">Rejection Reason: <span className="text-red-700 mt-1">{quote.rejectionReason}</span></h4>
+                
+                <p className="text-red-700 mt-1">{quote.rejectionDetails}</p>
+              </motion.div>
+            )}
 
             {/* Decision Panel */}
-   {quote.status === "quoted" && (
- <>
-  {/* CASE: poStatus is null/empty or "approved" => show approve options */}
-  {(!quote.poStatus || quote.poStatus === "approved") && (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      className="bg-white rounded-xl shadow-sm overflow-hidden p-6"
-    >
-      <h3 className="text-lg font-semibold mb-4">Submit Your Decision</h3>
+            {quote.status === "quoted" && (
+              <>
+                {/* CASE: poStatus is null/empty or "approved" => show approve options */}
+                {(!quote.poStatus || quote.poStatus === "approved") && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="bg-white rounded-xl shadow-sm overflow-hidden p-6"
+                  >
+                    <h3 className="text-lg font-semibold mb-4">Submit Your Decision</h3>
 
-      {(availableHours >= quote.requiredHour || quote.poStatus === "approved") ? (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            You have enough hours to approve this quote.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            {(quote.poStatus === "approved") ? (
- <ActionButton
-              onClick={() => handleDecisionPO("approved")}
-              disabled={submitting}
-              variant="success"
-              icon={<FiCheck />}
-            >
-              {submitting ? "Processing..." : "Approve Quote"}
-            </ActionButton>
+                    {(availableHours >= quote.requiredHour || quote.poStatus === "approved") ? (
+                      <div className="space-y-4">
+                        <p className="text-gray-600">
+                          You have enough hours to approve this quote.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          {(quote.poStatus === "approved") ? (
+                            <ActionButton
+                              onClick={() => handleDecisionPO("approved")}
+                              disabled={submitting}
+                              variant="success"
+                              icon={<FiCheck />}
+                            >
+                              {submitting ? "Processing..." : "Approve Quote"}
+                            </ActionButton>
+                          ) : (
+                            <ActionButton
+                              onClick={() => handleDecision("approved")}
+                              disabled={submitting}
+                              variant="success"
+                              icon={<FiCheck />}
+                            >
+                              {submitting ? "Processing..." : "Approve Quote"}
+                            </ActionButton>
+                          )}
 
-            ):(
+                          <ActionButton
+                            onClick={() => handleDecision("rejected")}
+                            disabled={submitting}
+                            variant="danger"
+                            icon={<FiXCircle />}
+                          >
+                            {submitting ? "Processing..." : "Reject Quote"}
+                          </ActionButton>
+                        </div>
+                      </div>
+                    ) : (
+                      <motion.div
+                        initial={{ scale: 0.95 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500 }}
+                        className="bg-red-50 border-l-4 border-red-400 p-4"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-3">
+                            <FiXCircle className="h-5 w-5 text-red-400" />
+                            <p className="text-sm text-red-700">
+                              You don't have enough available hours to approve this quote.
+                              You need {quote.requiredHour - availableHours} more hours.
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setShowPaymentModal(true)}
+                            className="ml-4 px-5 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                          >
+                            Purchase Hours
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
 
-               <ActionButton
-              onClick={() => handleDecision("approved")}
-              disabled={submitting}
-              variant="success"
-              icon={<FiCheck />}
-            >
-              {submitting ? "Processing..." : "Approve Quote"}
-            </ActionButton>
-            )}
+                {/* Rejection Message Input */}
+               {showRejectionReasonInput && (
+  <motion.div
+    initial={{ opacity: 0, height: 0 }}
+    animate={{ opacity: 1, height: "auto" }}
+    exit={{ opacity: 0, height: 0 }}
+    className="bg-white rounded-xl shadow-sm overflow-hidden p-6 mt-4"
+  >
+    <h3 className="text-lg font-semibold mb-4">Select Rejection Reason</h3>
+  <select
+  value={rejectionReason}
+  onChange={(e) => setRejectionReason(e.target.value)}
+  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+>
+  <option value="">Select a reason...</option>
+  <option value="price">Too expensive</option>
+  <option value="timeline">Not needed anymore</option>
+  <option value="user_rejection">Found another provider</option>
+  <option value="requirements">Requirements changed</option>
+  <option value="other">Other (please specify)</option>
+</select>
 
-             {(quote.poStatus === "rejected") ? (
- <ActionButton
-              onClick={() => handleDecisionPO("rejected")}
-              disabled={submitting}
-              variant="danger"
-              icon={<FiXCircle />}
-            >
-              {submitting ? "Processing..." : "Reject Quote"}
-            </ActionButton>
-
-            ):(
-
-                <ActionButton
-              onClick={() => handleDecision("rejected")}
-              disabled={submitting}
-              variant="danger"
-              icon={<FiXCircle />}
-            >
-              {submitting ? "Processing..." : "Reject Quote"}
-            </ActionButton>
-            )}
-          </div>
-        </div>
-      ) : (
-        <motion.div
-          initial={{ scale: 0.95 }}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 500 }}
-          className="bg-red-50 border-l-4 border-red-400 p-4"
-        >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <FiXCircle className="h-5 w-5 text-red-400" />
-              <p className="text-sm text-red-700">
-                You don't have enough available hours to approve this quote.
-                You need {quote.requiredHour - availableHours} more hours.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowPaymentModal(true)}
-              className="ml-4 px-5 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-            >
-              Purchase Hours
-            </button>
-          </div>
-        </motion.div>
-      )}
-    </motion.div>
-  )}
-
-  {/* CASE: poStatus is "requested" => show some text */}
-  {quote.poStatus === "requested" && (
-    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md shadow">
-      <p className="text-yellow-800 font-medium">
-        Your request has been submitted and is awaiting approval.
-      </p>
-    </div>
-  )}
-
-  {/* CASE: poStatus is "rejected" => show purchase button with message */}
-  {quote.poStatus === "rejected" && (
-    <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow">
-      <div className="flex justify-between items-center">
-        <p className="text-red-700">
-          Your purchase order was rejected. You can reupload your purchase order or purchase hours to try again.
-        </p>
-        <button
-          onClick={() => setShowPaymentModal(true)}
-          className="ml-4 px-5 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-        >
-          Purchase Hours
-        </button>
-      </div>
-    </div>
-  )}
-</>
-
+    
+   {rejectionReason === "other" && (
+  <textarea
+    value={rejectionDetails}
+    onChange={(e) => setRejectionDetails(e.target.value)}
+    placeholder="Please specify the reason..."
+    className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mt-3"
+    rows={3}
+  />
 )}
 
-              </div>
+    
+    <div className="flex justify-end space-x-3 mt-4">
+      <button
+        onClick={() => {
+          setShowRejectionReasonInput(false);
+          setRejectionReason("");
+        }}
+        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+      >
+        Cancel
+      </button>
+      <button
+        onClick={handleRejectionWithMessage}
+        disabled={submitting || !rejectionReason}
+        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-red-400"
+      >
+        {submitting ? "Submitting..." : "Submit Rejection"}
+      </button>
+    </div>
+  </motion.div>
+)}
+                {/* CASE: poStatus is "requested" => show some text */}
+                {quote.poStatus === "requested" && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md shadow">
+                    <p className="text-yellow-800 font-medium">
+                      Your request has been submitted and is awaiting approval.
+                    </p>
+                  </div>
+                )}
+
+                {/* CASE: poStatus is "rejected" => show purchase button with message */}
+                {quote.poStatus === "rejected" && (
+                  <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow">
+                    <div className="flex justify-between items-center">
+                      <p className="text-red-700">
+                        Your purchase order was rejected. You can reupload your purchase order or purchase hours to try again.
+                      </p>
+                      <button
+                        onClick={() => setShowPaymentModal(true)}
+                        className="ml-4 px-5 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                      >
+                        Purchase Hours
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
           {/* Right Column - Summary */}
           <div className="space-y-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white rounded-xl shadow-sm p-6"
-            >
-              <h3 className="text-lg font-semibold mb-4">Quote Summary</h3>
-              <div className="space-y-3">
-                <SummaryItem
-                  label="Project ID"
-                  value={`#CSC` + id.slice(-8).toUpperCase()}
-                />
-                <SummaryItem
-                  label="Status"
-                  value={<StatusBadge status={quote.status} />}
-                />
-                <SummaryItem
-                  label="Created"
-                  value={new Date(quote.createdAt).toLocaleDateString()}
-                />
-                <SummaryItem
-                  label="Last Updated"
-                  value={new Date(quote.updatedAt).toLocaleDateString()}
-                />
-                {quote.requiredHour && (
-                  <SummaryItem
-                    label="Required Hours"
-                    value={quote.requiredHour || "N/A"}
-                  />
-                )}
-                {availableHours !== null && (
-                  <SummaryItem
-                    label="Your Available Hours"
-                    value={
-                      <span
-                        className={
-                          availableHours >= quote.requiredHour
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }
-                      >
-                        {availableHours}
-                      </span>
-                    }
-                  />
-                )}
-              </div>
-            </motion.div>
+           <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.5 }}
+  className="bg-white rounded-xl shadow-sm p-6"
+>
+  <h3 className="text-lg font-semibold mb-4">Quote Summary</h3>
+  <div className="space-y-3">
+    <SummaryItem
+      label="Project ID"
+      value={`#CSC` + id.slice(-8).toUpperCase()}
+    />
+    <SummaryItem
+      label="Status"
+      value={<StatusBadge status={quote.status} />}
+    />
+    <SummaryItem
+      label="Created"
+      value={new Date(quote.createdAt).toLocaleDateString()}
+    />
+    <SummaryItem
+      label="Last Updated"
+      value={new Date(quote.updatedAt).toLocaleDateString()}
+    />
+    {quote.requiredHour && (
+      <SummaryItem
+        label="Required Hours"
+        value={quote.requiredHour || "N/A"}
+      />
+    )}
+    {availableHours !== null && (
+      <SummaryItem
+        label="Your Available Hours"
+        value={
+          <span
+            className={
+              availableHours >= quote.requiredHour
+                ? "text-green-600"
+                : "text-red-600"
+            }
+          >
+            {availableHours}
+          </span>
+        }
+      />
+    )}
+  </div>
+  
+  {/* Add this section for approve option when rejected */}
+  {quote.status === "rejected" && (
+    <div className="mt-4 pt-4 border-t border-gray-200">
+      <h4 className="text-sm font-medium text-gray-700 mb-2">
+       Have you changed your mind? Would you like to accept the quote now?
+
+      </h4>
+      <button
+        onClick={handleApproveAfterRejection}
+        disabled={submitting}
+        className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400"
+      >
+        {submitting ? "Processing..." : "Approve Quote"}
+      </button>
+    </div>
+  )}
+</motion.div>
 
             {quote.status === "completed" && (
               <motion.div
@@ -594,7 +718,7 @@ export default function QuoteDetail() {
                   Project Completed
                 </h3>
                 <p className="text-green-700">
-                  Porject {`#CSC` + id.slice(-8).toUpperCase()} has been successfully completed. Download CAD file.
+                  Project {`#CSC` + id.slice(-8).toUpperCase()} has been successfully completed. Download CAD file.
                 </p>
                 {quote.completedFile && (
                   <button className="mt-4 w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
@@ -621,36 +745,37 @@ export default function QuoteDetail() {
         </div>
       </motion.div>
 
-      {/* STL Viewer Modal */}
-     <StepPaymentModal
-  isOpen={showPaymentModal}
-  onClose={() => setShowPaymentModal(false)}
-  requiredHours={quote.requiredHour - availableHours}
-  quotationId={id}
-  onPaymentSuccess={() => {
-    setShowPaymentModal(false);
-    showTempNotification("Payment successful! Your hours have been updated.", "success");
-    // Refresh available hours
-    getUserHours()
-      .then((data) => {
-        if (data?.data?.hours) {
-          setAvailableHours(data.data.hours);
-        }
-      })
-      .catch(console.error);
-  }}
-  onPOUploadSuccess={() => {
-    setShowPaymentModal(false);
-    showTempNotification("PO uploaded successfully! Please wait for Admin to respond to your PO.", "success");
-    // You might want to refresh the quote data here
-    getQuotationById(id)
-      .then((res) => {
-        setQuote(res.data);
-      })
-      .catch(console.error);
-  }}
-/>
+      {/* Payment Modal */}
+      <StepPaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        requiredHours={quote.requiredHour - availableHours}
+        quotationId={id}
+        onPaymentSuccess={() => {
+          setShowPaymentModal(false);
+          showTempNotification("Payment successful! Your hours have been updated.", "success");
+          // Refresh available hours
+          getUserHours()
+            .then((data) => {
+              if (data?.data?.hours) {
+                setAvailableHours(data.data.hours);
+              }
+            })
+            .catch(console.error);
+        }}
+        onPOUploadSuccess={() => {
+          setShowPaymentModal(false);
+          showTempNotification("PO uploaded successfully! Please wait for Admin to respond to your PO.", "success");
+          // You might want to refresh the quote data here
+          getQuotationById(id)
+            .then((res) => {
+              setQuote(res.data);
+            })
+            .catch(console.error);
+        }}
+      />
 
+      {/* STL Viewer Modal */}
       <AnimatePresence>
         {showSTLViewer && (
           <motion.div

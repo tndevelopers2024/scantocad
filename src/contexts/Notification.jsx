@@ -28,7 +28,7 @@ const Notification = ({ message, type = "success", onClose }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg ${config[type].bgColor} text-white flex items-center`}
+      className={`fixed bottom-6 left-6 z-50 p-4 rounded-md shadow-lg ${config[type].bgColor} text-white flex items-center`}
     >
       {config[type].icon}
       <span>{message}</span>

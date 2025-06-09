@@ -8,6 +8,7 @@ import {
   updatePoStatus,
   updateEstimatedHours
 } from "../../api";
+import Notification from "../../contexts/Notification";
 import STLViewer from "../../contexts/STLViewer";
 import { motion } from "framer-motion";
 import { useSocket } from "../../contexts/SocketProvider"; 
@@ -83,7 +84,7 @@ export default function QuoteDetail() {
  const [isEditingHours, setIsEditingHours] = useState(false);
   const [tempHours, setTempHours] = useState("");
   const { socket } = useSocket(); 
-
+ const [notification, setNotification] = useState({ show: false, message: "", type: "" });
 
   const fetchQuote = async () => {
     try {
@@ -110,6 +111,7 @@ export default function QuoteDetail() {
     console.log("Socket connected:", socket.connected);
 
     const events = [
+      "quotation:requested",
       "quotation:raised",
       "quotation:updated",
       "quotation:decision",
@@ -135,56 +137,68 @@ export default function QuoteDetail() {
     };
   }, [socket, id]);
 
+  // Helper function to show notification
+  const showNotification = (message, type = "success") => {
+    setNotification({ show: true, message, type });
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 5000);
+  };
+
+  // Modify all your functions to use showNotification instead of setMessage
   const handleRaiseQuote = async () => {
     if (!requiredHour) {
-      return setMessage({ text: "Required hour is mandatory", type: "error" });
+      return showNotification("Required hour is mandatory", "error");
     }
     setSubmitting(true);
     try {
       const res = await raiseQuote(id, requiredHour);
       setQuote(res.data);
-      setMessage({ text: "Quote raised successfully!", type: "success" });
+      showNotification("Quote raised successfully!", "success");
     } catch (err) {
       console.error(err);
-      setMessage({ text: "Failed to raise quote", type: "error" });
+      showNotification("Failed to raise quote", "error");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleUpdateHours = async () => {
-  if (!tempHours) {
-    return setMessage({ text: "Required hour cannot be empty", type: "error" });
-  }
 
-  setSubmitting(true);
-  try {
-    const res = await updateEstimatedHours(id, tempHours );
-    setQuote(res.data);
-    setRequiredHour(tempHours);
-    setIsEditingHours(false);
-    setMessage({ text: "Estimated hours updated successfully!", type: "success" });
-  } catch (err) {
-    console.error(err);
-    setMessage({ text: "Failed to update hours", type: "error" });
-  } finally {
-    setSubmitting(false);
-  }
-};
+ const handleUpdateHours = async () => {
+    if (!tempHours) {
+      return showNotification("Required hour cannot be empty", "error");
+    }
+    setSubmitting(true);
+    try {
+      const res = await updateEstimatedHours(id, tempHours);
+      setQuote(res.data);
+      setRequiredHour(tempHours);
+      setIsEditingHours(false);
+      showNotification("Estimated hours updated successfully!", "success");
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to update hours", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
 
   const handleOngoing = async () => {
+    setSubmitting(true);
     try {
       const res = await updateOngoing(id);
       setQuote(res.data);
-      setMessage({ text: "Notification sent to customer that work has been started!", type: "success" });
+      showNotification("Notification sent to customer that work has been started!", "success");
     } catch (err) {
       console.error(err);
-      setMessage({ text: "Failed to Ongoing quote", type: "error" });
+      showNotification("Failed to Ongoing quote", "error");
     } finally {
       setSubmitting(false);
     }
   };
+
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -213,43 +227,32 @@ export default function QuoteDetail() {
 
   const handleCompleteQuotation = async () => {
     if (!completedFile) {
-      return setMessage({
-        text: "Please upload the completed file",
-        type: "error",
-      });
+      return showNotification("Please upload the completed file", "error");
     }
-
     setCompleting(true);
     try {
       const formData = new FormData();
       formData.append("completedFile", completedFile);
-
       const res = await completeQuotation(id, formData);
       setQuote(res.data);
-      setMessage({
-        text: "Quotation as completed successfully!",
-        type: "success",
-      });
+      showNotification("Quotation as completed successfully!", "success");
     } catch (err) {
       console.error(err);
-      setMessage({ text: "Failed to complete quotation", type: "error" });
+      showNotification("Failed to complete quotation", "error");
     } finally {
       setCompleting(false);
     }
   };
 
-   const handleUpdatePoStatus = async (status) => {
+  const handleUpdatePoStatus = async (status) => {
     setUpdatingPoStatus(true);
     try {
       const res = await updatePoStatus(id, status);
       setQuote(res.data);
-      setMessage({
-        text: `PO ${status} successfully!`,
-        type: "success",
-      });
+      showNotification(`PO ${status} successfully!`, "success");
     } catch (err) {
       console.error(err);
-      setMessage({ text: `Failed to ${status} PO`, type: "error" });
+      showNotification(`Failed to ${status} PO`, "error");
     } finally {
       setUpdatingPoStatus(false);
     }
@@ -282,6 +285,16 @@ export default function QuoteDetail() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br p-4 md:p-8">
+
+       {notification.show && (
+        <Notification 
+          message={notification.message} 
+          type={notification.type} 
+          onClose={() => setNotification(prev => ({ ...prev, show: false }))}
+        />
+      )}
+
+
       <motion.div
         initial="hidden"
         animate="visible"
@@ -801,27 +814,7 @@ export default function QuoteDetail() {
             </motion.div>
           )}
 
-          {/* Status Messages */}
-          {message.text && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`p-4 rounded-lg ${
-                message.type === "error"
-                  ? "bg-red-50 text-red-800"
-                  : "bg-green-50 text-green-800"
-              }`}
-            >
-              <div className="flex items-center">
-                {message.type === "error" ? (
-                  <FiX className="mr-2 flex-shrink-0" />
-                ) : (
-                  <FiCheckCircle className="mr-2 flex-shrink-0" />
-                )}
-                <span>{message.text}</span>
-              </div>
-            </motion.div>
-          )}
+        
         </div>
       </motion.div>
 

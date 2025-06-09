@@ -375,6 +375,26 @@ export const completeQuotation = async (id, formData) => {
   }
 };
 
+export const rejectWithMessage = async (quotationId, payload) => {
+  try {
+    const response = await axios.put(
+      `${BASE_URL}/quotations/${quotationId}/reject-with-message`,
+      payload, // ✅ no stringify here
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Reject with message failed:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+
 export const deleteQuote = async (id) => {
   try {
     const response = await axios.delete(`${BASE_URL}/quotations/${id}`, {

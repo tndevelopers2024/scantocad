@@ -11,17 +11,18 @@ import {
   FiCreditCard,
   FiDollarSign,
   FiDownload,
+  FiUser,
 } from 'react-icons/fi';
 import Notification from "../../contexts/Notification";
 import { motion, AnimatePresence } from "framer-motion";
 
 const steps = [
-  { label: 'Request quote', icon: <FiUploadCloud /> },
+  { label: 'Quote Requested', icon: <FiUploadCloud /> },
   { label: 'Receive Quotation', icon: <FiFileText /> },
-  { label: 'Accept Quote', icon: <FiCheckCircle /> },
+  { label: 'Accept or Reject Quote', icon: <FiCheckCircle /> },
   { label: 'Add credit hrs or upload PO', icon: <FiCreditCard /> },
-  { label: 'Make payment', icon: <FiDollarSign /> },
-  { label: 'Receive Project Files', icon: <FiDownload /> },
+  { label: 'Work in Progress', icon: <FiUser /> },
+  { label: 'Receive Files', icon: <FiDownload /> },
 ];
 
 const NewQuoteRequest = () => {
@@ -280,7 +281,7 @@ const NewQuoteRequest = () => {
                       });
                       setErrors(prev => ({ ...prev, liveTransferFormat: '' }));
                     }}
-                    className={`mt-1 w-full px-4 py-2 border ${errors.liveTransferFormat ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-blue-400 focus:border-blue-400`}
+                    className={`mt-1 w-full px-4 py-2 border capitalize ${errors.liveTransferFormat ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-blue-400 focus:border-blue-400`}
                   >
                     <option value="">---select option---</option>
                     <option value="solidworks">Solidworks - .sldprt</option>
@@ -329,7 +330,7 @@ const NewQuoteRequest = () => {
                 </label>
                 {selectedFile && (
                   <p className="mt-2 text-sm text-gray-600">
-                    Selected: <span className="font-medium">{selectedFile.name}</span> ({Math.round(selectedFile.size / 1024)} KB)
+                    Selected: <span className="font-medium">{selectedFile.name}</span> ({Math.round(selectedFile.size / 1024 / 1024)} MB)
                   </p>
                 )}
                 {errors.file && (
