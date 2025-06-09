@@ -160,18 +160,22 @@ export default function QuoteDetail() {
 };
 
 const handleRejectionWithMessage = async () => {
-  const message =
-    rejectionReason === "other"
-      ? rejectionDetails.trim()
-      : rejectionReason.trim();
+  // Validate inputs
+  if (!rejectionReason) {
+    showTempNotification("Please select a rejection reason", "error");
+    return;
+  }
+  if (!rejectionDetails.trim()) {
+    showTempNotification("Please provide rejection details", "error");
+    return;
+  }
 
   setSubmitting(true);
   try {
     const response = await rejectWithMessage(id, {
-  rejectionReason,
-  rejectionMessage: message,
-});
-
+      rejectionReason,
+      rejectionMessage: rejectionDetails.trim(),
+    });
 
     if (response.success) {
       const res = await getQuotationById(id);
@@ -179,7 +183,7 @@ const handleRejectionWithMessage = async () => {
       setShowRejectionReasonInput(false);
       setRejectionReason("");
       setRejectionDetails("");
-      showTempNotification("Quote rejected with message", "success");
+      showTempNotification("Quote rejected successfully", "success");
     } else {
       showTempNotification(response.error || "Failed to submit rejection.", "error");
     }
@@ -190,7 +194,6 @@ const handleRejectionWithMessage = async () => {
     setSubmitting(false);
   }
 };
-
 
   const handleDecisionPO = async (status) => {
     if (!["approved", "rejected"].includes(status)) return;
@@ -557,44 +560,56 @@ const handleRejectionWithMessage = async () => {
                 )}
 
                 {/* Rejection Message Input */}
-               {showRejectionReasonInput && (
+             {showRejectionReasonInput && (
   <motion.div
     initial={{ opacity: 0, height: 0 }}
     animate={{ opacity: 1, height: "auto" }}
     exit={{ opacity: 0, height: 0 }}
     className="bg-white rounded-xl shadow-sm overflow-hidden p-6 mt-4"
   >
-    <h3 className="text-lg font-semibold mb-4">Select Rejection Reason</h3>
-  <select
-  value={rejectionReason}
-  onChange={(e) => setRejectionReason(e.target.value)}
-  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
->
-  <option value="">Select a reason...</option>
-  <option value="price">Too expensive</option>
-  <option value="timeline">Not needed anymore</option>
-  <option value="user_rejection">Found another provider</option>
-  <option value="requirements">Requirements changed</option>
-  <option value="other">Other (please specify)</option>
-</select>
-
+    <h3 className="text-lg font-semibold mb-4">Rejection Details</h3>
     
-   {rejectionReason === "other" && (
-  <textarea
-    value={rejectionDetails}
-    onChange={(e) => setRejectionDetails(e.target.value)}
-    placeholder="Please specify the reason..."
-    className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mt-3"
-    rows={3}
-  />
-)}
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Reason for Rejection
+        </label>
+        <select
+          value={rejectionReason}
+          onChange={(e) => setRejectionReason(e.target.value)}
+          className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          required
+        >
+          <option value="">Select a reason...</option>
+          <option value="price">Too expensive</option>
+          <option value="timeline">Not needed anymore</option>
+          <option value="user_rejection">Found another provider</option>
+          <option value="requirements">Requirements changed</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
 
-    
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Additional Details
+        </label>
+        <textarea
+          value={rejectionDetails}
+          onChange={(e) => setRejectionDetails(e.target.value)}
+          placeholder="Please provide details about why you're rejecting this quote..."
+          className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          rows={4}
+          required
+        />
+      </div>
+    </div>
+
     <div className="flex justify-end space-x-3 mt-4">
       <button
         onClick={() => {
           setShowRejectionReasonInput(false);
           setRejectionReason("");
+          setRejectionDetails("");
         }}
         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
       >
@@ -602,7 +617,7 @@ const handleRejectionWithMessage = async () => {
       </button>
       <button
         onClick={handleRejectionWithMessage}
-        disabled={submitting || !rejectionReason}
+        disabled={submitting || !rejectionReason || !rejectionDetails.trim()}
         className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-red-400"
       >
         {submitting ? "Submitting..." : "Submit Rejection"}

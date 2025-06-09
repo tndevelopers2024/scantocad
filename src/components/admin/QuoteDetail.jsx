@@ -814,6 +814,19 @@ export default function QuoteDetail() {
             </motion.div>
           )}
 
+{/* Rejection Message Display */}
+            {quote.status === "rejected" && quote.rejectionReason && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow"
+              >
+                <h4 className="font-medium text-red-800">Rejection Reason: <span className="text-red-700 mt-1">{quote.rejectionReason}</span></h4>
+                
+                <p className="text-red-700 mt-1">{quote.rejectionDetails}</p>
+              </motion.div>
+            )}
+
         
         </div>
       </motion.div>
