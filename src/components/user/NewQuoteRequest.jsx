@@ -96,7 +96,7 @@ const NewQuoteRequest = () => {
     if (!selectedFile) {
       newErrors.file = 'File upload is required';
       isValid = false;
-    } else if (selectedFile.size > 50 * 1024 * 1024) { // 50MB limit
+    } else if (selectedFile.size > 1024 * 1024 * 1024) { // 50MB limit
       newErrors.file = 'File size must be less than 50MB';
       isValid = false;
     } else if (!selectedFile.name.toLowerCase().endsWith('.stl')) {
