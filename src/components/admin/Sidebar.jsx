@@ -152,7 +152,7 @@ const Sidebar = () => {
                       );
                     })()}
                     {sidebarOpen && (
-                      <span className={`font-medium text-sm ${
+                      <span className={`font-medium text-md ${
                         expandedMenus[item.id] ? 'text-white' : 'text-[#818181] hover:text-[#2990F1]'
                       }`}>
                         {item.title}
@@ -176,7 +176,7 @@ const Sidebar = () => {
                         key={subItem.id}
                         to={subItem.path} 
                         className={({ isActive }) => 
-                          `flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-colors ${
+                          `flex items-center gap-2 px-4 py-2.5 rounded-lg text-md transition-colors ${
                             isActive 
                               ? 'bg-[#2990F1] shadow-md' 
                               : 'hover:bg-[#2990F1]/10 hover:shadow-sm'

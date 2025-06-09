@@ -736,10 +736,10 @@ const handleRejectionWithMessage = async () => {
                   Project {`#CSC` + id.slice(-8).toUpperCase()} has been successfully completed. Download CAD file.
                 </p>
                 {quote.completedFile && (
-                  <button className="mt-4 w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                  <a href={quote.completedFile} download className="mt-4 w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
                     <FiDownload className="mr-2" />
                     Download Final Files
-                  </button>
+                  </a>
                 )}
               </motion.div>
             )}
@@ -802,7 +802,7 @@ const handleRejectionWithMessage = async () => {
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
-              className="bg-white rounded-lg p-4 w-full max-w-4xl relative"
+              className="bg-white h-full overflow-hidden rounded-lg p-4 w-full max-w-4xl relative"
             >
               <button
                 onClick={() => setShowSTLViewer(false)}

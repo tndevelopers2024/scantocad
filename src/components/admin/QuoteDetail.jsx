@@ -43,6 +43,10 @@ const statusConfig = {
     color: "bg-red-100 text-red-800",
     icon: <FiX className="mr-1" />,
   },
+   ongoing: {
+    color: "bg-indigo-100 text-indigo-800",
+    icon: <FiUser className="mr-1" />,
+  },
   completed: {
     color: "bg-purple-100 text-purple-800",
     icon: <FiCheckCircle className="mr-1" />,
