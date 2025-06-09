@@ -683,5 +683,5 @@ export default function QuoteDetail() {
 const getAbsoluteUrl = (path) => {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  return `http://localhost:5000${path}`;
+  return `https://ardpgimerchd.org${path}`;
 };

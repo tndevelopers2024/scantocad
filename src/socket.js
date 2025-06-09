@@ -1,7 +1,7 @@
 // src/utils/socket.js
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = 'https://ardpgimerchd.org';
 
 let socket;
 
