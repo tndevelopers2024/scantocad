@@ -490,3 +490,12 @@ export default function UserQuotations() {
 }
 
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+
+
+ratePerHour
+5000
+currency
+"INR"
+isActive
+true

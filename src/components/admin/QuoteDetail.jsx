@@ -845,7 +845,7 @@ export default function QuoteDetail() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col"
+            className="bg-white h-full rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col"
           >
             <div className="flex justify-between items-center p-4 border-b">
               <h3 className="text-xl font-semibold">3D Model Viewer</h3>

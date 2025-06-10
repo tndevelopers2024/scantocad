@@ -17,7 +17,7 @@ const HowItWorksPage = () => {
         <img src={logo} alt="Logo" className="h-24" />
       </div>
 
-      <main className="relative z-10 bg-[#E6F2FC] rounded-2xl shadow-xl p-12 max-w-6xl w-full text-center">
+      <main className="relative z-10 mt-[90px] bg-[#E6F2FC] rounded-2xl shadow-xl p-12 max-w-6xl w-full text-center">
         <h1 className="text-4xl font-bold text-[#1C88ED]">How does Convert SCAN to CAD work?</h1>
 
         <p className="mt-4 text-gray-600 text-lg">
