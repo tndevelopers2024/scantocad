@@ -90,16 +90,22 @@ export default function QuoteDetail() {
   const { socket } = useSocket(); 
  const [notification, setNotification] = useState({ show: false, message: "", type: "" });
 
-  const fetchQuote = async () => {
-    try {
-      const res = await getQuotationById(id);
-      setQuote(res.data);
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
+const fetchQuote = async () => {
+  try {
+    const res = await getQuotationById(id);
+    setQuote(res.data);
+    
+    // Store user details in session storage
+    if (res.data?.user) {
+      sessionStorage.setItem('userDetails', JSON.stringify(res.data.user));
     }
-  };
+    
+    setLoading(false);
+  } catch (err) {
+    console.error(err);
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchQuote();
@@ -204,30 +210,19 @@ export default function QuoteDetail() {
   };
 
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+const handleFileChange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    // Validate file size (50MB limit)
-    if (file.size > 1024 * 1024 * 1024) {
-      setFileError("File exceeds 1GB limit");
-      return;
-    }
+  // Validate file size (1GB limit)
+  if (file.size > 1024 * 1024 * 1024) {
+    setFileError("File exceeds 1GB limit");
+    return;
+  }
 
-    // Validate file extension
-    const allowedExtensions = [".stl", ".obj", ".ply", ".3mf", ".zip", ".rar"];
-    const fileExtension = file.name.toLowerCase().match(/\.[0-9a-z]+$/)?.[0];
-
-    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-      setFileError(
-        "Invalid file type. Only 3D model files (STL, OBJ, PLY, 3MF) or archives (ZIP, RAR) are accepted"
-      );
-      return;
-    }
-
-    setFileError("");
-    setCompletedFile(file);
-  };
+  setFileError("");
+  setCompletedFile(file);
+};
 
   const handleCompleteQuotation = async () => {
     if (!completedFile) {
@@ -262,7 +257,11 @@ export default function QuoteDetail() {
     }
   };
 
-
+  const getUserDetailsFromStorage = () => {
+    const storedUser = sessionStorage.getItem('userDetails');
+    return storedUser ? JSON.parse(storedUser) : null;
+  };
+  const userDetails = getUserDetailsFromStorage();
   const isSTLFile = quote?.file?.toLowerCase().endsWith(".stl");
 
   if (loading)
@@ -422,11 +421,11 @@ export default function QuoteDetail() {
               icon={<FiUser className="text-indigo-500" />}
               title="Customer Information"
               items={[
-                { label: "Name", value: quote.user?.name || "N/A" },
-                { label: "Email", value: quote.user?.email || "N/A" },
+                { label: "Name", value: userDetails.name || "N/A" },
+                { label: "Email", value: userDetails.email || "N/A" },
                 {
                   label: "Contact",
-                  value: quote.user?.phone || "Not provided",
+                  value: userDetails.phone || "Not provided",
                 },
               ]}
             />
@@ -730,91 +729,91 @@ export default function QuoteDetail() {
               <h3 className="text-lg font-semibold text-green-800 mb-4">
             Upload CAD file
               </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Upload Completed Files
-                  </label>
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-                    <div className="space-y-1 text-center">
-                      <div className="flex text-sm text-gray-600">
-                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none">
-                          <span>Upload a file</span>
-                          <input
-                            type="file"
-                            className="sr-only"
-                            onChange={handleFileChange}
-                          />
-                        </label>
-                        <p className="pl-1">or drag and drop</p>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        STL, OBJ, PLY, 3MF, ZIP, RAR up to 1GB
-                      </p>
-                    </div>
-                  </div>
-                  {fileError && (
-                    <p className="mt-1 text-sm text-red-600">{fileError}</p>
-                  )}
-                  {completedFile && (
-                    <div className="mt-2 p-3 bg-white rounded-lg border border-gray-200 flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {completedFile.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {(completedFile.size / 1024 / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setCompletedFile(null)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <FiX />
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={handleCompleteQuotation}
-                  disabled={completing || !completedFile}
-                  className={`px-6 py-2 text-white rounded-lg transition-colors flex items-center ${
-                    completing
-                      ? "bg-green-400"
-                      : !completedFile
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700"
-                  }`}
-                >
-                  {completing ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    "Mark as Completed"
-                  )}
-                </button>
-              </div>
+            <div className="space-y-4">
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Upload Completed Files
+    </label>
+    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+      <div className="space-y-1 text-center">
+        <div className="flex text-sm text-gray-600">
+          <label className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none">
+            <span>Upload a file</span>
+            <input
+              type="file"
+              className="sr-only"
+              onChange={handleFileChange}
+            />
+          </label>
+          <p className="pl-1">or drag and drop</p>
+        </div>
+        <p className="text-xs text-gray-500">
+          Any file type accepted (up to 1GB)
+        </p>
+      </div>
+    </div>
+    {fileError && (
+      <p className="mt-1 text-sm text-red-600">{fileError}</p>
+    )}
+    {completedFile && (
+      <div className="mt-2 p-3 bg-white rounded-lg border border-gray-200 flex justify-between items-center">
+        <div>
+          <p className="text-sm font-medium text-gray-900">
+            {completedFile.name}
+          </p>
+          <p className="text-xs text-gray-500">
+            {(completedFile.size / 1024 / 1024).toFixed(2)} MB
+          </p>
+        </div>
+        <button
+          onClick={() => setCompletedFile(null)}
+          className="text-red-500 hover:text-red-700"
+        >
+          <FiX />
+        </button>
+      </div>
+    )}
+  </div>
+  <button
+    onClick={handleCompleteQuotation}
+    disabled={completing || !completedFile}
+    className={`px-6 py-2 text-white rounded-lg transition-colors flex items-center ${
+      completing
+        ? "bg-green-400"
+        : !completedFile
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-green-600 hover:bg-green-700"
+    }`}
+  >
+    {completing ? (
+      <>
+        <svg
+          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        Processing...
+      </>
+    ) : (
+      "Mark as Completed"
+    )}
+  </button>
+</div>
             </motion.div>
           )}
 
