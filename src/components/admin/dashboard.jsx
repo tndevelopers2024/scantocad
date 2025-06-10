@@ -315,11 +315,7 @@ const fetchQuotations = () => {
                           >
                             {q.status === "requested" ? "Prepare Quote" : "View Details"}
                           </button>
-                          {q.status === "quoted" && (
-                            <button className="text-green-600 hover:text-green-900">
-                              Send Reminder
-                            </button>
-                          )}
+
                         </td>
                       </motion.tr>
                     ))
