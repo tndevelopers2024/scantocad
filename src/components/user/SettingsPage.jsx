@@ -3,7 +3,7 @@ import { getMe, updateDetails } from '../../api';
 import { 
   FaUser, FaEnvelope, FaPhone, FaClock, 
   FaBuilding, FaIndustry, FaMapMarkerAlt, 
-  FaGlobe, FaFileInvoice, FaSave, FaSpinner 
+  FaGlobe, FaSave, FaSpinner, FaLock 
 } from 'react-icons/fa';
 import { FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 
@@ -12,14 +12,12 @@ const SettingsPage = () => {
     name: '',
     email: '',
     phone: '',
-    role: 'user',
     Hours: '',
     company: {
       name: '',
       address: '',
       website: '',
-      industry: '',
-      gstNumber: ''
+      industry: ''
     }
   });
 
@@ -44,8 +42,7 @@ const SettingsPage = () => {
             name: '',
             address: '',
             website: '',
-            industry: '',
-            gstNumber: ''
+            industry: ''
           }
         });
 
@@ -71,7 +68,7 @@ const SettingsPage = () => {
           [key]: value
         }
       }));
-    } else {
+    } else if (name !== 'Hours') { // Prevent changes to Hours field
       setFormData(prev => ({
         ...prev,
         [name]: value
@@ -160,27 +157,28 @@ const SettingsPage = () => {
                   onChange={handleChange} 
                   icon={<FaPhone className="text-gray-400" />}
                 />
-                <InputField 
-                  label="Available hours" 
-                  name="Hours" 
-                  value={formData.Hours} 
-                  onChange={handleChange} 
-                  type="number" 
-                  icon={<FaClock className="text-gray-400" />}
-                />
-                <div className="md:col-span-2">
-                  <SelectField 
-                    label="Role" 
-                    name="role" 
-                    value={formData.role} 
-                    onChange={handleChange}
-                    options={[
-                      { value: 'user', label: 'User' },
-                      { value: 'client', label: 'Client' },
-                      { value: 'admin', label: 'Admin' }
-                    ]}
-                  />
+                <div>
+                  <label htmlFor="Hours" className="block text-sm font-medium text-gray-700 mb-1">
+                    Available hours
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FaClock className="text-gray-400" />
+                    </div>
+                    <input
+                      type="number"
+                      id="Hours"
+                      name="Hours"
+                      value={formData.Hours}
+                      readOnly
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <FaLock className="text-gray-400" />
+                    </div>
+                  </div>
                 </div>
+               
               </div>
             </div>
 
@@ -220,13 +218,6 @@ const SettingsPage = () => {
                   value={formData.company.website} 
                   onChange={handleChange} 
                   icon={<FaGlobe className="text-gray-400" />}
-                />
-                <InputField 
-                  label="GST Number" 
-                  name="company.gstNumber" 
-                  value={formData.company.gstNumber} 
-                  onChange={handleChange} 
-                  icon={<FaFileInvoice className="text-gray-400" />}
                 />
               </div>
             </div>

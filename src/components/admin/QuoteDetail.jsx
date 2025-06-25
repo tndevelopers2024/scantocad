@@ -6,12 +6,13 @@ import {
   completeQuotation,
   updateOngoing,
   updatePoStatus,
-  updateEstimatedHours
+  updateEstimatedHours,
+  uploadIssuedFiles,
 } from "../../api";
 import Notification from "../../contexts/Notification";
 import STLViewer from "../../contexts/STLViewer";
-import { motion } from "framer-motion";
-import { useSocket } from "../../contexts/SocketProvider"; 
+import { motion, AnimatePresence } from "framer-motion";
+import { useSocket } from "../../contexts/SocketProvider";
 import {
   FiDownload,
   FiX,
@@ -23,8 +24,14 @@ import {
   FiInfo,
   FiThumbsUp,
   FiThumbsDown,
-   FiEdit, 
+  FiEdit,
+  FiMinimize,
+  FiMaximize,
+  FiSave,
+  FiArrowLeft,
+  FiArrowRight,
 } from "react-icons/fi";
+import FileCompletionSection from "./QuoteDetails/FileCompletionSection";
 
 const statusConfig = {
   requested: {
@@ -43,7 +50,7 @@ const statusConfig = {
     color: "bg-red-100 text-red-800",
     icon: <FiX className="mr-1" />,
   },
-   ongoing: {
+  ongoing: {
     color: "bg-indigo-100 text-indigo-800",
     icon: <FiUser className="mr-1" />,
   },
@@ -80,45 +87,58 @@ export default function QuoteDetail() {
   const [requiredHour, setRequiredHour] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [completing, setCompleting] = useState(false);
-  const [message, setMessage] = useState({ text: "", type: "" });
-  const [showSTLViewer, setShowSTLViewer] = useState(false);
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: "",
+  });
+  const [showSTLViewerFullscreen, setShowSTLViewerFullscreen] = useState(false);
   const [completedFile, setCompletedFile] = useState(null);
   const [fileError, setFileError] = useState("");
   const [updatingPoStatus, setUpdatingPoStatus] = useState(false);
- const [isEditingHours, setIsEditingHours] = useState(false);
+  const [isEditingHours, setIsEditingHours] = useState(false);
   const [tempHours, setTempHours] = useState("");
-  const { socket } = useSocket(); 
- const [notification, setNotification] = useState({ show: false, message: "", type: "" });
+  const { socket } = useSocket();
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
+  const [fileHours, setFileHours] = useState({});
+  const [editingFileId, setEditingFileId] = useState(null);
+  const [tempFileHour, setTempFileHour] = useState("");
+  const [activeTab, setActiveTab] = useState("original");
 
-const fetchQuote = async () => {
-  try {
-    const res = await getQuotationById(id);
-    setQuote(res.data);
-    
-    // Store user details in session storage
-    if (res.data?.user) {
-      sessionStorage.setItem('userDetails', JSON.stringify(res.data.user));
+  const fetchQuote = async () => {
+    try {
+      const res = await getQuotationById(id);
+      setQuote(res.data);
+
+      if (res.data?.user) {
+        sessionStorage.setItem("userDetails", JSON.stringify(res.data.user));
+      }
+
+      // Initialize file hours
+      if (res.data?.files) {
+        const initialFileHours = {};
+        res.data.files.forEach((file) => {
+          initialFileHours[file._id] = file.requiredHour || "";
+        });
+        setFileHours(initialFileHours);
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
     }
-    
-    setLoading(false);
-  } catch (err) {
-    console.error(err);
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchQuote();
   }, [id]);
 
-  // ✅ Socket Logic
   useEffect(() => {
     if (!socket) {
       console.warn("Socket not available");
       return;
     }
-
-    console.log("Socket connected:", socket.connected);
 
     const events = [
       "quotation:requested",
@@ -147,23 +167,38 @@ const fetchQuote = async () => {
     };
   }, [socket, id]);
 
-  // Helper function to show notification
   const showNotification = (message, type = "success") => {
     setNotification({ show: true, message, type });
-    // Auto-hide after 5 seconds
     setTimeout(() => {
-      setNotification(prev => ({ ...prev, show: false }));
+      setNotification((prev) => ({ ...prev, show: false }));
     }, 5000);
   };
 
-  // Modify all your functions to use showNotification instead of setMessage
   const handleRaiseQuote = async () => {
     if (!requiredHour) {
-      return showNotification("Required hour is mandatory", "error");
+      return showNotification("Total required hours are mandatory", "error");
     }
+
+    // Prepare files with individual required hours
+    const filesWithHours = quote.files.map((file) => ({
+      fileId: file._id,
+      requiredHour: fileHours[file._id] || 0,
+    }));
+
+    // Validate each required hour
+    const invalidFiles = filesWithHours.filter(
+      (file) => isNaN(file.requiredHour) || file.requiredHour < 0
+    );
+    if (invalidFiles.length > 0) {
+      return showNotification(
+        "Please enter valid hours for all files",
+        "error"
+      );
+    }
+
     setSubmitting(true);
     try {
-      const res = await raiseQuote(id, requiredHour);
+      const res = await raiseQuote(id, requiredHour, filesWithHours);
       setQuote(res.data);
       showNotification("Quote raised successfully!", "success");
     } catch (err) {
@@ -174,17 +209,59 @@ const fetchQuote = async () => {
     }
   };
 
+  const startEditingFileHour = (fileId, currentHour) => {
+    setEditingFileId(fileId);
+    setTempFileHour(currentHour);
+  };
 
- const handleUpdateHours = async () => {
-    if (!tempHours) {
-      return showNotification("Required hour cannot be empty", "error");
+  const saveFileHour = (fileId) => {
+    if (isNaN(tempFileHour)) {
+      showNotification("Please enter a valid number for hours", "error");
+      return;
     }
+
+    setFileHours((prev) => ({
+      ...prev,
+      [fileId]: Number(tempFileHour),
+    }));
+
+    setEditingFileId(null);
+    setTempFileHour("");
+  };
+
+  const adjustHours = (fileId, delta) => {
+    setFileHours((prev) => ({
+      ...prev,
+      [fileId]: Math.max(0, parseFloat(prev[fileId] || 0) + delta),
+    }));
+  };
+
+  const updateHours = (fileId, value) => {
+    setFileHours((prev) => ({
+      ...prev,
+      [fileId]: parseFloat(value) || 0,
+    }));
+  };
+
+  const handleUpdateHours = async () => {
     setSubmitting(true);
     try {
-      const res = await updateEstimatedHours(id, tempHours);
+      // Prepare files with their updated hours
+      const filesWithHours = quote.files.map((file) => ({
+        _id: file._id,
+        requiredHour: fileHours[file._id] || 0,
+      }));
+
+      // Calculate total hours from individual file hours
+      const totalHours = filesWithHours.reduce(
+        (sum, file) => sum + (file.requiredHour || 0),
+        0
+      );
+
+      // Call the API with both individual file hours and total hours
+      const res = await updateEstimatedHours(id, filesWithHours, totalHours);
+
       setQuote(res.data);
-      setRequiredHour(tempHours);
-      setIsEditingHours(false);
       showNotification("Estimated hours updated successfully!", "success");
     } catch (err) {
       console.error(err);
@@ -194,13 +271,15 @@ const fetchQuote = async () => {
     }
   };
 
-
   const handleOngoing = async () => {
     setSubmitting(true);
     try {
       const res = await updateOngoing(id);
       setQuote(res.data);
-      showNotification("Notification sent to customer that work has been started!", "success");
+      showNotification(
+        "Notification sent to customer that work has been started!",
+        "success"
+      );
     } catch (err) {
       console.error(err);
       showNotification("Failed to Ongoing quote", "error");
@@ -209,20 +288,18 @@ const fetchQuote = async () => {
     }
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-const handleFileChange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+    if (file.size > 1024 * 1024 * 1024) {
+      setFileError("File exceeds 1GB limit");
+      return;
+    }
 
-  // Validate file size (1GB limit)
-  if (file.size > 1024 * 1024 * 1024) {
-    setFileError("File exceeds 1GB limit");
-    return;
-  }
-
-  setFileError("");
-  setCompletedFile(file);
-};
+    setFileError("");
+    setCompletedFile(file);
+  };
 
   const handleCompleteQuotation = async () => {
     if (!completedFile) {
@@ -258,11 +335,30 @@ const handleFileChange = (e) => {
   };
 
   const getUserDetailsFromStorage = () => {
-    const storedUser = sessionStorage.getItem('userDetails');
+    const storedUser = sessionStorage.getItem("userDetails");
     return storedUser ? JSON.parse(storedUser) : null;
   };
+
   const userDetails = getUserDetailsFromStorage();
-  const isSTLFile = quote?.file?.toLowerCase().endsWith(".stl");
+  const isSTLFile = (filename) => {
+    if (!filename) return false;
+    const lower = filename.toLowerCase();
+    return (
+      lower.endsWith(".stl") || lower.endsWith(".ply") || lower.endsWith(".obj")
+    );
+  };
+
+  const navigateFile = (direction) => {
+    if (direction === "prev") {
+      setCurrentFileIndex((prev) =>
+        prev > 0 ? prev - 1 : quote.files.length - 1
+      );
+    } else {
+      setCurrentFileIndex((prev) =>
+        prev < quote.files.length - 1 ? prev + 1 : 0
+      );
+    }
+  };
 
   if (loading)
     return (
@@ -288,22 +384,20 @@ const handleFileChange = (e) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br p-4 md:p-8">
-
-       {notification.show && (
-        <Notification 
-          message={notification.message} 
-          type={notification.type} 
-          onClose={() => setNotification(prev => ({ ...prev, show: false }))}
+      {notification.show && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification((prev) => ({ ...prev, show: false }))}
         />
       )}
-
 
       <motion.div
         initial="hidden"
         animate="visible"
         variants={fadeIn}
         transition={{ duration: 0.5 }}
-        className=" mx-auto bg-white rounded-xl shadow-md overflow-hidden"
+        className="mx-auto bg-white rounded-xl shadow-md overflow-hidden"
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
@@ -338,84 +432,37 @@ const handleFileChange = (e) => {
 
         {/* Main Content */}
         <div className="p-6 md:p-8">
-          {/* Quote Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-     <DetailCard
-  icon={<FiInfo className="text-indigo-500" />}
-  title="Project Details"
-  items={[
-    {
-      label: "Description",
-      value: quote.description || "Not provided",
-    },
-    {
-      label: "Technical Details",
-      value: quote.technicalInfo || "Not specified",
-    },
-    {
-      label: "Live Transfer Format",
-      value: quote.deliverables ? (
-        <ul>
-          {quote.deliverables.split(',').map((item, index) => (
-            <li key={index}>{item.trim()}</li>
-          ))}
-        </ul>
-      ) : (
-        "Not specified"
-      ),
-    },
-    quote.requiredHour
-      ? {
-          label: "Required Hours",
-          value:
-            isEditingHours && quote.status === "quoted" ? (
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  min="1"
-                  value={tempHours}
-                  onChange={(e) => setTempHours(e.target.value)}
-                  className="w-24 px-2 py-1 border border-gray-300 rounded mr-2"
-                />
-                <button
-                  onClick={handleUpdateHours}
-                  disabled={submitting}
-                  className="px-2 py-1 bg-green-500 text-white rounded text-sm disabled:opacity-50"
-                >
-                  {submitting ? "Saving..." : "Save"}
-                </button>
-                <button
-                  onClick={() => setIsEditingHours(false)}
-                  className="ml-2 px-2 py-1 bg-gray-200 rounded text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center">
-                {quote.requiredHour || "Not estimated yet"}
-                {quote.status !== "completed" && (
-                  <button
-                    onClick={() => {
-                      setTempHours(quote.requiredHour || "");
-                      setIsEditingHours(true);
-                    }}
-                    className="ml-2 text-indigo-600 hover:text-indigo-800"
-                    title="Edit hours"
-                  >
-                    <FiEdit size={14} />
-                  </button>
-                )}
-              </div>
-            ),
-        }
-      : {
-          label: "Required Hours",
-          value: "Not estimated yet",
-        },
-  ].filter(Boolean)} // Filter out any null/false entries
-/>
-
+            <DetailCard
+              icon={<FiInfo className="text-indigo-500" />}
+              title="Project Details"
+              items={[
+                {
+                  label: "Description",
+                  value: quote.description || "Not provided",
+                },
+                {
+                  label: "Technical Details",
+                  value: quote.technicalInfo || "Not specified",
+                },
+                {
+                  label: "Live Transfer Format",
+                  value: quote.deliverables ? (
+                    <ul>
+                      {quote.deliverables.split(",").map((item, index) => (
+                        <li key={index}>{item.trim()}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    "Not specified"
+                  ),
+                },
+                {
+                  label: "Required Hours",
+                  value: quote.requiredHour || "Not estimated yet",
+                },
+              ]}
+            />
 
             <DetailCard
               icon={<FiUser className="text-indigo-500" />}
@@ -431,28 +478,232 @@ const handleFileChange = (e) => {
             />
           </div>
 
-          {/* Files Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FiFile className="mr-2 text-indigo-500" />
-              Files
-            </h3>
+          <div className="space-y-6 mb-8">
+            {/* Tabs */}
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveTab("original")}
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === "original"
+                      ? "border-[#155DFC] text-[#155DFC]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  Original Files ({quote.files?.length || 0})
+                </button>
+                {quote.completedFiles?.length > 0 && (
+                  <button
+                    onClick={() => setActiveTab("completed")}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === "completed"
+                        ? "border-[#155DFC] text-[#155DFC]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    Completed Files ({quote.completedFiles.length})
+                  </button>
+                )}
+                {quote.infoFiles?.length > 0 && (
+                  <button
+                    onClick={() => setActiveTab("supporting")}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === "supporting"
+                        ? "border-[#155DFC] text-[#155DFC]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    Supporting Documents ({quote.infoFiles.length})
+                  </button>
+                )}
+              </nav>
+            </div>
 
-            <div className="space-y-4">
-              <FileCard
-                title="Original File"
-                filename={quote.file?.split("/").pop()}
-                url={getAbsoluteUrl(quote.file)}
-                onPreview={() => isSTLFile && setShowSTLViewer(true)}
-                canPreview={isSTLFile}
-              />
+            {/* Tab Content */}
+            <div>
+              {/* Original Files Content */}
+              {activeTab === "original" && (
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Original Files Section */}
+                  <div className="mb-6">
+                    <div className="space-y-2">
+                      {/* Header Row */}
+                      <div className="grid grid-cols-12 gap-4 font-semibold text-sm text-gray-600 px-3">
+                        <div className="col-span-1">#</div>
+                        <div className="col-span-5">File Name</div>
+                        <div className="col-span-4">Estimated Hours</div>
+                        <div className="col-span-2">Actions</div>
+                      </div>
 
-              {quote.completedFile && (
-                <FileCard
-                  title="Completed File"
-                  filename={quote.completedFile?.split("/").pop()}
-                  url={getAbsoluteUrl(quote.completedFile)}
-                />
+                      {/* File Rows - Replaced with the new hour editing component */}
+                      <div className="space-y-2">
+                        {quote.files?.map((file, index) => (
+                          <div
+                            key={file._id}
+                            className="grid grid-cols-12 gap-4 items-center px-3 py-2 border border-gray-200 rounded-lg bg-white shadow-sm"
+                          >
+                            {/* Index */}
+                            <div className="col-span-1 rounded-md text-center font-medium text-sm text-[#5D36F7] bg-[#E0E7FF] w-8 h-8 flex items-center justify-center">
+                              {index + 1}
+                            </div>
+
+                            {/* File Name */}
+                            <div className="col-span-5 text-sm text-gray-800 truncate">
+                              {file.originalFile?.split("/").pop()}
+                            </div>
+
+                            {/* Estimated Hours Counter */}
+                            <div className="col-span-3 flex items-center justify-center space-x-2">
+                              {quote.status === "quoted" ||
+                              quote.status === "requested" ? (
+                                <>
+                                  <button
+                                    className="px-2 py-1 text-orange-500 border border-orange-200 rounded hover:bg-orange-50"
+                                    onClick={() => adjustHours(file._id, -1)}
+                                  >
+                                    –
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    className="w-12 p-1.5 text-center border border-gray-300 rounded text-sm"
+                                    value={fileHours[file._id] || 0}
+                                    onChange={(e) =>
+                                      updateHours(file._id, e.target.value)
+                                    }
+                                  />
+                                  <button
+                                    className="px-2 py-1 text-orange-500 border border-orange-200 rounded hover:bg-orange-50"
+                                    onClick={() => adjustHours(file._id, 1)}
+                                  >
+                                    +
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="text-sm text-gray-600 text-center">
+                                  {fileHours[file._id] || 0}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="col-span-3 flex items-center justify-end space-x-3">
+                              {isSTLFile(file.originalFile) && (
+                                <button
+                                  onClick={() => {
+                                    setCurrentFileIndex(index);
+                                  }}
+                                  className="text-blue-600 text-sm hover:underline"
+                                >
+                                  Preview
+                                </button>
+                              )}
+                              <a
+                                href={getAbsoluteUrl(file.originalFile)}
+                                download
+                                className="text-gray-700 hover:text-gray-900"
+                                title="Download"
+                              >
+                                <FiDownload size={16} />
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Add the Save All Hours button at the bottom */}
+                      {quote.status === "quoted" && (
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            onClick={handleUpdateHours}
+                            disabled={submitting}
+                            className="px-4 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+                          >
+                            {submitting ? "Saving..." : "Save All Hours"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* STL Preview Section */}
+                  {quote.files?.some((f) => isSTLFile(f.originalFile)) && (
+                    <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">
+                          3D Model Preview
+                        </h3>
+                        <div className="flex space-x-2">
+                          {quote.files.length > 1 && (
+                            <>
+                              <button
+                                onClick={() => navigateFile("prev")}
+                                className="p-1 text-gray-500 hover:text-gray-700"
+                                title="Previous file"
+                              >
+                                <FiArrowLeft />
+                              </button>
+                              <button
+                                onClick={() => navigateFile("next")}
+                                className="p-1 text-gray-500 hover:text-gray-700"
+                                title="Next file"
+                              >
+                                <FiArrowRight />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => setShowSTLViewerFullscreen(true)}
+                            className="p-1 text-gray-500 hover:text-gray-700"
+                            title="Fullscreen"
+                          >
+                            <FiMaximize />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="h-64 w-full bg-gray-100 rounded-lg overflow-hidden">
+                        <STLViewer
+                          file={getAbsoluteUrl(
+                            quote.files[currentFileIndex]?.originalFile
+                          )}
+                          style={{ height: "100%", width: "100%" }}
+                        />
+                      </div>
+                      <div className="mt-2 text-sm text-gray-500 text-center">
+                        File {currentFileIndex + 1} of {quote.files.length}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Completed Files Content */}
+              {activeTab === "completed" && (
+                <div className="space-y-3">
+                  {quote.completedFiles?.map((file, index) => (
+                    <FileCard
+                      key={`completed-${index}`}
+                      title={`Completed File ${index + 1}`}
+                      filename={file?.split("/").pop()}
+                      url={getAbsoluteUrl(file)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Supporting Documents Content */}
+              {activeTab === "supporting" && (
+                <div className="space-y-3">
+                  {quote.infoFiles?.map((file, index) => (
+                    <FileCard
+                      key={`info-${index}`}
+                      title={`Document ${index + 1}`}
+                      filename={file.split("/").pop()}
+                      url={getAbsoluteUrl(file)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -471,13 +722,17 @@ const handleFileChange = (e) => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Estimated Hours Required
+                    Total Estimated Hours Required
                   </label>
                   <input
                     type="number"
                     min="1"
-                    placeholder="Enter hours"
-                    value={requiredHour}
+                    step="1"
+                    placeholder="Enter total hours"
+                    value={quote.files?.reduce(
+                      (sum, file) => sum + (fileHours[file._id] || 0),
+                      0
+                    )}
                     onChange={(e) => setRequiredHour(e.target.value)}
                     className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -521,356 +776,308 @@ const handleFileChange = (e) => {
             </motion.div>
           )}
 
-        {quote.poStatus && (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ delay: 0.2 }}
-    className={`rounded-lg p-6 mb-6 border ${
-      quote.poStatus === "requested"
-        ? "bg-yellow-50 border-yellow-100"
-        : quote.poStatus === "approved"
-        ? "bg-green-50 border-green-100"
-        : "bg-red-50 border-red-100"
-    }`}
-  >
-    <div className="flex justify-between items-start">
-      <div>
-        <h3 className="text-lg font-semibold mb-2">
-          {quote.poStatus === "requested"
-            ? "Purchase Order Approval"
-            : quote.poStatus === "approved"
-            ? "Purchase Order"
-            : "Purchase Order Rejected"}
-        </h3>
-        <div className="flex items-center">
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center ${
-              poStatusConfig[quote.poStatus?.toLowerCase()]?.color ||
-              "bg-gray-100 text-gray-800"
-            }`}
-          >
-            {poStatusConfig[quote.poStatus?.toLowerCase()]?.icon}
-            {capitalize(quote.poStatus)}
-          </span>
-          {quote.poStatus === "rejected" && (
-            <p className="ml-3 text-sm text-red-600">
-              This purchase order has been rejected
-            </p>
-          )}
-        </div>
-      </div>
-
-      {quote.poStatus === "requested" && (
-        <div className="flex space-x-2">
-          <button
-            onClick={() => handleUpdatePoStatus("approved")}
-            disabled={updatingPoStatus}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-70 flex items-center"
-          >
-            {updatingPoStatus ? (
-              <>
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              <>
-                <FiThumbsUp className="mr-1" />
-                Approve PO
-              </>
-            )}
-          </button>
-          <button
-            onClick={() => handleUpdatePoStatus("rejected")}
-            disabled={updatingPoStatus}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-70 flex items-center"
-          >
-            {updatingPoStatus ? (
-              <>
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              <>
-                <FiThumbsDown className="mr-1" />
-                Reject PO
-              </>
-            )}
-          </button>
-        </div>
-      )}
-    </div>
-
-    {quote.payment?.purchaseOrderFile && (
-      <div className="mt-4">
-        {quote.poStatus === "approved" ? (
-          <FileCard
-            title="Purchase Order File"
-            filename={quote.payment?.purchaseOrderFile?.split("/").pop()}
-            url={getAbsoluteUrl(quote.payment?.purchaseOrderFile)}
-          />
-        ) : quote.poStatus === "requested" ? (
-          <FileCard
-            title="Purchase Order File (Pending Approval)"
-            filename={quote.payment?.purchaseOrderFile?.split("/").pop()}
-            url={getAbsoluteUrl(quote.payment?.purchaseOrderFile)}
-          />
-        ) : (
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-gray-700">
-              <span className="font-medium">Original PO File:</span>{" "}
-              {quote.payment?.purchaseOrderFile?.split("/").pop()}
-            </p>
-            <p className="text-sm text-red-500 mt-1">
-              This file is no longer available for download as the PO was
-              rejected.
-            </p>
-          </div>
-        )}
-      </div>
-    )}
-  </motion.div>
-)}
-
-    {quote.status === "approved" && (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ delay: 0.2 }}
-    className="bg-purple-50 flex justify-between items-center rounded-lg p-6 mb-6 border border-purple-100"
-  >
-    <h3 className="text-lg font-semibold text-purple-800 mb-4">
-      Make Quotation to Ongoing
-    </h3>
-    <div className="flex items-center">
-      <button
-        onClick={handleOngoing}
-        disabled={submitting}
-        className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-800 transition-colors disabled:opacity-70 flex items-center"
-      >
-        {submitting ? (
-          <>
-            <svg
-              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            Processing...
-          </>
-        ) : (
-          "Make it Ongoing"   
-        )}
-      </button>
-    </div>
-  </motion.div>
-)}
-
-
-  {quote.status === "ongoing" && (
+          {quote.poStatus && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="bg-green-50 rounded-lg p-6 mb-6 border border-green-100"
+              className={`rounded-lg p-6 mb-6 border ${
+                quote.poStatus === "requested"
+                  ? "bg-yellow-50 border-yellow-100"
+                  : quote.poStatus === "approved"
+                  ? "bg-green-50 border-green-100"
+                  : "bg-red-50 border-red-100"
+              }`}
             >
-              <h3 className="text-lg font-semibold text-green-800 mb-4">
-            Upload CAD file
-              </h3>
-            <div className="space-y-4">
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Upload Completed Files
-    </label>
-    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-      <div className="space-y-1 text-center">
-        <div className="flex text-sm text-gray-600">
-          <label className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none">
-            <span>Upload a file</span>
-            <input
-              type="file"
-              className="sr-only"
-              onChange={handleFileChange}
-            />
-          </label>
-          <p className="pl-1">or drag and drop</p>
-        </div>
-        <p className="text-xs text-gray-500">
-          Any file type accepted (up to 1GB)
-        </p>
-      </div>
-    </div>
-    {fileError && (
-      <p className="mt-1 text-sm text-red-600">{fileError}</p>
-    )}
-    {completedFile && (
-      <div className="mt-2 p-3 bg-white rounded-lg border border-gray-200 flex justify-between items-center">
-        <div>
-          <p className="text-sm font-medium text-gray-900">
-            {completedFile.name}
-          </p>
-          <p className="text-xs text-gray-500">
-            {(completedFile.size / 1024 / 1024).toFixed(2)} MB
-          </p>
-        </div>
-        <button
-          onClick={() => setCompletedFile(null)}
-          className="text-red-500 hover:text-red-700"
-        >
-          <FiX />
-        </button>
-      </div>
-    )}
-  </div>
-  <button
-    onClick={handleCompleteQuotation}
-    disabled={completing || !completedFile}
-    className={`px-6 py-2 text-white rounded-lg transition-colors flex items-center ${
-      completing
-        ? "bg-green-400"
-        : !completedFile
-        ? "bg-gray-400 cursor-not-allowed"
-        : "bg-green-600 hover:bg-green-700"
-    }`}
-  >
-    {completing ? (
-      <>
-        <svg
-          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          ></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          ></path>
-        </svg>
-        Processing...
-      </>
-    ) : (
-      "Mark as Completed"
-    )}
-  </button>
-</div>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    {quote.poStatus === "requested"
+                      ? "Purchase Order Approval"
+                      : quote.poStatus === "approved"
+                      ? "Purchase Order"
+                      : "Purchase Order Rejected"}
+                  </h3>
+                  <div className="flex items-center">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center ${
+                        poStatusConfig[quote.poStatus?.toLowerCase()]?.color ||
+                        "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {poStatusConfig[quote.poStatus?.toLowerCase()]?.icon}
+                      {capitalize(quote.poStatus)}
+                    </span>
+                    {quote.poStatus === "rejected" && (
+                      <p className="ml-3 text-sm text-red-600">
+                        This purchase order has been rejected
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {quote.poStatus === "requested" && (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleUpdatePoStatus("approved")}
+                      disabled={updatingPoStatus}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-70 flex items-center"
+                    >
+                      {updatingPoStatus ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <FiThumbsUp className="mr-1" />
+                          Approve PO
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleUpdatePoStatus("rejected")}
+                      disabled={updatingPoStatus}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-70 flex items-center"
+                    >
+                      {updatingPoStatus ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <FiThumbsDown className="mr-1" />
+                          Reject PO
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {quote.payment?.purchaseOrderFile && (
+                <div className="mt-4">
+                  {quote.poStatus === "approved" ? (
+                    <FileCard
+                      title="Purchase Order File"
+                      filename={quote.payment?.purchaseOrderFile
+                        ?.split("/")
+                        .pop()}
+                      url={getAbsoluteUrl(quote.payment?.purchaseOrderFile)}
+                    />
+                  ) : quote.poStatus === "requested" ? (
+                    <FileCard
+                      title="Purchase Order File (Pending Approval)"
+                      filename={quote.payment?.purchaseOrderFile
+                        ?.split("/")
+                        .pop()}
+                      url={getAbsoluteUrl(quote.payment?.purchaseOrderFile)}
+                    />
+                  ) : (
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <p className="text-gray-700">
+                        <span className="font-medium">Original PO File:</span>{" "}
+                        {quote.payment?.purchaseOrderFile?.split("/").pop()}
+                      </p>
+                      <p className="text-sm text-red-500 mt-1">
+                        This file is no longer available for download as the PO
+                        was rejected.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
 
-{/* Rejection Message Display */}
-            {quote.status === "rejected" && quote.rejectionReason && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow"
-              >
-                <h4 className="font-medium text-red-800">Rejection Reason: <span className="text-red-700 mt-1">{quote.rejectionReason}</span></h4>
-                
-                <p className="text-red-700 mt-1">{quote.rejectionDetails}</p>
-              </motion.div>
-            )}
+          {quote.status === "approved" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="bg-purple-50 flex justify-between items-center rounded-lg p-6 mb-6 border border-purple-100"
+            >
+              <h3 className="text-lg font-semibold text-purple-800 mb-4">
+                Make Quotation to Ongoing
+              </h3>
+              <div className="flex items-center">
+                <button
+                  onClick={handleOngoing}
+                  disabled={submitting}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-800 transition-colors disabled:opacity-70 flex items-center"
+                >
+                  {submitting ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    "Make it Ongoing"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          )}
 
-        
+          {quote.status === "ongoing" && (
+            <FileCompletionSection
+              files={quote.files}
+              quotationId={quote._id}
+            />
+          )}
+
+          {/* Rejection Message Display */}
+          {quote.status === "rejected" && quote.rejectionReason && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow"
+            >
+              <h4 className="font-medium text-red-800">
+                Rejection Reason:{" "}
+                <span className="text-red-700 mt-1">
+                  {quote.rejectionReason}
+                </span>
+              </h4>
+              <p className="text-red-700 mt-1">{quote.rejectionDetails}</p>
+            </motion.div>
+          )}
+
+
+          {quote.status === "issued" && (
+            <>
+              <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+                <h4 className="font-medium text-gray-800">Notes:</h4>
+                <p className="text-gray-600">{quote.notes}</p>
+              </div>
+              <AdminIssuedFilesSection
+                files={quote.files}
+                quotationId={quote._id}
+              />
+            </>
+          )}
         </div>
       </motion.div>
 
-      {/* STL Viewer Modal */}
-      {showSTLViewer && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center p-4"
-        >
+      {/* Fullscreen STL Viewer Modal */}
+      <AnimatePresence>
+        {showSTLViewerFullscreen && quote.files?.length > 0 && (
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white h-full rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center p-4"
           >
-            <div className="flex justify-between items-center p-4 border-b">
-              <h3 className="text-xl font-semibold">3D Model Viewer</h3>
-              <button
-                onClick={() => setShowSTLViewer(false)}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-              >
-                <FiX className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex-1 min-h-0">
-              <STLViewer file={getAbsoluteUrl(quote.file)} />
-            </div>
-            <div className="p-4 border-t flex justify-end">
-              <a
-                href={getAbsoluteUrl(quote.file)}
-                download
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center"
-              >
-                <FiDownload className="mr-2" />
-                Download File
-              </a>
-            </div>
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              className="bg-white h-full w-full max-w-6xl rounded-lg p-4 relative flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">3D Model Preview</h3>
+                <div className="flex space-x-4">
+                  {quote.files.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => navigateFile("prev")}
+                        className="p-2 text-gray-500 hover:text-gray-700"
+                        title="Previous file"
+                      >
+                        &larr;
+                      </button>
+                      <button
+                        onClick={() => navigateFile("next")}
+                        className="p-2 text-gray-500 hover:text-gray-700"
+                        title="Next file"
+                      >
+                        &rarr;
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => setShowSTLViewerFullscreen(false)}
+                    className="p-2 text-gray-500 hover:text-gray-700"
+                    title="Exit fullscreen"
+                  >
+                    <FiMinimize />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-grow relative">
+                <STLViewer
+                  file={getAbsoluteUrl(
+                    quote.files[currentFileIndex]?.originalFile
+                  )}
+                  style={{ height: "100%", width: "100%" }}
+                />
+              </div>
+
+              <div className="mt-2 text-sm text-gray-500 text-center">
+                File {currentFileIndex + 1} of {quote.files.length}
+              </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -892,32 +1099,281 @@ const DetailCard = ({ icon, title, items }) => (
   </div>
 );
 
-const FileCard = ({ title, filename, url, onPreview, canPreview = false }) => (
-  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
-    <div>
-      <p className="text-sm text-gray-500">{title}</p>
-      <p className="text-gray-900 font-medium">{filename}</p>
-    </div>
-    <div className="flex space-x-2">
-      {canPreview && (
-        <button
-          onClick={onPreview}
-          className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded text-sm hover:bg-indigo-100 transition-colors"
+const FileCard = ({
+  title,
+  filename,
+  url,
+  onPreview,
+  canPreview = false,
+  status,
+  uploadedAt,
+  issues,
+  notes,
+  isCompleted = false,
+  originalFileUrl,
+}) => (
+  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+    <div className="flex justify-between items-start">
+      <div>
+        <p className="text-sm text-gray-500">{title}</p>
+        <p className="text-gray-900 font-medium">{filename}</p>
+        {status && (
+          <span
+            className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
+              status === "completed"
+                ? "bg-green-100 text-green-800"
+                : status === "issues"
+                ? "bg-red-100 text-red-800"
+                : "bg-blue-100 text-blue-800"
+            }`}
+          >
+            {status === "completed"
+              ? "Completed"
+              : status === "issues"
+              ? "Issues Reported"
+              : status}
+          </span>
+        )}
+        {uploadedAt && (
+          <p className="text-xs text-gray-500 mt-1">
+            {new Date(uploadedAt).toLocaleString()}
+          </p>
+        )}
+      </div>
+      <div className="flex space-x-2">
+        {isCompleted && originalFileUrl && (
+          <a
+            href={originalFileUrl}
+            download
+            className="p-2 text-gray-500 hover:text-gray-700"
+            title="Download Original"
+          >
+            <FiFile size={16} />
+          </a>
+        )}
+        {canPreview && (
+          <button
+            onClick={onPreview}
+            className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded text-sm hover:bg-indigo-100 transition-colors"
+          >
+            Preview
+          </button>
+        )}
+        <a
+          href={url}
+          download
+          className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition-colors flex items-center"
         >
-          Preview
-        </button>
-      )}
-      <a
-        href={url}
-        download
-        className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition-colors flex items-center"
-      >
-        <FiDownload className="mr-1" />
-        Download
-      </a>
+          <FiDownload className="mr-1" />
+          Download
+        </a>
+      </div>
     </div>
+
+    {notes && (
+      <div className="mt-3 bg-blue-50 p-3 rounded">
+        <h5 className="text-sm font-medium text-blue-800">Notes:</h5>
+        <p className="text-sm text-blue-700 mt-1">{notes}</p>
+      </div>
+    )}
+
+    {issues && (
+      <div className="mt-3 bg-red-50 p-3 rounded">
+        <h5 className="text-sm font-medium text-red-800">Issues:</h5>
+        <p className="text-sm text-red-700 mt-1">{issues}</p>
+      </div>
+    )}
   </div>
 );
+
+const AdminIssuedFilesSection = ({ files, quotationId }) => {
+  const [filesToReupload, setFilesToReupload] = useState({});
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: ""
+  });
+
+  const showNotification = (message, type = "success") => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 5000);
+  };
+
+  const handleFileChange = (fileId, file) => {
+    setFilesToReupload(prev => ({
+      ...prev,
+      [fileId]: file
+    }));
+  };
+
+ const handleReupload = async () => {
+    if (Object.keys(filesToReupload).length === 0) {
+      alert('Please select at least one file to reupload');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      await uploadIssuedFiles(quotationId, filesToReupload, {
+        onUploadProgress: (progress) => setProgress(progress)
+      });
+      alert('Files reuploaded successfully!');
+      window.location.reload(); // Refresh to show updated status
+    } catch (error) {
+      console.error('Reupload failed:', error);
+      alert(error.userMessage || 'Failed to reupload files');
+    } finally {
+      setUploading(false);
+      setProgress(0);
+    }
+  };
+
+  const downloadFile = (fileUrl, fileName) => {
+    if (!fileUrl) return;
+    
+    // Create a temporary anchor element
+    const link = document.createElement('a');
+    link.href = getAbsoluteUrl(fileUrl);
+    link.download = fileName || fileUrl.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+      <h3 className="text-lg font-semibold mb-4">Issued Files Management</h3>
+      
+      {notification.show && (
+        <div className={`mb-4 p-3 rounded ${
+          notification.type === "success" 
+            ? "bg-green-100 text-green-800" 
+            : "bg-red-100 text-red-800"
+        }`}>
+          {notification.message}
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {files.map((file) => (
+          <div key={file._id} className="border border-gray-200 rounded-lg p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h4 className="font-medium text-gray-800">
+                  {file.originalFile?.split('/').pop()}
+                </h4>
+                <div className="mt-1 flex items-center">
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    file.userReportedStatus === 'ok' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {file.userReportedStatus === 'ok' ? 'No Issues' : 'Issues Reported'}
+                  </span>
+                  <span className="ml-2 text-xs text-gray-500">
+                    Estimated Hours: {file.requiredHour || 0}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                {/* Download original file button */}
+                {file.originalFile && (
+                  <button
+                    onClick={() => downloadFile(file.originalFile, `original_${file.originalFile.split('/').pop()}`)}
+                    className="p-2 text-gray-700 hover:text-blue-600 transition-colors"
+                    title="Download Original File"
+                  >
+                    <FiDownload className="h-4 w-4" />
+                  </button>
+                )}
+                
+                {/* Download completed file button */}
+                {file.completedFile && (
+                  <button
+                    onClick={() => downloadFile(file.completedFile, `completed_${file.completedFile.split('/').pop()}`)}
+                    className="p-2 text-gray-700 hover:text-green-600 transition-colors"
+                    title="Download Completed File"
+                  >
+                    <FiFile className="h-4 w-4" />
+                  </button>
+                )}
+                
+                {/* File reupload section */}
+                {file.userReportedStatus !== 'ok' && (
+                  <div className="flex flex-col items-end">
+                    <label className="cursor-pointer bg-blue-50 text-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-100 transition-colors">
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => handleFileChange(file._id, e.target.files[0])}
+                        
+                      />
+                      {filesToReupload[file._id] ? 'Change File' : 'Select File'}
+                    </label>
+                    {filesToReupload[file._id] && (
+                      <span className="text-xs text-gray-500 mt-1">
+                        {filesToReupload[file._id].name}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {file.issues && (
+              <div className="mt-3 bg-red-50 p-3 rounded">
+                <h5 className="text-sm font-medium text-red-800">Reported Issues:</h5>
+                <p className="text-sm text-red-700 mt-1">{file.issues}</p>
+              </div>
+            )}
+
+            {file.notes && (
+              <div className="mt-3 bg-blue-50 p-3 rounded">
+                <h5 className="text-sm font-medium text-blue-800">Notes:</h5>
+                <p className="text-sm text-blue-700 mt-1">{file.notes}</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {Object.keys(filesToReupload).length > 0 && (
+        <div className="mt-6">
+          <button
+            onClick={handleReupload}
+            disabled={uploading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70 flex items-center justify-center w-full md:w-auto"
+          >
+            {uploading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Uploading {progress}%
+              </>
+            ) : (
+              'Reupload Selected Files'
+            )}
+          </button>
+          {uploading && (
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full" 
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const getAbsoluteUrl = (path) => {
   if (!path) return "#";

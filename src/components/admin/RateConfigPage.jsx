@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaEdit, FaSave, FaTimes, FaHistory, 
-  FaMoneyBillWave, FaSearch, FaFilter
+  FaMoneyBillWave, FaSearch, FaFilter, FaPlus
 } from 'react-icons/fa';
-import { getAllRates, updateRate } from '../../api';
+import { getAllRates, updateRate, createRate } from '../../api';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const RateConfigPage = ({ user }) => {
@@ -18,6 +18,7 @@ const RateConfigPage = ({ user }) => {
     isActive: false
   });
   const [editMode, setEditMode] = useState(false);
+  const [createMode, setCreateMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterActive, setFilterActive] = useState('all');
@@ -81,6 +82,18 @@ const RateConfigPage = ({ user }) => {
     setFilterActive(e.target.value);
   };
 
+  const handleCreateNew = () => {
+    setFormData({
+      ratePerHour: '',
+      currency: 'USD',
+      isActive: false
+    });
+    setCreateMode(true);
+    setEditMode(false);
+    setEditingId(null);
+    setError(null);
+  };
+
   const handleEdit = (rate) => {
     setFormData({
       ratePerHour: rate.ratePerHour,
@@ -88,7 +101,9 @@ const RateConfigPage = ({ user }) => {
       isActive: rate.isActive
     });
     setEditMode(true);
+    setCreateMode(false);
     setEditingId(rate._id);
+    setError(null);
   };
 
   const handleCancelEdit = () => {
@@ -97,8 +112,23 @@ const RateConfigPage = ({ user }) => {
     setEditingId(null);
   };
 
+  const handleCancelCreate = () => {
+    setFormData({ ratePerHour: '', currency: 'USD', isActive: false });
+    setCreateMode(false);
+  };
+
+  const validateForm = () => {
+    if (parseFloat(formData.ratePerHour) <= 0) {
+      setError('Rate must be a positive number');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
     try {
       // If setting one rate active, deactivate others
       if (formData.isActive) {
@@ -117,6 +147,31 @@ const RateConfigPage = ({ user }) => {
       handleCancelEdit();
     } catch (err) {
       setError(err.message || 'Failed to update rate');
+    }
+  };
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    try {
+      // If setting one rate active, deactivate others
+      if (formData.isActive) {
+        const updateInactive = allRates
+          .filter((r) => r.isActive)
+          .map((r) =>
+            updateRate(r._id, { ...r, isActive: false })
+          );
+        await Promise.all(updateInactive);
+      }
+
+      await createRate(formData);
+      await fetchRates();
+      setSuccessMessage('Rate created successfully!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+      setCreateMode(false);
+    } catch (err) {
+      setError(err.message || 'Failed to create rate');
     }
   };
 
@@ -203,6 +258,13 @@ const RateConfigPage = ({ user }) => {
                   Rate History
                 </h2>
                 <div className="flex gap-3">
+                  <button
+                    onClick={handleCreateNew}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                    disabled={editMode || createMode}
+                  >
+                    <FaPlus /> New Rate
+                  </button>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <FaSearch className="text-gray-400" />
@@ -266,6 +328,7 @@ const RateConfigPage = ({ user }) => {
                             <button
                               onClick={() => handleEdit(rate)}
                               className="text-blue-600 hover:text-blue-900 mr-3 flex items-center gap-1"
+                              disabled={createMode}
                             >
                               <FaEdit className="inline" /> Edit
                             </button>
@@ -334,15 +397,31 @@ const RateConfigPage = ({ user }) => {
               </div>
             </div>
 
-            {editMode && (
+            {(editMode || createMode) && (
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-xl shadow-md overflow-hidden"
               >
                 <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-4">Edit Rate</h2>
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                    {editMode ? 'Edit Rate' : 'Create New Rate'}
+                  </h2>
+                  {error && (
+                    <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-red-700">{error}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <form onSubmit={editMode ? handleSubmit : handleCreateSubmit} className="space-y-4">
                     <div>
                       <label htmlFor="ratePerHour" className="block text-sm font-medium text-gray-700 mb-1">
                         Rate Per Hour
@@ -372,7 +451,11 @@ const RateConfigPage = ({ user }) => {
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
-                        <option value="INR">INR (₹)</option>                
+                        <option value="USD">USD ($)</option>
+                        <option value="INR">INR (₹)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="JPY">JPY (¥)</option>
                       </select>
                     </div>
                     
@@ -395,11 +478,11 @@ const RateConfigPage = ({ user }) => {
                         type="submit"
                         className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
                       >
-                        <FaSave /> Update
+                        <FaSave /> {editMode ? 'Update' : 'Create'}
                       </button>
                       <button
                         type="button"
-                        onClick={handleCancelEdit}
+                        onClick={editMode ? handleCancelEdit : handleCancelCreate}
                         className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
                       >
                         <FaTimes /> Cancel

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { 
-  FiX, FiPlus, FiMinus, FiCheck, FiCreditCard, FiDollarSign,
+  FiX, FiPlus, FiMinus, FiCheck, FiDollarSign,
   FiLoader, FiArrowRight, FiCheckCircle, FiAlertCircle, FiArrowLeft
 } from 'react-icons/fi';
 import { FaPaypal, FaRupeeSign } from 'react-icons/fa';
 import { SiRazorpay } from 'react-icons/si';
-import { getCurrentRate } from '../../api';
+import { getAllRates, getMe } from '../../api';
 
 const StepPaymentModal = ({ 
   isOpen, 
@@ -14,7 +14,7 @@ const StepPaymentModal = ({
   onPaymentSuccess, 
   requiredHours = 1,
 }) => {
-    const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1);
   const [hours, setHours] = useState(requiredHours);
   const [activeGateway, setActiveGateway] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -22,7 +22,9 @@ const StepPaymentModal = ({
   const [ratePerHour, setRatePerHour] = useState(0);
   const [loadingRate, setLoadingRate] = useState(true);
   const [rateError, setRateError] = useState(null);
-  const [currency, setCurrency] = useState('INR'); 
+  const [currency, setCurrency] = useState('USD');
+  const [userCurrency, setUserCurrency] = useState('USD');
+  const [availableRates, setAvailableRates] = useState([]);
 
   const totalPrice = hours * ratePerHour;
   const backendBaseUrl = 'https://ardpgimerchd.org/api/v1/payments';
@@ -34,33 +36,64 @@ const StepPaymentModal = ({
       setStep(1);
       setHours(requiredHours);
       setActiveGateway(null);
+      setIsProcessing(false);
+      setLoadingScript(false);
     }
   }, [isOpen, requiredHours]);
 
-  useEffect(() => {
-    const fetchRate = async () => {
-      if (isOpen) {
-        try {
-          setLoadingRate(true);
-          const response = await getCurrentRate();
+// In your useEffect for fetching data
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoadingRate(true);
+      setRateError(null);
+      
+      // Fetch rates first
+      const ratesResponse = await getAllRates();
+      if (!ratesResponse?.success || !ratesResponse?.data?.length) {
+        throw new Error(ratesResponse?.message || 'No rates available');
+      }
+      
+      setAvailableRates(ratesResponse.data);
+      
+      // Set initial rate (use first rate as fallback)
+      const initialRate = ratesResponse.data[0]?.ratePerHour || 0;
+      setRatePerHour(initialRate);
+      
+      // Then fetch user data to get preferred currency
+      if (token) {
+        const userResponse = await getMe();
+        if (userResponse?.success && userResponse.data?.currency) {
+          const userCurrency = userResponse.data.currency;
+          setUserCurrency(userCurrency);
           
-          if (response.success && response.data) {
-            setRatePerHour(response.data.ratePerHour);
-            setCurrency(response.data.currency || 'INR');
-          } else {
-            throw new Error(response.message || 'Invalid rate data received');
+          // Find matching rate for user's currency
+          const matchedRate = ratesResponse.data.find(
+            rate => rate.currency === userCurrency
+          );
+          
+          if (matchedRate) {
+            setRatePerHour(matchedRate.ratePerHour);
+            setCurrency(matchedRate.currency);
           }
-          setLoadingRate(false);
-        } catch (error) {
-          console.error('Failed to fetch rate:', error);
-          setRateError(error.message || 'Failed to load pricing. Please try again later.');
-          setLoadingRate(false);
         }
       }
-    };
+      
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      setRateError(error.message || 'Failed to load payment information');
+      // Set default values if error occurs
+      setRatePerHour(0);
+      setCurrency('USD');
+    } finally {
+      setLoadingRate(false);
+    }
+  };
 
-    fetchRate();
-  }, [isOpen]);
+  if (isOpen) {
+    fetchData();
+  }
+}, [isOpen, token]);
 
   const handleIncrement = () => setHours(prev => prev + 1);
   const handleDecrement = () => setHours(prev => (prev > 1 ? prev - 1 : 1));
@@ -90,6 +123,7 @@ const StepPaymentModal = ({
 
   const verifyPayment = async (gateway, verificationData) => {
     try {
+      setIsProcessing(true);
       const verifyRes = await fetch(`${backendBaseUrl}/verify`, {
         method: 'POST',
         headers: {
@@ -100,6 +134,7 @@ const StepPaymentModal = ({
           gateway,
           amount: totalPrice,
           hours,
+          currency,
           ...verificationData
         })
       });
@@ -109,9 +144,11 @@ const StepPaymentModal = ({
         throw new Error(verifyData.message || "Payment verification failed");
       }
       onPaymentSuccess();
-      setStep(3); // Move to success step
+      setStep(3);
     } catch (error) {
       handlePaymentError(error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -125,8 +162,8 @@ const StepPaymentModal = ({
     try {
       await loadScript("https://checkout.razorpay.com/v1/checkout.js");
   
-      // Convert to paise for Razorpay (₹999 → 99900)
-      const amountInPaise = Math.round(totalPrice * 100); // Ensure integer
+      // Convert to smallest currency unit (paise for INR, cents for others)
+      const amountInSubunits = Math.round(totalPrice * (currency === 'INR' ? 100 : 100));
   
       const orderRes = await fetch(`${backendBaseUrl}/order`, {
         method: 'POST',
@@ -135,10 +172,10 @@ const StepPaymentModal = ({
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ 
-          amount: amountInPaise, // Send amount in paise
+          amount: amountInSubunits,
           hours, 
           gateway: 'razorpay',
-          currency: 'INR' // Explicitly specify currency
+          currency
         })
       });
   
@@ -147,8 +184,8 @@ const StepPaymentModal = ({
   
       const options = {
         key: 'rzp_test_9prjSZS0QLvGyK', // Replace with your actual key
-        amount: orderData.order.amount, // Amount in paise from backend
-        currency: "INR",
+        amount: orderData.order.amount,
+        currency,
         name: "Your Company Name",
         description: `Purchase of ${hours} hours`,
         order_id: orderData.order.id,
@@ -162,13 +199,10 @@ const StepPaymentModal = ({
         theme: {
           color: "#3399cc"
         },
-        display: {
-          amount: totalPrice, // Display amount in rupees
-          currency: 'INR'
-        },
         notes: {
           hours: hours.toString(),
-          price: totalPrice.toString()
+          price: totalPrice.toString(),
+          currency
         }
       };
   
@@ -195,6 +229,10 @@ const StepPaymentModal = ({
     try {
       document.getElementById('paypal-button-container').innerHTML = '';
       
+      // PayPal supports limited currencies, fallback to USD if needed
+      const paypalSupportedCurrencies = ['USD', 'EUR', 'AUD', 'CAD', 'GBP'];
+      const paypalCurrency = paypalSupportedCurrencies.includes(currency) ? currency : 'USD';
+      
       window.paypal.Buttons({
         style: {
           shape: 'rect',
@@ -212,7 +250,8 @@ const StepPaymentModal = ({
             body: JSON.stringify({ 
               amount: totalPrice, 
               hours, 
-              gateway: 'paypal' 
+              gateway: 'paypal',
+              currency: paypalCurrency
             })
           });
           const orderData = await orderRes.json();
@@ -235,23 +274,70 @@ const StepPaymentModal = ({
 
   useEffect(() => {
     if (activeGateway === 'paypal' && step === 2) {
-      loadScript(`https://www.paypal.com/sdk/js?client-id=ASJQyCyGK6uKYaMMyOXb1wXXW1Q4OEcSJfxV_xYzXlccJZ-efkhFTtgim2mECDU4qZRtajbrkJBtqifY&currency=USD`)
+      const paypalSupportedCurrencies = ['USD', 'EUR', 'AUD', 'CAD', 'GBP'];
+      const paypalCurrency = paypalSupportedCurrencies.includes(currency) ? currency : 'USD';
+      loadScript(`https://www.paypal.com/sdk/js?client-id=ASJQyCyGK6uKYaMMyOXb1wXXW1Q4OEcSJfxV_xYzXlccJZ-efkhFTtgim2mECDU4qZRtajbrkJBtqifY&currency=${paypalCurrency}`)
         .then(() => initializePaypal())
         .catch(err => handlePaymentError(err));
     }
-  }, [activeGateway, step]);
+  }, [activeGateway, step, currency]);
 
-  
+  const renderCurrencyIcon = () => {
+    switch (currency) {
+      case 'INR':
+        return <FaRupeeSign className="mr-1" />;
+      case 'USD':
+      case 'AUD':
+      case 'CAD':
+      case 'SGD':
+      case 'HKD':
+        return <FiDollarSign className="mr-1" />;
+      case 'EUR':
+        return <span className="mr-1">€</span>;
+      case 'GBP':
+        return <span className="mr-1">£</span>;
+      case 'JPY':
+        return <span className="mr-1">¥</span>;
+      default:
+        return <span className="mr-1">{currency}</span>;
+    }
+  };
 
   if (!isOpen) return null;
 
+  if (loadingRate) {
+    return (
+      <div className="fixed inset-0 m-0 bg-black/50 bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl relative text-center">
+          <FiLoader className="animate-spin mx-auto text-2xl text-blue-600 mb-4" />
+          <p>Loading payment information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (rateError) {
+    return (
+      <div className="fixed inset-0 m-0 bg-black/50 bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl relative text-center">
+          <FiAlertCircle className="mx-auto text-2xl text-red-500 mb-4" />
+          <p className="text-red-500 mb-4">{rateError}</p>
+          <button
+            onClick={onClose}
+            className="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 m-0 bg-black/50 bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl relative ">
-        {/* Gradient Background */}
+      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl relative">
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 to-white-600"></div>
         
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-[-5px] right-[-5px] bg-[#2563eb] rounded-4xl text-white p-1 hover:text-black transition-colors"
@@ -260,7 +346,6 @@ const StepPaymentModal = ({
           <FiX size={24} />
         </button>
 
-        {/* Step Indicator */}
         <div className="flex justify-between mb-8 relative">
           {['Select Hours', 'Payment', 'Confirmation'].map((label, idx) => {
             const index = idx + 1;
@@ -288,7 +373,6 @@ const StepPaymentModal = ({
               </div>
             );
           })}
-          {/* Progress line */}
           <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200 -z-0">
             <div 
               className="h-full bg-blue-600 transition-all duration-300" 
@@ -299,13 +383,15 @@ const StepPaymentModal = ({
           </div>
         </div>
 
-        {/* Step 1: Select Hours */}
         {step === 1 && (
           <div className="space-y-6">
-           
-
             <div className="text-center">
               <h3 className="text-lg font-semibold text-gray-800 mb-1">Add credit hours</h3>
+              {availableRates.length > 1 && (
+                <div className="text-sm text-gray-500">
+                  Available in: {availableRates.map(rate => rate.currency).join(', ')}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-center mb-4">
@@ -332,8 +418,9 @@ const StepPaymentModal = ({
               <div className="p-4 rounded-lg text-center">
                 <div className="text-sm text-gray-500 mb-1">Total price</div>
                 <div className="text-2xl font-bold text-gray-800 flex items-center justify-center">
-                  <FaRupeeSign className="mr-1" /> {totalPrice.toLocaleString()}
+                  {renderCurrencyIcon()} {totalPrice.toLocaleString()}
                 </div>
+                <div className="text-xs text-gray-500 mt-1">({currency})</div>
               </div>
               <button
                 onClick={() => setStep(2)}
@@ -355,10 +442,8 @@ const StepPaymentModal = ({
           </div>
         )}
 
-        {/* Step 2: Payment Method */}
         {step === 2 && (
           <div className="space-y-6">
-            {/* Back button */}
             <button
               onClick={() => setStep(1)}
               className="flex items-center text-gray-500 hover:text-gray-700 transition-colors"
@@ -395,10 +480,13 @@ const StepPaymentModal = ({
               
               <button
                 onClick={() => setActiveGateway('paypal')}
-                disabled={isProcessing || loadingScript}
+                disabled={isProcessing || loadingScript || !['USD', 'EUR', 'AUD', 'CAD', 'GBP'].includes(currency)}
                 className="w-full bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-lg font-medium flex items-center justify-center hover:bg-blue-100 hover:border-blue-200 transition-all disabled:opacity-50"
               >
                 <FaPaypal className="mr-2 text-xl" /> Pay with PayPal
+                {!['USD', 'EUR', 'AUD', 'CAD', 'GBP'].includes(currency) && (
+                  <span className="text-xs ml-2">(USD only)</span>
+                )}
               </button>
             </div>
 
@@ -416,53 +504,59 @@ const StepPaymentModal = ({
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500">Rate:</span>
                 <span className="font-medium flex items-center">
-                  <FaRupeeSign className="mr-1" /> {ratePerHour}/hour
+                  {renderCurrencyIcon()} {ratePerHour}/hour
                 </span>
               </div>
               <div className="border-t border-gray-200 my-2"></div>
               <div className="flex justify-between items-center">
                 <span className="font-medium">Total:</span>
                 <span className="text-lg font-bold flex items-center">
-                  <FaRupeeSign className="mr-1" /> {totalPrice.toLocaleString()}
+                  {renderCurrencyIcon()} {totalPrice.toLocaleString()}
                 </span>
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                Currency: {currency}
               </div>
             </div>
           </div>
         )}
 
-        {/* Step 3: Confirmation */}
-{step === 3 && (
-  <div className="text-center space-y-6">
-    <div className="bg-green-50 text-green-600 p-4 rounded-full inline-flex items-center justify-center">
-      <FiCheckCircle size={48} />
-    </div>
-    <h3 className="text-2xl font-bold text-gray-800">Payment Successful!</h3>
-    <p className="text-gray-600">
-      You've successfully purchased <span className="font-semibold">{hours} hours</span> of credit.
-    </p>
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <div className="font-medium mb-1">Transaction Details</div>
-      <div className="flex justify-between text-sm text-gray-600">
-        <span>Amount Paid:</span>
-        <span className="font-medium flex items-center">
-          <FaRupeeSign className="mr-1" /> {totalPrice.toLocaleString()}
-        </span>
-      </div>
-      <div className="flex justify-between text-sm text-gray-600 mt-2">
-        <span>Total Available Hours:</span>
-        <span className="font-medium">
-          {hours} hours
-        </span>
-      </div>
-    </div>
-    <button
-      onClick={onClose}
-      className="w-full bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md"
-    >
-      Close
-    </button>
-  </div>
-)}
+        {step === 3 && (
+          <div className="text-center space-y-6">
+            <div className="bg-green-50 text-green-600 p-4 rounded-full inline-flex items-center justify-center">
+              <FiCheckCircle size={48} />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800">Payment Successful!</h3>
+            <p className="text-gray-600">
+              You've successfully purchased <span className="font-semibold">{hours} hours</span> of credit.
+            </p>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="font-medium mb-1">Transaction Details</div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Amount Paid:</span>
+                <span className="font-medium flex items-center">
+                  {renderCurrencyIcon()} {totalPrice.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600 mt-2">
+                <span>Currency:</span>
+                <span className="font-medium">{currency}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600 mt-2">
+                <span>Total Available Hours:</span>
+                <span className="font-medium">
+                  {hours} hours
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-full bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md"
+            >
+              Close
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -473,7 +567,6 @@ StepPaymentModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onPaymentSuccess: PropTypes.func.isRequired,
   requiredHours: PropTypes.number,
-  ratePerHour: PropTypes.number
 };
 
 export default StepPaymentModal;

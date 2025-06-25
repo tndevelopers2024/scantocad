@@ -9,13 +9,15 @@ export {
   disconnectSocket 
 } from './socket';
 
-export const register = async ({ name, email, password, phone, role, company }) => {
+export const register = async ({ name, email, password, phone, country, currency,role, company }) => {
   try {
     const response = await axios.post(`${BASE_URL}/auth/register`, {
       name,
       email,
       password,
       phone,
+      country,
+      currency,
       role,
       company // should be an object with keys: name, address, website, industry, gstNumber
     });
@@ -62,6 +64,8 @@ export const login = async (email, password) => {
     throw error;
   }
 };
+
+
 
 export const avaiableHour = async (id) => {
   try {
@@ -224,11 +228,11 @@ export const getQuotationById = async (id) => {
   }
 };
 
-export const raiseQuote = async (id, requiredHour) => {
+export const raiseQuote = async (id, totalHours, files) => {
   try {
     const response = await axios.put(
       `${BASE_URL}/quotations/${id}/quote`,
-      { requiredHour },
+      { files, totalHours },
       {
         headers: {
           'Content-Type': 'application/json',
@@ -238,16 +242,15 @@ export const raiseQuote = async (id, requiredHour) => {
     );
     return response.data;
   } catch (error) {
-    console.error('Raising quote failed:', error);
+    console.error('Raising quote failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
-export const updateEstimatedHours = async (id, tempHours) => {
+export const deleteFile = async (id, fileId) => {
   try {
-    const response = await axios.put(
-      `${BASE_URL}/quotations/${id}/update-hour/`,
-      { requiredHour:tempHours },
+    const response = await axios.delete(
+      `${BASE_URL}/quotations/${id}/files/${fileId}`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -257,10 +260,43 @@ export const updateEstimatedHours = async (id, tempHours) => {
     );
     return response.data;
   } catch (error) {
-    console.error('Raising quote failed:', error);
+    console.error('Deleting file failed:', error.response?.data || error.message);
     throw error;
   }
 };
+
+
+export const updateEstimatedHours = async (id, files, totalHours = null) => {
+  try {
+    const payload = {
+      files: files.map(file => ({
+        fileId: file._id,
+        requiredHour: file.requiredHour
+      }))
+    };
+
+    if (totalHours !== null) {
+      payload.totalHours = totalHours;
+    }
+
+    const response = await axios.put(
+      `${BASE_URL}/quotations/${id}/update-hour`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Updating estimated hours failed:', error);
+    throw error;
+  }
+};
+
 
 export const getQuotationsByuser = async () => {
   try {
@@ -356,8 +392,20 @@ export const updateOngoing = async (id) => {
 };
 
 
-export const completeQuotation = async (id, formData) => {
+export const completeQuotation = async (id, completedFiles, { onUploadProgress } = {}) => {
   try {
+    // Create FormData object
+    const formData = new FormData();
+    
+    // Append all completed files
+    if (Array.isArray(completedFiles)) {
+      completedFiles.forEach((file, index) => {
+        formData.append(`completedFiles`, file);
+      });
+    } else {
+      formData.append(`completedFiles`, completedFiles);
+    }
+
     const response = await axios.put(
       `${BASE_URL}/quotations/${id}/complete`,
       formData,
@@ -366,12 +414,32 @@ export const completeQuotation = async (id, formData) => {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
+        onUploadProgress: (progressEvent) => {
+          if (onUploadProgress) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            onUploadProgress(percentCompleted);
+          }
+        }
       }
     );
+
     return response.data;
   } catch (error) {
     console.error('Completing quotation failed:', error);
-    throw error;
+    
+    // Enhance the error object with custom messages
+    const enhancedError = {
+      ...error,
+      userMessage: 'Failed to submit completed files',
+      details: error.response?.data?.message || 
+               (error.response?.status === 413 
+                ? 'File size exceeds maximum limit' 
+                : 'Network or server error')
+    };
+    
+    throw enhancedError;
   }
 };
 
@@ -555,5 +623,69 @@ export const createRate = async (rateData) => {
   } catch (error) {
     console.error('Failed to create rate:', error.response?.data || error.message);
     throw error;
+  }
+};
+
+export const reportQuotationIssues = async (quotationId, { fileReports = [], mainNote = '' }) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/quotations/${quotationId}/report-issues`,
+      { fileReports, mainNote },
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Reporting quotation issues failed:', error);
+
+    throw {
+      ...error,
+      userMessage: 'Failed to report issues. Please try again.',
+      details: error.response?.data?.message || 'Server error',
+    };
+  }
+};
+
+export const uploadIssuedFiles = async (quotationId, fileMap, { onUploadProgress } = {}) => {
+  try {
+    const formData = new FormData();
+
+    // fileMap should be: { 0: File, 2: File, ... }
+    Object.entries(fileMap).forEach(([index, file]) => {
+      formData.append(`issuedFiles[${index}]`, file);
+    });
+
+    const response = await axios.post(
+      `${BASE_URL}/quotations/${quotationId}/upload-issued-files`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        onUploadProgress: (progressEvent) => {
+          if (onUploadProgress) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            onUploadProgress(percentCompleted);
+          }
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Uploading issued files failed:', error);
+
+    throw {
+      ...error,
+      userMessage: 'Failed to upload replacement files.',
+      details: error.response?.data?.message || 'File or server error',
+    };
   }
 };
