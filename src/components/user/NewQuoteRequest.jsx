@@ -64,7 +64,7 @@ const InfoIcon = ({ infoText }) => {
             fillRule="evenodd"
             d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
             clipRule="evenodd"
-          />
+        />
         </svg>
       </button>
 
@@ -111,7 +111,7 @@ const UploadPopup = ({
                 id="initial-files-upload"
                 type="file"
                 multiple
-                 accept=".stl,.ply,.obj" 
+                accept=".stl,.ply,.obj" 
                 className="hidden"
                 onChange={onFileChange}
               />
@@ -141,87 +141,79 @@ const UploadPopup = ({
     return (
       <div 
       style={{background:'url(/img/banner/upload.png)', backgroundColor:'#fff', backgroundSize:'cover', backgroundRepeat:'no-repeat'}}
-      className="fixed inset-0 bg-white p-50 bg-opacity-50 flex gap-8  items-center justify-center  z-50">
-        <div className="bg-white shadow rounded-lg overflow-hidden w-[50%] ">
+      className="fixed inset-0 bg-white p-50 bg-opacity-50 flex gap-8 items-center justify-center z-50">
+        <div className="bg-white shadow rounded-lg overflow-hidden w-[50%]">
           <div className="p-8">
-            <div className="flex mb-6 justify-center ">
+            <div className="flex mb-6 justify-center">
               <button
                 onClick={onAddMoreFiles}
                 className="px-6 py-2 text-center grid place-items-center gap-3 border-dashed border-2 bg-[#F5EFFD] border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50"
               >
                 <img src="/img/icon/upload.png" alt="" /> Add More Files
               </button>
-            
             </div>
-             <p className="text-md  inline border-b-[1px] font-medium text-gray-700">
-    {selectedFiles.length} Files
-  </p>
+            <p className="text-md inline border-b-[1px] font-medium text-gray-700">
+              {selectedFiles.length} Files
+            </p>
             <div className="max-h-96 flex gap-5 overflow-y-auto mt-2">
-              
-            <ul className="w-full space-y-3">
-  {selectedFiles.map((file, index) => (
-    <li
-      key={index}
-      onClick={() => onNavigateFile(index)}
-      className={`p-3 rounded-lg cursor-pointer 
-        ${currentFileIndex === index ? 'border-2 border-[#5D01F2] bg-[#F3F3F3]' : 'bg-[#fff]'} 
-        hover:bg-gray-100`}
-    >
-      <div className="flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>
-          <p className="text-xs text-gray-500">{Math.round(file.size / 1024 / 1024)} MB</p>
-        </div>
-        <div className="flex space-x-2">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onNavigateFile(index);
-            }}
-            className="text-[#155DFC] hover:text-blue-700"
-          >
-            View
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemoveFile(index);
-            }}
-            className="text-red-500 hover:text-red-700"
-          >
-            <FiTrash2 />
-          </button>
-        </div>
-      </div>
-    </li>
-  ))}
-</ul>
-
-
+              <ul className="w-full space-y-3">
+                {selectedFiles.map((file, index) => (
+                  <li
+                    key={index}
+                    onClick={() => onNavigateFile(index)}
+                    className={`p-3 rounded-lg cursor-pointer 
+                      ${currentFileIndex === index ? 'border-2 border-[#5D01F2] bg-[#F3F3F3]' : 'bg-[#fff]'} 
+                      hover:bg-gray-100`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>
+                        <p className="text-xs text-gray-500">{Math.round(file.size / 1024 / 1024)} MB</p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigateFile(index);
+                          }}
+                          className="text-[#155DFC] hover:text-blue-700"
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveFile(index);
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
-
-           
           </div>
         </div>
-                      <div className="w-[50%] h-full inline-grid gap-5 place-items-end">
-              <FileViewer 
-                files={selectedFiles} 
-                currentIndex={currentFileIndex} 
-                onNavigate={onNavigateFile} 
-                onToggleFullScreen={onToggleFullScreen} 
-                fullScreen={false}
-              />
-
-                <button
-                onClick={onReviewComplete}
-                className="px-6 py-2 rounded-md font-medium bg-blue-600 text-white hover:bg-blue-700"
-              >
-                Continue to Form <FiArrowRight className="inline ml-1" />
-              </button>
-              </div>
-
+        <div className="w-[50%] h-full inline-grid gap-5 place-items-end">
+          <FileViewer 
+            files={selectedFiles} 
+            currentIndex={currentFileIndex} 
+            onNavigate={onNavigateFile} 
+            onToggleFullScreen={onToggleFullScreen} 
+            fullScreen={false}
+          />
+          <button
+            onClick={onReviewComplete}
+            className="px-6 py-2 rounded-md font-medium bg-blue-600 text-white hover:bg-blue-700"
+          >
+            Continue to Form <FiArrowRight className="inline ml-1" />
+          </button>
+        </div>
       </div>
     );
   }
@@ -370,7 +362,7 @@ const NewQuoteRequest = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fullScreenViewer, setFullScreenViewer] = useState(false);
   const [uploadStep, setUploadStep] = useState(0);
-  const [showUploadPopup, setShowUploadPopup] = useState(true);
+  const [showUploadPopup, setShowUploadPopup] = useState(false); // Changed to false initially
   
   // Notification state
   const [notification, setNotification] = useState({
@@ -390,13 +382,6 @@ const NewQuoteRequest = () => {
   });
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (selectedFiles.length === 0) {
-      setUploadStep(0);
-      setShowUploadPopup(true);
-    }
-  }, []);
 
   const validateForm = () => {
     let isValid = true;
@@ -445,18 +430,18 @@ const NewQuoteRequest = () => {
       isValid = false;
     } else {
       for (const file of selectedFiles) {
-  if (file.size > 1024 * 1024 * 1024) {
-    newErrors.files = `File ${file.name} exceeds 1GB size limit`;
-    isValid = false;
-    break;
-  }
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (!['stl', 'ply', 'obj'].includes(ext)) {
-    newErrors.files = `File ${file.name} has invalid extension. Allowed: .stl, .ply, .obj`;
-    isValid = false;
-    break;
-  }
-}
+        if (file.size > 1024 * 1024 * 1024) {
+          newErrors.files = `File ${file.name} exceeds 1GB size limit`;
+          isValid = false;
+          break;
+        }
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['stl', 'ply', 'obj'].includes(ext)) {
+          newErrors.files = `File ${file.name} has invalid extension. Allowed: .stl, .ply, .obj`;
+          isValid = false;
+          break;
+        }
+      }
     }
 
     // Info files validation
@@ -682,7 +667,7 @@ const NewQuoteRequest = () => {
       )}
 
       {/* Main Content (shown after upload steps) */}
-      {uploadStep === 2 && (
+      {uploadStep === 2 || selectedFiles.length > 0 ? (
         <>
           <div className="flex justify-end items-center mb-6">
             <CreditHours />
@@ -963,95 +948,423 @@ const NewQuoteRequest = () => {
 
                 {/* Right Column - Files Section */}
                 <div className="space-y-6">
-                  {/* STL Viewer Section */}
-                  <FileViewer 
-                    files={selectedFiles} 
-                    currentIndex={currentFileIndex} 
-                    onNavigate={navigateFile} 
-                    onToggleFullScreen={toggleFullScreen} 
-                    fullScreen={false}
-                  />
-
-                  {/* Files Summary */}
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        Files ({selectedFiles.length})
-                      </h3>
+                  {selectedFiles.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                       <button
-                        type="button"
-                        onClick={() => {
-                          setUploadStep(0);
-                          setShowUploadPopup(true);
-                        }}
-                        className="text-blue-500 hover:text-blue-700 text-sm"
+                        onClick={() => setShowUploadPopup(true)}
+                        className="px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
                       >
-                        Edit Files
+                        <FiUploadCloud className="inline mr-2" />
+                        Upload STL Files
                       </button>
+                      {errors.files && (
+                        <p className="mt-2 text-sm text-red-600">{errors.files}</p>
+                      )}
                     </div>
+                  ) : (
+                    <>
+                      {/* STL Viewer Section */}
+                      <FileViewer 
+                        files={selectedFiles} 
+                        currentIndex={currentFileIndex} 
+                        onNavigate={navigateFile} 
+                        onToggleFullScreen={toggleFullScreen} 
+                        fullScreen={false}
+                      />
 
-                    <div className="max-h-60 overflow-y-auto mb-4">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              File
-                            </th>
-                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Size
-                            </th>
-                            <th scope="col" className="px-3 py-2 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {selectedFiles.map((file, index) => (
-                            <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                              <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 truncate max-w-xs">
-                                {file.name}
-                              </td>
-                              <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                                {Math.round(file.size / 1024 / 1024)} MB
-                              </td>
-                              <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                                <div className="flex justify-end space-x-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setCurrentFile(index)}
-                                    className="text-blue-500 hover:text-blue-700"
-                                  >
-                                    Preview
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeFile(index)}
-                                    className="text-red-500 hover:text-red-700"
-                                  >
-                                    <FiTrash2 />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      {/* Files Summary */}
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            Files ({selectedFiles.length})
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUploadStep(0);
+                              setShowUploadPopup(true);
+                            }}
+                            className="text-blue-500 hover:text-blue-700 text-sm"
+                          >
+                            Edit Files
+                          </button>
+                        </div>
+
+                        <div className="max-h-60 overflow-y-auto mb-4">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  File
+                                </th>
+                                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Size
+                                </th>
+                                <th scope="col" className="px-3 py-2 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Actions
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {selectedFiles.map((file, index) => (
+                                <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 truncate max-w-xs">
+                                    {file.name}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                                    {Math.round(file.size / 1024 / 1024)} MB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                                    <div className="flex justify-end space-x-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setCurrentFile(index)}
+                                        className="text-blue-500 hover:text-blue-700"
+                                      >
+                                        Preview
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeFile(index)}
+                                        className="text-red-500 hover:text-red-700"
+                                      >
+                                        <FiTrash2 />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Submit Button */}
+                  <div className="pt-4">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || selectedFiles.length === 0}
+                      className={`w-full px-6 py-3 bg-blue-600 text-white rounded-md font-medium
+                        ${
+                          isSubmitting || selectedFiles.length === 0
+                            ? "opacity-70 cursor-not-allowed"
+                            : "hover:bg-blue-700"
+                        }`}
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit Quote Request"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <StepsTimeline />
+        </>
+      ) : (
+        <>
+          <div className="flex justify-end items-center mb-6">
+            <CreditHours />
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
+            <h2 className="text-2xl font-semibold text-gray-800">New Quote Request</h2>
+
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column - Project Details */}
+                <div className="space-y-6">
+                  {/* Project Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Project name</label>
+                    <input
+                      type="text"
+                      name="projectName"
+                      value={formData.projectName}
+                      onChange={handleInputChange}
+                      required
+                      className={`mt-1 w-full px-4 py-2 border ${
+                        errors.projectName ? "border-red-500" : "border-gray-300"
+                      } rounded-md focus:ring-blue-400 focus:border-blue-400`}
+                    />
+                    {errors.projectName && (
+                      <p className="mt-1 text-sm text-red-600">{errors.projectName}</p>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      rows={4}
+                      placeholder="Enter project description or special notes..."
+                      className={`mt-1 w-full px-4 py-2 border ${
+                        errors.description ? "border-red-500" : "border-gray-300"
+                      } rounded-md focus:ring-blue-400 focus:border-blue-400`}
+                    />
+                    {errors.description && (
+                      <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                    )}
+                  </div>
+
+                  {/* Technical Info */}
+                  <div>
+                    <span className="block text-sm font-medium text-gray-700 mb-2">
+                      Technical Information
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <label className="inline-flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={technicalInfo.designIntent}
+                          onChange={(e) => {
+                            const newTechInfo = {
+                              ...technicalInfo,
+                              designIntent: e.target.checked,
+                            };
+                            setTechnicalInfo(newTechInfo);
+                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        />
+                        <span className="text-gray-700 text-sm">Design Intent</span>
+                        <InfoIcon infoText="We rebuild the original design by applying dimensions and constraints, ignoring manufacturing errors. This approach is suited for new product development and allows easy edits in CAD software, keeping design history intact." />
+                      </label>
+
+                      <label className="inline-flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={technicalInfo.hybridModelling}
+                          onChange={(e) => {
+                            setTechnicalInfo({
+                              ...technicalInfo,
+                              hybridModelling: e.target.checked,
+                            });
+                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        />
+                        <span className="text-gray-700 text-sm">Hybrid Modelling</span>
+                        <InfoIcon infoText="We use a mix of as-built/design intent for prismatic shapes and NURBS for organic ones. This method suits parts with both freeform and geometric shapes, allowing accurate CAD conversion and flexible editing in reverse engineering tools." />
+                      </label>
+
+                      <label className="inline-flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={technicalInfo.scansToNURBS}
+                          onChange={(e) => {
+                            setTechnicalInfo({
+                              ...technicalInfo,
+                              scansToNURBS: e.target.checked,
+                            });
+                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        />
+                        <span className="text-gray-700 text-sm">Scans to NURBS</span>
+                        <InfoIcon infoText="We turn scan data into smooth, accurate NURBS surfaces, ideal for organic shapes. Edits can only be made in reverse engineering software, and files are exportable in formats like IGES or STEP for further use." />
+                      </label>
+
+                      <label className="inline-flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={technicalInfo.asBuildModelling}
+                          onChange={(e) => {
+                            setTechnicalInfo({
+                              ...technicalInfo,
+                              asBuildModelling: e.target.checked,
+                            });
+                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        />
+                        <span className="text-gray-700 text-sm">As-Build Modelling</span>
+                        <InfoIcon infoText="We create CAD models that exactly match the scanned object, including any manufacturing errors. This method ensures high accuracy and is ideal for replacing existing parts. The final model can be exported for manufacturing or mold development and edited in Geomagic Design X." />
+                      </label>
                     </div>
+                    {errors.technicalInfo && (
+                      <p className="mt-1 text-sm text-red-600">{errors.technicalInfo}</p>
+                    )}
+                  </div>
+
+                  {/* Live Transfer Format */}
+                  <span className="block text-md font-medium text-gray-700 mb-2">
+                    Live.transfer format
+                  </span>
+                  
+                  {/* Deliverables - Only shown when designIntent is selected */}
+                  {technicalInfo.designIntent && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Software Selection */}
+                        <div>
+                          <select
+                            value={selectedSoftware}
+                            onChange={(e) => {
+                              setSelectedSoftware(e.target.value);
+                              setSelectedVersion("");
+                              setDeliverables({
+                                ...deliverables,
+                                liveTransferFormat: "",
+                              });
+                              setErrors((prev) => ({ ...prev, liveTransferFormat: "" }));
+                            }}
+                            className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-400 focus:border-blue-400"
+                          >
+                            {Object.entries(SOFTWARE_OPTIONS).map(([key, { name }]) => (
+                              <option key={key} value={key}>{name}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Version Selection */}
+                        <div>
+                          <select
+                            value={selectedVersion}
+                            onChange={(e) => {
+                              setSelectedVersion(e.target.value);
+                              setDeliverables({
+                                ...deliverables,
+                                liveTransferFormat: `${selectedSoftware}-${e.target.value}`,
+                              });
+                              setErrors((prev) => ({ ...prev, liveTransferFormat: "" }));
+                            }}
+                            disabled={!selectedSoftware}
+                            className={`mt-1 w-full px-4 py-2 border ${
+                              !selectedSoftware ? "border-gray-200" : "border-gray-300"
+                            } rounded-md focus:ring-blue-400 focus:border-blue-400 disabled:opacity-50`}
+                          >
+                            <option value="">Select version</option>
+                            {SOFTWARE_OPTIONS[selectedSoftware]?.versions.map((version) => (
+                              <option key={version} value={version}>{version}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {errors.liveTransferFormat && (
+                        <p className="mt-1 text-sm text-red-600">{errors.liveTransferFormat}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Additional Options */}
+                  <div className="flex flex-wrap gap-4">
+                    <label className="inline-flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={deliverables.cadNeutralFiles}
+                        onChange={(e) =>
+                          setDeliverables({
+                            ...deliverables,
+                            cadNeutralFiles: e.target.checked,
+                          })
+                        }
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      <span className="text-gray-700 text-sm">CAD neutral files</span>
+                      <InfoIcon infoText="Export files in neutral formats like STEP, IGES that can be opened in any CAD software." />
+                    </label>
+                    {(technicalInfo.designIntent || technicalInfo.hybridModelling) && (
+                      <label className="inline-flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={deliverables.caddraftfiles}
+                          onChange={(e) =>
+                            setDeliverables({
+                              ...deliverables,
+                              caddraftfiles: e.target.checked,
+                            })
+                          }
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        />
+                        <span className="text-gray-700 text-sm">2D Drafting (.dwg)</span>
+                        <InfoIcon infoText="Include 2D technical drawings with dimensions and annotations in DWG format." />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Info Files Section */}
+                  <div>
+                    <label className="block mb-3 text-sm font-medium text-gray-700">
+                      Additional Supporting Files (Optional)
+                    </label>
+                    <label
+                      htmlFor="info-files-upload"
+                      className={`flex flex-col items-center justify-center h-32 border-2 border-dashed ${
+                        errors.infoFiles ? "border-red-500" : "border-blue-300"
+                      } rounded-lg cursor-pointer hover:bg-blue-50 transition`}
+                    >
+                      <FiUploadCloud className="text-3xl text-blue-400 mb-2" />
+                      <span className="text-sm text-blue-500">Click to upload supporting files</span>
+                      <span className="text-xs text-gray-500">You can select multiple files</span>
+                      <input
+                        id="info-files-upload"
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={handleInfoFilesChange}
+                      />
+                    </label>
+                    {errors.infoFiles && (
+                      <p className="mt-1 text-sm text-red-600">{errors.infoFiles}</p>
+                    )}
+
+                    {infoFiles.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <h4 className="text-sm font-medium text-gray-700">Selected files:</h4>
+                        <ul className="space-y-2">
+                          {infoFiles.map((file, index) => (
+                            <li
+                              key={index}
+                              className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                            >
+                              <span className="text-sm text-gray-700 truncate max-w-xs">
+                                {file.name} ({Math.round(file.size / 1024 / 1024)} MB)
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeInfoFile(index)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <FiX />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Column - Files Section */}
+                <div className="space-y-6">
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <button
+                      onClick={() => setShowUploadPopup(true)}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
+                    >
+                      <FiUploadCloud className="inline mr-2" />
+                      Upload STL Files
+                    </button>
+                    {errors.files && (
+                      <p className="mt-2 text-sm text-red-600">{errors.files}</p>
+                    )}
                   </div>
 
                   {/* Submit Button */}
                   <div className="pt-4">
                     <button
                       type="submit"
-                      disabled={isSubmitting}
-                      className={`w-full px-6 py-3 bg-blue-600 text-white rounded-md font-medium
-                        ${
-                          isSubmitting
-                            ? "opacity-70 cursor-not-allowed"
-                            : "hover:bg-blue-700"
-                        }`}
+                      disabled={true}
+                      className="w-full px-6 py-3 bg-blue-600 text-white rounded-md font-medium opacity-70 cursor-not-allowed"
                     >
-                      {isSubmitting ? "Submitting..." : "Submit Quote Request"}
+                      Submit Quote Request
                     </button>
                   </div>
                 </div>
