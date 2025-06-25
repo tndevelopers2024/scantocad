@@ -955,7 +955,7 @@ const NewQuoteRequest = () => {
                         className="px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
                       >
                         <FiUploadCloud className="inline mr-2" />
-                        Upload STL Files
+                        Browse files
                       </button>
                       {errors.files && (
                         <p className="mt-2 text-sm text-red-600">{errors.files}</p>

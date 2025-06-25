@@ -620,7 +620,7 @@ export default function QuoteDetail() {
                             disabled={submitting}
                             className="px-4 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
                           >
-                            {submitting ? "Saving..." : "Save All Hours"}
+                            {submitting ? "updating..." : "Update All Hours"}
                           </button>
                         </div>
                       )}
