@@ -27,7 +27,7 @@ const [showPassword, setShowPassword] = useState(false);
         localStorage.setItem('token', response.token);
         localStorage.setItem('userId', response.user.id);
         localStorage.setItem('userRole', response.role);
-        navigate(response.role === 'admin' ? '/admin/dashboard' : '/request-quote');
+        navigate(response.role === 'admin' ? '/admin/dashboard' : '/my-quotations');
       } else {
         setError(response.message || 'Login failed. Please try again.');
       }
