@@ -121,7 +121,7 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
                         download
                         className="text-blue-600 hover:text-blue-800 flex items-center"
                       >
-                        <FiDownload className="mr-1" />
+                        <FiDownload className="mr-1" />Download
                         {completedFileName}
                       </a>
                     ) : selectedFiles[file._id] ? (
