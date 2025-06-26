@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { countries } from 'country-data';
 import {
   FaEdit, FaSave, FaTimes, FaHistory, 
-  FaMoneyBillWave, FaSearch, FaFilter, FaPlus
+  FaMoneyBillWave, FaSearch, FaFilter, FaPlus,
+  FaGlobeAmericas, FaTrash
 } from 'react-icons/fa';
-import { getAllRates, updateRate, createRate } from '../../api';
+import { 
+  getAllRates, 
+  updateRate, 
+  createRate,
+  deleteRate,
+  getCurrentRateByCountry 
+} from '../../api';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const RateConfigPage = ({ user }) => {
@@ -14,8 +22,8 @@ const RateConfigPage = ({ user }) => {
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     ratePerHour: '',
-    currency: 'USD',
-    isActive: false
+    country: 'US',
+    isActive: true
   });
   const [editMode, setEditMode] = useState(false);
   const [createMode, setCreateMode] = useState(false);
@@ -23,12 +31,25 @@ const RateConfigPage = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterActive, setFilterActive] = useState('all');
   const [successMessage, setSuccessMessage] = useState(null);
+  const [currentCountry, setCurrentCountry] = useState('US');
+  const [currentRate, setCurrentRate] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
 
+  // Get all countries with their codes and names
+  const allCountries = Object.values(countries.all)
+    .map(country => ({
+      code: country.alpha2,
+      name: country.name
+    }))
+    .filter(country => country.code)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   useEffect(() => {
     fetchRates();
-  }, [user, navigate]);
+    fetchCurrentRate(currentCountry);
+  }, [user, navigate, currentCountry]);
 
   useEffect(() => {
     filterRates();
@@ -37,27 +58,46 @@ const RateConfigPage = ({ user }) => {
   const fetchRates = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await getAllRates();
-      setAllRates(response.data);
-      setLoading(false);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch rates');
+      }
+      
+      setAllRates(response.data || []);
     } catch (err) {
-      setError(err.message || 'Failed to fetch rates');
+      console.error('Failed to fetch rates:', err);
+      setError(err.message || 'Failed to load rates. Please try again.');
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCurrentRate = async (countryCode) => {
+    try {
+      const response = await getCurrentRateByCountry(countryCode);
+      if (response.success) {
+        setCurrentRate(response.data);
+      } else {
+        setCurrentRate(null);
+      }
+    } catch (err) {
+      console.error('Failed to fetch current rate:', err);
+      setCurrentRate(null);
     }
   };
 
   const filterRates = () => {
     let results = allRates;
     
-    // Apply search filter
     if (searchTerm) {
       results = results.filter(rate => 
         rate.ratePerHour.toString().includes(searchTerm) ||
-        rate.currency.toLowerCase().includes(searchTerm.toLowerCase())
+        getCountryName(rate.country).toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
-    // Apply status filter
     if (filterActive !== 'all') {
       const activeFilter = filterActive === 'active';
       results = results.filter(rate => rate.isActive === activeFilter);
@@ -66,12 +106,17 @@ const RateConfigPage = ({ user }) => {
     setFilteredRates(results);
   };
 
+  const getCountryName = (code) => {
+    const country = allCountries.find(c => c.code === code);
+    return country ? country.name : code;
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: type === 'checkbox' ? checked : value
-    });
+    }));
   };
 
   const handleSearchChange = (e) => {
@@ -82,11 +127,15 @@ const RateConfigPage = ({ user }) => {
     setFilterActive(e.target.value);
   };
 
+  const handleCountryChange = (e) => {
+    setCurrentCountry(e.target.value);
+  };
+
   const handleCreateNew = () => {
     setFormData({
       ratePerHour: '',
-      currency: 'USD',
-      isActive: false
+      country: 'US',
+      isActive: true
     });
     setCreateMode(true);
     setEditMode(false);
@@ -97,7 +146,7 @@ const RateConfigPage = ({ user }) => {
   const handleEdit = (rate) => {
     setFormData({
       ratePerHour: rate.ratePerHour,
-      currency: rate.currency,
+      country: rate.country,
       isActive: rate.isActive
     });
     setEditMode(true);
@@ -107,19 +156,41 @@ const RateConfigPage = ({ user }) => {
   };
 
   const handleCancelEdit = () => {
-    setFormData({ ratePerHour: '', currency: 'USD', isActive: false });
     setEditMode(false);
     setEditingId(null);
   };
 
   const handleCancelCreate = () => {
-    setFormData({ ratePerHour: '', currency: 'USD', isActive: false });
     setCreateMode(false);
   };
 
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this rate?')) {
+      try {
+        setIsSubmitting(true);
+        const response = await deleteRate(id);
+        if (response.success) {
+          await fetchRates();
+          setSuccessMessage('Rate deleted successfully!');
+          setTimeout(() => setSuccessMessage(null), 3000);
+        } else {
+          throw new Error(response.message || 'Failed to delete rate');
+        }
+      } catch (err) {
+        setError(err.message || 'Failed to delete rate');
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
   const validateForm = () => {
-    if (parseFloat(formData.ratePerHour) <= 0) {
+    if (!formData.ratePerHour || parseFloat(formData.ratePerHour) <= 0) {
       setError('Rate must be a positive number');
+      return false;
+    }
+    if (!formData.country) {
+      setError('Country is required');
       return false;
     }
     return true;
@@ -130,23 +201,32 @@ const RateConfigPage = ({ user }) => {
     if (!validateForm()) return;
 
     try {
-      // If setting one rate active, deactivate others
+      setIsSubmitting(true);
+      
+      // If making this rate active, deactivate previous rates for same country
       if (formData.isActive) {
-        const updateInactive = allRates
-          .filter((r) => r._id !== editingId && r.isActive)
-          .map((r) =>
-            updateRate(r._id, { ...r, isActive: false })
-          );
-        await Promise.all(updateInactive);
+        await updateRate(
+          { country: formData.country, _id: { $ne: editingId } },
+          { isActive: false }
+        );
       }
 
-      await updateRate(editingId, formData);
+      const response = await updateRate(editingId, formData);
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to update rate');
+      }
+
       await fetchRates();
+      await fetchCurrentRate(formData.country);
       setSuccessMessage('Rate updated successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
-      handleCancelEdit();
+      setEditMode(false);
+      setEditingId(null);
     } catch (err) {
+      console.error('Failed to update rate:', err);
       setError(err.message || 'Failed to update rate');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -155,27 +235,33 @@ const RateConfigPage = ({ user }) => {
     if (!validateForm()) return;
 
     try {
-      // If setting one rate active, deactivate others
+      setIsSubmitting(true);
+      
+      // For new rates, deactivate any existing active rate for this country
       if (formData.isActive) {
-        const updateInactive = allRates
-          .filter((r) => r.isActive)
-          .map((r) =>
-            updateRate(r._id, { ...r, isActive: false })
-          );
-        await Promise.all(updateInactive);
+        await updateRate(
+          { country: formData.country },
+          { isActive: false }
+        );
       }
 
-      await createRate(formData);
+      const response = await createRate(formData);
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to create rate');
+      }
+
       await fetchRates();
+      await fetchCurrentRate(formData.country);
       setSuccessMessage('Rate created successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
       setCreateMode(false);
     } catch (err) {
+      console.error('Failed to create rate:', err);
       setError(err.message || 'Failed to create rate');
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  const activeRate = allRates.find((rate) => rate.isActive);
 
   if (loading) {
     return (
@@ -224,7 +310,7 @@ const RateConfigPage = ({ user }) => {
             <FaMoneyBillWave className="text-blue-600" />
             <span>Rate Configuration</span>
           </h1>
-          <p className="text-gray-600 mt-2">Manage and configure your billing rates</p>
+          <p className="text-gray-600 mt-2">Manage country-specific rates in USD</p>
         </header>
 
         <AnimatePresence>
@@ -261,7 +347,7 @@ const RateConfigPage = ({ user }) => {
                   <button
                     onClick={handleCreateNew}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-                    disabled={editMode || createMode}
+                    disabled={editMode || createMode || isSubmitting}
                   >
                     <FaPlus /> New Rate
                   </button>
@@ -294,8 +380,8 @@ const RateConfigPage = ({ user }) => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate (USD)</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                         <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -311,10 +397,13 @@ const RateConfigPage = ({ user }) => {
                           className={rate.isActive ? 'bg-blue-50' : 'hover:bg-gray-50'}
                         >
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {rate.ratePerHour}
+                            <div className="flex items-center gap-2">
+                              <FaGlobeAmericas className="text-gray-400" />
+                              {getCountryName(rate.country)}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {rate.currency}
+                            ${rate.ratePerHour.toFixed(2)}/hour
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${rate.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
@@ -325,13 +414,22 @@ const RateConfigPage = ({ user }) => {
                             {new Date(rate.createdAt).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                              onClick={() => handleEdit(rate)}
-                              className="text-blue-600 hover:text-blue-900 mr-3 flex items-center gap-1"
-                              disabled={createMode}
-                            >
-                              <FaEdit className="inline" /> Edit
-                            </button>
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => handleEdit(rate)}
+                                className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
+                                disabled={createMode || isSubmitting}
+                              >
+                                <FaEdit className="inline" /> Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(rate._id)}
+                                className="text-red-600 hover:text-red-900 flex items-center gap-1"
+                                disabled={isSubmitting}
+                              >
+                                <FaTrash className="inline" />
+                              </button>
+                            </div>
                           </td>
                         </motion.tr>
                       ))}
@@ -367,13 +465,33 @@ const RateConfigPage = ({ user }) => {
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Current Active Rate</h2>
-                {activeRate ? (
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-800">Current Active Rate</h2>
+                  <select
+                    value={currentCountry}
+                    onChange={handleCountryChange}
+                    className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={isSubmitting}
+                  >
+                    {allCountries.map(country => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {currentRate ? (
                   <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Country:</span>
+                      <span className="font-medium">
+                        {getCountryName(currentRate.country)}
+                      </span>
+                    </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Rate:</span>
                       <span className="font-medium">
-                        {activeRate.ratePerHour} {activeRate.currency}/hour
+                        ${currentRate.ratePerHour.toFixed(2)}/hour
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -383,15 +501,29 @@ const RateConfigPage = ({ user }) => {
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Created:</span>
+                      <span className="text-gray-600">Effective From:</span>
                       <span className="text-sm text-gray-500">
-                        {new Date(activeRate.createdAt).toLocaleDateString()}
+                        {new Date(currentRate.effectiveFrom).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-4">
-                    <p className="text-gray-500">No active rate configured</p>
+                    <p className="text-gray-500">No active rate configured for {getCountryName(currentCountry)}</p>
+                    <button
+                      onClick={() => {
+                        setFormData({
+                          ratePerHour: '',
+                          country: currentCountry,
+                          isActive: true
+                        });
+                        setCreateMode(true);
+                      }}
+                      className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                      disabled={isSubmitting}
+                    >
+                      Create Rate
+                    </button>
                   </div>
                 )}
               </div>
@@ -424,38 +556,49 @@ const RateConfigPage = ({ user }) => {
                   <form onSubmit={editMode ? handleSubmit : handleCreateSubmit} className="space-y-4">
                     <div>
                       <label htmlFor="ratePerHour" className="block text-sm font-medium text-gray-700 mb-1">
-                        Rate Per Hour
+                        Rate Per Hour (USD)
                       </label>
-                      <input
-                        type="number"
-                        id="ratePerHour"
-                        name="ratePerHour"
-                        value={formData.ratePerHour}
-                        onChange={handleInputChange}
-                        placeholder="0.00"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required
-                        step="0.01"
-                        min="0"
-                      />
+                      <div className="relative rounded-md shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span className="text-gray-500 sm:text-sm">$</span>
+                        </div>
+                        <input
+                          type="number"
+                          id="ratePerHour"
+                          name="ratePerHour"
+                          value={formData.ratePerHour}
+                          onChange={handleInputChange}
+                          placeholder="0.00"
+                          className="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                          step="0.01"
+                          min="0"
+                          disabled={isSubmitting}
+                        />
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                          <span className="text-gray-500 sm:text-sm">/hour</span>
+                        </div>
+                      </div>
                     </div>
                     
                     <div>
-                      <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
-                        Currency
+                      <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                        Country
                       </label>
                       <select
-                        id="currency"
-                        name="currency"
-                        value={formData.currency}
+                        id="country"
+                        name="country"
+                        value={formData.country}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        disabled={editMode || isSubmitting}
+                        required
                       >
-                        <option value="USD">USD ($)</option>
-                        <option value="INR">INR (₹)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="GBP">GBP (£)</option>
-                        <option value="JPY">JPY (¥)</option>
+                        {allCountries.map(country => (
+                          <option key={country.code} value={country.code}>
+                            {country.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     
@@ -467,23 +610,38 @@ const RateConfigPage = ({ user }) => {
                         checked={formData.isActive}
                         onChange={handleInputChange}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        disabled={isSubmitting}
                       />
                       <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
-                        Set as active rate
+                        Set as active rate for this country
                       </label>
                     </div>
                     
                     <div className="flex space-x-3 pt-2">
                       <button
                         type="submit"
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                        disabled={isSubmitting}
                       >
-                        <FaSave /> {editMode ? 'Update' : 'Create'}
+                        {isSubmitting ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            {editMode ? 'Updating...' : 'Creating...'}
+                          </>
+                        ) : (
+                          <>
+                            <FaSave /> {editMode ? 'Update' : 'Create'}
+                          </>
+                        )}
                       </button>
                       <button
                         type="button"
                         onClick={editMode ? handleCancelEdit : handleCancelCreate}
                         className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                        disabled={isSubmitting}
                       >
                         <FaTimes /> Cancel
                       </button>

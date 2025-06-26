@@ -569,60 +569,88 @@ export const updatePoStatus = async (quotationId, poStatus) => {
   }
 };
 
-// Rate Config functions
-export const getCurrentRate = async () => {
-  try {
-    const response = await axios.get(`${BASE_URL}/rateconfig/current`, {
-      headers: {
-         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      }
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to get current rate:', error.response?.data || error.message);
-    throw error;
-  }
-};
-
 export const getAllRates = async () => {
   try {
     const response = await axios.get(`${BASE_URL}/rateconfig`, {
       headers: {
-         'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     });
     return response.data;
   } catch (error) {
-    console.error('Failed to get all rates:', error.response?.data || error.message);
-    throw error;
+    console.error('Failed to get all rates:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch rates'
+    };
   }
 };
 
-export const updateRate = async (id, rateData) => {
+export const getCurrentRateByCountry = async (countryCode) => {
   try {
-    const response = await axios.put(`${BASE_URL}/rateconfig/${id}`, rateData, {
+    const response = await axios.get(`${BASE_URL}/rateconfig/current/${countryCode}`, {
       headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     });
     return response.data;
   } catch (error) {
-    console.error('Failed to update rate:', error.response?.data || error.message);
-    throw error;
+    console.error('Failed to get current rate:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch current rate'
+    };
   }
 };
 
-export const createRate = async (rateData) => {
+export const updateRate = async (id, data) => {
   try {
-    const response = await axios.post(`${BASE_URL}/rateconfig`, rateData, {
+    const response = await axios.put(`${BASE_URL}/rateconfig/${id}`, data, {
       headers: {
-         'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     });
     return response.data;
   } catch (error) {
-    console.error('Failed to create rate:', error.response?.data || error.message);
-    throw error;
+    console.error('Failed to update rate:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to update rate'
+    };
+  }
+};
+
+export const createRate = async (data) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/rateconfig`, data, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create rate:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to create rate'
+    };
+  }
+};
+
+export const deleteRate = async (id) => {
+  try {
+    const response = await axios.delete(`${BASE_URL}/rateconfig/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to delete rate:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to delete rate'
+    };
   }
 };
 

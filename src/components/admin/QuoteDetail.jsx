@@ -84,7 +84,6 @@ export default function QuoteDetail() {
   const { id } = useParams();
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [requiredHour, setRequiredHour] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [notification, setNotification] = useState({
@@ -104,6 +103,7 @@ export default function QuoteDetail() {
   const [editingFileId, setEditingFileId] = useState(null);
   const [tempFileHour, setTempFileHour] = useState("");
   const [activeTab, setActiveTab] = useState("original");
+  const [previewingFileIndex, setPreviewingFileIndex] = useState(null);
 
   const fetchQuote = async () => {
     try {
@@ -175,8 +175,17 @@ export default function QuoteDetail() {
   };
 
   const handleRaiseQuote = async () => {
-    if (!requiredHour) {
-      return showNotification("Total required hours are mandatory", "error");
+    // Calculate total from individual file hours
+    const totalHours = quote.files.reduce(
+      (sum, file) => sum + (fileHours[file._id] || 0),
+      0
+    );
+
+    if (totalHours <= 0) {
+      return showNotification(
+        "Please set hours for at least one file",
+        "error"
+      );
     }
 
     // Prepare files with individual required hours
@@ -198,7 +207,7 @@ export default function QuoteDetail() {
 
     setSubmitting(true);
     try {
-      const res = await raiseQuote(id, requiredHour, filesWithHours);
+      const res = await raiseQuote(id, totalHours, filesWithHours);
       setQuote(res.data);
       showNotification("Quote raised successfully!", "success");
     } catch (err) {
@@ -492,7 +501,7 @@ export default function QuoteDetail() {
                 >
                   Original Files ({quote.files?.length || 0})
                 </button>
-                {quote.completedFiles?.length > 0 && (
+               {(quote.status === "completed" || quote.status === "reported") && (
                   <button
                     onClick={() => setActiveTab("completed")}
                     className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
@@ -501,7 +510,7 @@ export default function QuoteDetail() {
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
-                    Completed Files ({quote.completedFiles.length})
+                    Completed Files ({quote.files?.filter((file) => file.status === "completed").length || 0})
                   </button>
                 )}
                 {quote.infoFiles?.length > 0 && (
@@ -593,6 +602,7 @@ export default function QuoteDetail() {
                                 <button
                                   onClick={() => {
                                     setCurrentFileIndex(index);
+                                    setPreviewingFileIndex(index);
                                   }}
                                   className="text-blue-600 text-sm hover:underline"
                                 >
@@ -612,67 +622,99 @@ export default function QuoteDetail() {
                         ))}
                       </div>
 
-                      {/* Add the Save All Hours button at the bottom */}
-                      {quote.status === "quoted" && (
-                        <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex justify-between items-center">
+                        {quote.status === "quoted" && (
+                          <div className="text-md font-medium text-gray-700">
+                            Total Hours:{" "}
+                            <span className="font-bold text-blue-600">
+                              {quote.files?.reduce(
+                                (sum, file) => sum + (fileHours[file._id] || 0),
+                                0
+                              )}
+                            </span>
+                          </div>
+                        )}
+
+                        {quote.status === "quoted" && (
                           <button
-                            onClick={handleUpdateHours}
+                            onClick={handleRaiseQuote}
                             disabled={submitting}
                             className="px-4 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
                           >
-                            {submitting ? "updating..." : "Update All Hours"}
+                            {submitting ? "updating..." : "Update Quote"}
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* STL Preview Section */}
-                  {quote.files?.some((f) => isSTLFile(f.originalFile)) && (
-                    <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold">
-                          3D Model Preview
-                        </h3>
-                        <div className="flex space-x-2">
-                          {quote.files.length > 1 && (
-                            <>
-                              <button
-                                onClick={() => navigateFile("prev")}
-                                className="p-1 text-gray-500 hover:text-gray-700"
-                                title="Previous file"
-                              >
-                                <FiArrowLeft />
-                              </button>
-                              <button
-                                onClick={() => navigateFile("next")}
-                                className="p-1 text-gray-500 hover:text-gray-700"
-                                title="Next file"
-                              >
-                                <FiArrowRight />
-                              </button>
-                            </>
-                          )}
-                          <button
-                            onClick={() => setShowSTLViewerFullscreen(true)}
-                            className="p-1 text-gray-500 hover:text-gray-700"
-                            title="Fullscreen"
-                          >
-                            <FiMaximize />
-                          </button>
+                  {previewingFileIndex !== null &&
+                    quote.files?.some((f) => isSTLFile(f.originalFile)) && (
+                      <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold">
+                            3D Model Preview
+                          </h3>
+                          <div className="flex space-x-2">
+                            {quote.files.length > 1 && (
+                              <>
+                                <button
+                                  onClick={() => navigateFile("prev")}
+                                  className="p-1 text-gray-500 hover:text-gray-700"
+                                  title="Previous file"
+                                >
+                                  <FiArrowLeft />
+                                </button>
+                                <button
+                                  onClick={() => navigateFile("next")}
+                                  className="p-1 text-gray-500 hover:text-gray-700"
+                                  title="Next file"
+                                >
+                                  <FiArrowRight />
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => setShowSTLViewerFullscreen(true)}
+                              className="p-1 text-gray-500 hover:text-gray-700"
+                              title="Fullscreen"
+                            >
+                              <FiMaximize />
+                            </button>
+                            <button
+                              onClick={() => setPreviewingFileIndex(null)}
+                              className="p-1 text-gray-500 hover:text-gray-700"
+                              title="Close preview"
+                            >
+                              <FiX />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="h-64 w-full bg-gray-100 rounded-lg overflow-hidden">
+                          <STLViewer
+                            file={getAbsoluteUrl(
+                              quote.files[currentFileIndex]?.originalFile
+                            )}
+                            style={{ height: "100%", width: "100%" }}
+                          />
+                        </div>
+                        <div className="mt-2 text-sm text-gray-500 text-center">
+                          File {currentFileIndex + 1} of {quote.files.length}
                         </div>
                       </div>
-                      <div className="h-64 w-full bg-gray-100 rounded-lg overflow-hidden">
-                        <STLViewer
-                          file={getAbsoluteUrl(
-                            quote.files[currentFileIndex]?.originalFile
-                          )}
-                          style={{ height: "100%", width: "100%" }}
-                        />
-                      </div>
-                      <div className="mt-2 text-sm text-gray-500 text-center">
-                        File {currentFileIndex + 1} of {quote.files.length}
-                      </div>
+                    )}
+
+                  {/* Show placeholder when no file is being previewed */}
+                  {previewingFileIndex === null && (
+                    <div
+                      className="bg-white rounded-xl shadow-sm p-6 mt-6 flex flex-col items-center justify-center"
+                      style={{ minHeight: "300px" }}
+                    >
+                      <FiFile className="text-gray-400 text-4xl mb-4" />
+                      <p className="text-gray-500 text-center">
+                        Select a file to preview 3D model
+                      </p>
                     </div>
                   )}
                 </div>
@@ -681,12 +723,22 @@ export default function QuoteDetail() {
               {/* Completed Files Content */}
               {activeTab === "completed" && (
                 <div className="space-y-3">
-                  {quote.completedFiles?.map((file, index) => (
+                  {quote.files?.map((file, index) => (
                     <FileCard
                       key={`completed-${index}`}
                       title={`Completed File ${index + 1}`}
-                      filename={file?.split("/").pop()}
-                      url={getAbsoluteUrl(file)}
+                      filename={file?.name || file?.url?.split("/").pop()}
+                      url={getAbsoluteUrl(file?.completedFile)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Supporting Documents Content */}
+              {activeTab === "supporting" && (
+                <div className="space-y-3">
+                  {quote.infoFiles?.map((file, index) => (
+                    <FileCard
                     />
                   ))}
                 </div>
@@ -716,27 +768,23 @@ export default function QuoteDetail() {
               transition={{ delay: 0.2 }}
               className="bg-blue-50 rounded-lg p-6 mb-6 border border-blue-100"
             >
-              <h3 className="text-lg font-semibold text-blue-800 mb-4">
+              <h3 className="text-xl font-semibold text-blue-800 mb-4">
                 Raise Quote
               </h3>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Total Estimated Hours Required
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    placeholder="Enter total hours"
-                    value={quote.files?.reduce(
-                      (sum, file) => sum + (fileHours[file._id] || 0),
-                      0
-                    )}
-                    onChange={(e) => setRequiredHour(e.target.value)}
-                    className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                {/* Show calculated total hours */}
+                <div className=" p-3 pl-0 rounded-lg ">
+                  <p className="text-lg font-medium text-gray-700">
+                    Total Estimated Hours:{" "}
+                    <span className="font-bold text-blue-800">
+                      {quote.files?.reduce(
+                        (sum, file) => sum + (fileHours[file._id] || 0),
+                        0
+                      )}
+                    </span>
+                  </p>
                 </div>
+
                 <div className="flex items-center">
                   <button
                     onClick={handleRaiseQuote}
@@ -981,6 +1029,9 @@ export default function QuoteDetail() {
             <FileCompletionSection
               files={quote.files}
               quotationId={quote._id}
+              onUploadSuccess={() => {
+                fetchQuote();
+              }}
             />
           )}
 
@@ -1001,8 +1052,7 @@ export default function QuoteDetail() {
             </motion.div>
           )}
 
-
-          {quote.status === "issued" && (
+          {quote.status === "reported" && (
             <>
               <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
                 <h4 className="font-medium text-gray-800">Notes:</h4>
@@ -1059,6 +1109,15 @@ export default function QuoteDetail() {
                   >
                     <FiMinimize />
                   </button>
+                  <button
+                    onClick={() => {
+                      setShowSTLViewerFullscreen(false);
+                      setPreviewingFileIndex(null);
+                    }}
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+                  >
+                    &times;
+                  </button>
                 </div>
               </div>
 
@@ -1107,7 +1166,7 @@ const FileCard = ({
   canPreview = false,
   status,
   uploadedAt,
-  issues,
+  reported,
   notes,
   isCompleted = false,
   originalFileUrl,
@@ -1122,14 +1181,14 @@ const FileCard = ({
             className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
               status === "completed"
                 ? "bg-green-100 text-green-800"
-                : status === "issues"
+                : status === "reported"
                 ? "bg-red-100 text-red-800"
                 : "bg-blue-100 text-blue-800"
             }`}
           >
             {status === "completed"
               ? "Completed"
-              : status === "issues"
+              : status === "reported"
               ? "Issues Reported"
               : status}
           </span>
@@ -1177,10 +1236,10 @@ const FileCard = ({
       </div>
     )}
 
-    {issues && (
+    {reported && (
       <div className="mt-3 bg-red-50 p-3 rounded">
         <h5 className="text-sm font-medium text-red-800">Issues:</h5>
-        <p className="text-sm text-red-700 mt-1">{issues}</p>
+        <p className="text-sm text-red-700 mt-1">{reported}</p>
       </div>
     )}
   </div>
@@ -1193,39 +1252,39 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
   const [notification, setNotification] = useState({
     show: false,
     message: "",
-    type: ""
+    type: "",
   });
 
   const showNotification = (message, type = "success") => {
     setNotification({ show: true, message, type });
     setTimeout(() => {
-      setNotification(prev => ({ ...prev, show: false }));
+      setNotification((prev) => ({ ...prev, show: false }));
     }, 5000);
   };
 
   const handleFileChange = (fileId, file) => {
-    setFilesToReupload(prev => ({
+    setFilesToReupload((prev) => ({
       ...prev,
-      [fileId]: file
+      [fileId]: file,
     }));
   };
 
- const handleReupload = async () => {
+  const handleReupload = async () => {
     if (Object.keys(filesToReupload).length === 0) {
-      alert('Please select at least one file to reupload');
+      alert("Please select at least one file to reupload");
       return;
     }
 
     setUploading(true);
     try {
       await uploadIssuedFiles(quotationId, filesToReupload, {
-        onUploadProgress: (progress) => setProgress(progress)
+        onUploadProgress: (progress) => setProgress(progress),
       });
-      alert('Files reuploaded successfully!');
+      alert("Files reuploaded successfully!");
       window.location.reload(); // Refresh to show updated status
     } catch (error) {
-      console.error('Reupload failed:', error);
-      alert(error.userMessage || 'Failed to reupload files');
+      console.error("Reupload failed:", error);
+      alert(error.userMessage || "Failed to reupload files");
     } finally {
       setUploading(false);
       setProgress(0);
@@ -1234,11 +1293,11 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
 
   const downloadFile = (fileUrl, fileName) => {
     if (!fileUrl) return;
-    
+
     // Create a temporary anchor element
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = getAbsoluteUrl(fileUrl);
-    link.download = fileName || fileUrl.split('/').pop();
+    link.download = fileName || fileUrl.split("/").pop();
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1247,13 +1306,15 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
       <h3 className="text-lg font-semibold mb-4">Issued Files Management</h3>
-      
+
       {notification.show && (
-        <div className={`mb-4 p-3 rounded ${
-          notification.type === "success" 
-            ? "bg-green-100 text-green-800" 
-            : "bg-red-100 text-red-800"
-        }`}>
+        <div
+          className={`mb-4 p-3 rounded ${
+            notification.type === "success"
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
           {notification.message}
         </div>
       )}
@@ -1264,56 +1325,73 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
             <div className="flex justify-between items-start">
               <div>
                 <h4 className="font-medium text-gray-800">
-                  {file.originalFile?.split('/').pop()}
+                  {file.originalFile?.split("/").pop()}
                 </h4>
                 <div className="mt-1 flex items-center">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    file.userReportedStatus === 'ok' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {file.userReportedStatus === 'ok' ? 'No Issues' : 'Issues Reported'}
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      file.userReportedStatus === "ok"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {file.userReportedStatus === "ok"
+                      ? "No Issues"
+                      : "Issues Reported"}
                   </span>
                   <span className="ml-2 text-xs text-gray-500">
                     Estimated Hours: {file.requiredHour || 0}
                   </span>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 {/* Download original file button */}
                 {file.originalFile && (
                   <button
-                    onClick={() => downloadFile(file.originalFile, `original_${file.originalFile.split('/').pop()}`)}
+                    onClick={() =>
+                      downloadFile(
+                        file.originalFile,
+                        `original_${file.originalFile.split("/").pop()}`
+                      )
+                    }
                     className="p-2 text-gray-700 hover:text-blue-600 transition-colors"
                     title="Download Original File"
                   >
                     <FiDownload className="h-4 w-4" />
                   </button>
                 )}
-                
+
                 {/* Download completed file button */}
                 {file.completedFile && (
                   <button
-                    onClick={() => downloadFile(file.completedFile, `completed_${file.completedFile.split('/').pop()}`)}
+                    onClick={() =>
+                      downloadFile(
+                        file.completedFile,
+                        `completed_${file.completedFile.split("/").pop()}`
+                      )
+                    }
                     className="p-2 text-gray-700 hover:text-green-600 transition-colors"
                     title="Download Completed File"
                   >
                     <FiFile className="h-4 w-4" />
                   </button>
                 )}
-                
+
                 {/* File reupload section */}
-                {file.userReportedStatus !== 'ok' && (
+                {file.userReportedStatus !== "ok" && (
                   <div className="flex flex-col items-end">
                     <label className="cursor-pointer bg-blue-50 text-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-100 transition-colors">
                       <input
                         type="file"
                         className="hidden"
-                        onChange={(e) => handleFileChange(file._id, e.target.files[0])}
-                        
+                        onChange={(e) =>
+                          handleFileChange(file._id, e.target.files[0])
+                        }
                       />
-                      {filesToReupload[file._id] ? 'Change File' : 'Select File'}
+                      {filesToReupload[file._id]
+                        ? "Change File"
+                        : "Select File"}
                     </label>
                     {filesToReupload[file._id] && (
                       <span className="text-xs text-gray-500 mt-1">
@@ -1325,10 +1403,12 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
               </div>
             </div>
 
-            {file.issues && (
+            {file.reported && (
               <div className="mt-3 bg-red-50 p-3 rounded">
-                <h5 className="text-sm font-medium text-red-800">Reported Issues:</h5>
-                <p className="text-sm text-red-700 mt-1">{file.issues}</p>
+                <h5 className="text-sm font-medium text-red-800">
+                  Reported Issues:
+                </h5>
+                <p className="text-sm text-red-700 mt-1">{file.reported}</p>
               </div>
             )}
 
@@ -1351,20 +1431,36 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
           >
             {uploading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Uploading {progress}%
               </>
             ) : (
-              'Reupload Selected Files'
+              "Reupload Selected Files"
             )}
           </button>
           {uploading && (
             <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-              <div 
-                className="bg-blue-600 h-2.5 rounded-full" 
+              <div
+                className="bg-blue-600 h-2.5 rounded-full"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>

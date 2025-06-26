@@ -4,7 +4,20 @@ import CreditHours from "./CreditHours";
 import STLViewer from "../../contexts/STLViewer";
 import { useNavigate } from "react-router-dom";
 import Loader from "../../contexts/Loader";
-import { FiUploadCloud, FiFileText, FiCheckCircle,FiTrash2, FiCreditCard, FiDownload, FiUser, FiX, FiArrowRight, FiArrowLeft, FiMaximize, FiMinimize } from "react-icons/fi";
+import {
+  FiUploadCloud,
+  FiFileText,
+  FiCheckCircle,
+  FiTrash2,
+  FiCreditCard,
+  FiDownload,
+  FiUser,
+  FiX,
+  FiArrowRight,
+  FiArrowLeft,
+  FiMaximize,
+  FiMinimize,
+} from "react-icons/fi";
 import Notification from "../../contexts/Notification";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -22,7 +35,24 @@ const SOFTWARE_OPTIONS = {
   "": { name: "Select software", versions: [] },
   solidworks: {
     name: "SolidWorks - .sldprt",
-    versions: ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012", "2011"],
+    versions: [
+      "2026",
+      "2025",
+      "2024",
+      "2023",
+      "2022",
+      "2021",
+      "2020",
+      "2019",
+      "2018",
+      "2017",
+      "2016",
+      "2015",
+      "2014",
+      "2013",
+      "2012",
+      "2011",
+    ],
   },
   creo: {
     name: "Creo- .prt",
@@ -39,7 +69,16 @@ const SOFTWARE_OPTIONS = {
   catia: { name: "CATIA - .catpart", versions: ["V5 ", "HIGHER VERSIONS"] },
 };
 
-const ALLOWED_INFO_FILE_EXTENSIONS = ["xls", "pdf", "ppt", "jpeg", "jpg", "png", "tif", "mp"];
+const ALLOWED_INFO_FILE_EXTENSIONS = [
+  "xls",
+  "pdf",
+  "ppt",
+  "jpeg",
+  "jpg",
+  "png",
+  "tif",
+  "mp",
+];
 
 // Sub-components
 const InfoIcon = ({ infoText }) => {
@@ -64,7 +103,7 @@ const InfoIcon = ({ infoText }) => {
             fillRule="evenodd"
             d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
             clipRule="evenodd"
-        />
+          />
         </svg>
       </button>
 
@@ -77,26 +116,38 @@ const InfoIcon = ({ infoText }) => {
   );
 };
 
-const UploadPopup = ({ 
-  onFileChange, 
-  onContinue, 
-  error, 
-  step, 
-  selectedFiles, 
-  onReviewComplete, 
-  onAddMoreFiles, 
-  currentFileIndex, 
-  onNavigateFile, 
-  onToggleFullScreen, 
-  onRemoveFile 
+const UploadPopup = ({
+  onFileChange,
+  onContinue,
+  error,
+  step,
+  selectedFiles,
+  onReviewComplete,
+  onAddMoreFiles,
+  currentFileIndex,
+  onNavigateFile,
+  onToggleFullScreen,
+  onRemoveFile,
 }) => {
   if (step === 0) {
     return (
-      <div style={{background:'url(/img/banner/upload.png)', backgroundColor:'#fff', backgroundSize:'cover', backgroundRepeat:'no-repeat'}} className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div
+        style={{
+          background: "url(/img/banner/upload.png)",
+          backgroundColor: "#fff",
+          backgroundSize: "cover",
+          backgroundRepeat: "no-repeat",
+        }}
+        className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center p-4 z-50"
+      >
         <div className="bg-white shadow rounded-lg overflow-hidden w-full max-w-md">
           <div className="p-12 text-center">
-            <h3 className="text-3xl font-semibold text-gray-800 mb-4">Upload Files</h3>
-            <p className="text-gray-600 mb-6">Documents uploaded here will be stored in drive</p>
+            <h3 className="text-3xl font-semibold text-gray-800 mb-4">
+              Upload Files
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Documents uploaded here will be stored in drive
+            </p>
 
             <label
               htmlFor="initial-files-upload"
@@ -105,18 +156,24 @@ const UploadPopup = ({
               } rounded-lg cursor-pointer hover:bg-blue-50 transition mb-4`}
             >
               <FiUploadCloud className="text-4xl text-blue-400 mb-3" />
-              <span className="text-lg text-blue-500 font-medium">Click to Upload or drag and drop</span>
-              <span className="text-sm text-gray-500 mt-1">Supported format: .stl .ply .obj</span>
+              <span className="text-lg text-blue-500 font-medium">
+                Click to Upload or drag and drop
+              </span>
+              <span className="text-sm text-gray-500 mt-1">
+                Supported format: .stl .ply .obj
+              </span>
               <input
                 id="initial-files-upload"
                 type="file"
                 multiple
-                accept=".stl,.ply,.obj" 
+                accept=".stl,.ply,.obj"
                 className="hidden"
                 onChange={onFileChange}
               />
             </label>
-            {error && <p className="mt-1 text-sm text-red-600 text-center">{error}</p>}
+            {error && (
+              <p className="mt-1 text-sm text-red-600 text-center">{error}</p>
+            )}
 
             <div className="flex justify-end mt-6">
               <button
@@ -139,19 +196,35 @@ const UploadPopup = ({
 
   if (step === 1) {
     return (
-      <div 
-      style={{background:'url(/img/banner/upload.png)', backgroundColor:'#fff', backgroundSize:'cover', backgroundRepeat:'no-repeat'}}
-      className="fixed inset-0 bg-white p-50 bg-opacity-50 flex gap-8 items-center justify-center z-50">
+      <div
+        style={{
+          background: "url(/img/banner/upload.png)",
+          backgroundColor: "#fff",
+          backgroundSize: "cover",
+          backgroundRepeat: "no-repeat",
+        }}
+        className="fixed inset-0 bg-white p-50 bg-opacity-50 flex gap-8 items-center justify-center z-50"
+      >
         <div className="bg-white shadow rounded-lg overflow-hidden w-[50%]">
           <div className="p-8">
             <div className="flex mb-6 justify-center">
-              <button
-                onClick={onAddMoreFiles}
-                className="px-6 py-2 text-center grid place-items-center gap-3 border-dashed border-2 bg-[#F5EFFD] border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50"
+              <label
+                htmlFor="initial-files-upload"
+                className="cursor-pointer px-6 py-2 text-center grid place-items-center gap-3 border-dashed border-2 bg-[#F5EFFD] border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50"
               >
-                <img src="/img/icon/upload.png" alt="" /> Add More Files
-              </button>
+                <img className="w-8" src="/img/icon/upload.png" alt="" />
+                Add More Files
+                <input
+                  id="initial-files-upload"
+                  type="file"
+                  multiple
+                  accept=".stl,.ply,.obj"
+                  className="hidden"
+                  onChange={onFileChange}
+                />
+              </label>
             </div>
+
             <p className="text-md inline border-b-[1px] font-medium text-gray-700">
               {selectedFiles.length} Files
             </p>
@@ -159,16 +232,25 @@ const UploadPopup = ({
               <ul className="w-full space-y-3">
                 {selectedFiles.map((file, index) => (
                   <li
-                    key={index}
+                    key={file.name + index} // Better key using file name
                     onClick={() => onNavigateFile(index)}
                     className={`p-3 rounded-lg cursor-pointer 
-                      ${currentFileIndex === index ? 'border-2 border-[#5D01F2] bg-[#F3F3F3]' : 'bg-[#fff]'} 
-                      hover:bg-gray-100`}
+                    ${
+                      currentFileIndex === index
+                        ? "border-2 border-[#5D01F2] bg-[#F3F3F3]"
+                        : "bg-[#fff]"
+                    } 
+                    hover:bg-gray-100`}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>
-                        <p className="text-xs text-gray-500">{Math.round(file.size / 1024 / 1024)} MB</p>
+                        <p className="text-sm font-medium text-gray-700 truncate">
+                          {index + 1}. {file.name}{" "}
+                          {/* Show number before filename */}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {Math.round(file.size / 1024 / 1024)} MB
+                        </p>
                       </div>
                       <div className="flex space-x-2">
                         <button
@@ -200,16 +282,22 @@ const UploadPopup = ({
           </div>
         </div>
         <div className="w-[50%] h-full inline-grid gap-5 place-items-end">
-          <FileViewer 
-            files={selectedFiles} 
-            currentIndex={currentFileIndex} 
-            onNavigate={onNavigateFile} 
-            onToggleFullScreen={onToggleFullScreen} 
+          <FileViewer
+            files={selectedFiles}
+            currentIndex={currentFileIndex}
+            onNavigate={onNavigateFile}
+            onToggleFullScreen={onToggleFullScreen}
             fullScreen={false}
           />
           <button
             onClick={onReviewComplete}
-            className="px-6 py-2 rounded-md font-medium bg-blue-600 text-white hover:bg-blue-700"
+            disabled={selectedFiles.length === 0} // Disable if no files
+            className={`px-6 py-2 rounded-md font-medium text-white hover:bg-blue-700
+            ${
+              selectedFiles.length === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600"
+            }`}
           >
             Continue to Form <FiArrowRight className="inline ml-1" />
           </button>
@@ -221,24 +309,49 @@ const UploadPopup = ({
   return null;
 };
 
-const FileViewer = ({ files, currentIndex, onNavigate, onToggleFullScreen, fullScreen }) => {
+// Update the FileViewer component
+const FileViewer = ({
+  files,
+  currentIndex,
+  onNavigate,
+  onToggleFullScreen,
+  fullScreen,
+}) => {
   if (files.length === 0) return null;
 
+  const handleNavigation = (direction, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onNavigate(direction);
+  };
+
+  const handleFullScreenToggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleFullScreen();
+  };
+
   return (
-    <div className={`border ${fullScreen ? 'w-full' : 'w-full bg-white'} border-gray-200 rounded-lg p-4`}>
+    <div
+      className={`border ${
+        fullScreen ? "w-full" : "w-full bg-white"
+      } border-gray-200 rounded-lg p-4`}
+    >
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-800">Model View</h3>
         <div className="flex space-x-2">
           {files.length > 1 && (
             <>
               <button
-                onClick={() => onNavigate("prev")}
+                type="button" // Important: Add type="button"
+                onClick={(e) => handleNavigation("prev", e)}
                 className="p-1 text-gray-600 hover:text-gray-800"
               >
                 <FiArrowLeft />
               </button>
               <button
-                onClick={() => onNavigate("next")}
+                type="button" // Important: Add type="button"
+                onClick={(e) => handleNavigation("next", e)}
                 className="p-1 text-gray-600 hover:text-gray-800"
               >
                 <FiArrowRight />
@@ -246,14 +359,19 @@ const FileViewer = ({ files, currentIndex, onNavigate, onToggleFullScreen, fullS
             </>
           )}
           <button
-            onClick={onToggleFullScreen}
+            type="button" // Important: Add type="button"
+            onClick={handleFullScreenToggle}
             className="p-1 text-gray-600 hover:text-gray-800"
           >
             {fullScreen ? <FiMinimize /> : <FiMaximize />}
           </button>
         </div>
       </div>
-      <div className={`${fullScreen ? 'h-[80vh]' : 'h-64'} bg-gray-100 rounded overflow-hidden border border-gray-300`}>
+      <div
+        className={`${
+          fullScreen ? "h-[80vh]" : "h-64"
+        } bg-gray-100 rounded overflow-hidden border border-gray-300`}
+      >
         <STLViewer file={files[currentIndex]} />
       </div>
       <div className="mt-2 text-sm text-gray-700 truncate">
@@ -263,8 +381,27 @@ const FileViewer = ({ files, currentIndex, onNavigate, onToggleFullScreen, fullS
   );
 };
 
-const FullScreenViewer = ({ files, currentIndex, onNavigate, onClose, onRemoveFile }) => {
+// Update the FullScreenViewer component
+const FullScreenViewer = ({
+  files,
+  currentIndex,
+  onNavigate,
+  onClose,
+  onRemoveFile,
+}) => {
   if (!files.length) return null;
+
+  const handleNavigation = (direction, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onNavigate(direction);
+  };
+
+  const handleClose = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center p-4 z-50">
@@ -277,13 +414,15 @@ const FullScreenViewer = ({ files, currentIndex, onNavigate, onClose, onRemoveFi
             {files.length > 1 && (
               <div className="flex space-x-2">
                 <button
-                  onClick={() => onNavigate("prev")}
+                  type="button" // Important: Add type="button"
+                  onClick={(e) => handleNavigation("prev", e)}
                   className="p-2 bg-gray-700 rounded hover:bg-gray-600"
                 >
                   <FiArrowLeft />
                 </button>
                 <button
-                  onClick={() => onNavigate("next")}
+                  type="button" // Important: Add type="button"
+                  onClick={(e) => handleNavigation("next", e)}
                   className="p-2 bg-gray-700 rounded hover:bg-gray-600"
                 >
                   <FiArrowRight />
@@ -291,7 +430,8 @@ const FullScreenViewer = ({ files, currentIndex, onNavigate, onClose, onRemoveFi
               </div>
             )}
             <button
-              onClick={onClose}
+              type="button" // Important: Add type="button"
+              onClick={handleClose}
               className="p-2 bg-gray-700 rounded hover:bg-gray-600"
             >
               <FiMinimize />
@@ -305,18 +445,25 @@ const FullScreenViewer = ({ files, currentIndex, onNavigate, onClose, onRemoveFi
     </div>
   );
 };
-
 const StepsTimeline = () => (
   <div className="bg-white rounded-2xl shadow-lg p-6">
-    <h3 className="text-xl font-semibold text-gray-800 mb-6">Steps to Receive Your CAD File</h3>
+    <h3 className="text-xl font-semibold text-gray-800 mb-6">
+      Steps to Receive Your CAD File
+    </h3>
     <div className="relative">
-      <div className="absolute inset-0 top-[-20px] flex items-center" aria-hidden="true">
+      <div
+        className="absolute inset-0 top-[-20px] flex items-center"
+        aria-hidden="true"
+      >
         <div className="w-full border-t-2 border-dashed border-blue-200" />
       </div>
 
       <div className="relative flex justify-between space-x-4">
         {STEPS.map(({ label, icon }, idx) => (
-          <div key={idx} className="flex time-lines flex-col items-center text-sm text-gray-700">
+          <div
+            key={idx}
+            className="flex time-lines flex-col items-center text-sm text-gray-700"
+          >
             <div className="bg-white p-3 first-line rounded-full shadow-md text-blue-600 text-xl">
               {icon}
             </div>
@@ -328,6 +475,25 @@ const StepsTimeline = () => (
   </div>
 );
 
+const ProgressLoader = ({ progress, message }) => {
+  return (
+    <div className="fixed inset-0 bg-white/80 bg-opacity-30 m-0 flex flex-col items-center justify-center z-50">
+      <div className="flex flex-col items-center justify-center">
+        {/* Spinner */}
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+      </div>
+
+      {/* Progress percentage */}
+      <div className="text-center text-sm text-gray-500">
+        {progress}% complete
+      </div>
+      <p className="mt-4 w-[500px] text-center text-blue-800 text-2xl font-semibold">
+        {message}
+      </p>
+    </div>
+  );
+};
+
 const NewQuoteRequest = () => {
   // Form state
   const [formData, setFormData] = useState({
@@ -336,41 +502,45 @@ const NewQuoteRequest = () => {
     resolution: "",
     deadline: "",
   });
-  
+
   const [technicalInfo, setTechnicalInfo] = useState({
     designIntent: false,
     hybridModelling: false,
     scansToNURBS: false,
     asBuildModelling: false,
   });
-  
+
   const [deliverables, setDeliverables] = useState({
     liveTransferFormat: "",
     cadNeutralFiles: false,
-    caddrftiles: false,
+    caddraftfiles: false,
   });
-  
+
   const [selectedSoftware, setSelectedSoftware] = useState("");
   const [selectedVersion, setSelectedVersion] = useState("");
-  
+
   // File state
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [infoFiles, setInfoFiles] = useState([]);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
-  
+
+  const onNavigateFile = (index) => {
+    setCurrentFileIndex(index);
+  };
+
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fullScreenViewer, setFullScreenViewer] = useState(false);
   const [uploadStep, setUploadStep] = useState(0);
   const [showUploadPopup, setShowUploadPopup] = useState(false); // Changed to false initially
-  
+  const [progress, setProgress] = useState(0);
   // Notification state
   const [notification, setNotification] = useState({
     show: false,
     type: "success",
     message: "",
   });
-  
+
   // Error state
   const [errors, setErrors] = useState({
     projectName: "",
@@ -414,19 +584,21 @@ const NewQuoteRequest = () => {
 
     // Technical info validation
     if (!Object.values(technicalInfo).some((val) => val)) {
-      newErrors.technicalInfo = "At least one technical information option must be selected";
+      newErrors.technicalInfo =
+        "At least one technical information option must be selected";
       isValid = false;
     }
 
     // Design intent validation
     if (technicalInfo.designIntent && (!selectedSoftware || !selectedVersion)) {
-      newErrors.liveTransferFormat = "Both software and version must be selected";
+      newErrors.liveTransferFormat =
+        "Both software and version must be selected";
       isValid = false;
     }
 
     // Files validation
     if (selectedFiles.length === 0) {
-      newErrors.files = "At least one STL file is required";
+      newErrors.files = "At least one file is required";
       isValid = false;
     } else {
       for (const file of selectedFiles) {
@@ -435,8 +607,8 @@ const NewQuoteRequest = () => {
           isValid = false;
           break;
         }
-        const ext = file.name.split('.').pop().toLowerCase();
-        if (!['stl', 'ply', 'obj'].includes(ext)) {
+        const ext = file.name.split(".").pop().toLowerCase();
+        if (!["stl", "ply", "obj"].includes(ext)) {
           newErrors.files = `File ${file.name} has invalid extension. Allowed: .stl, .ply, .obj`;
           isValid = false;
           break;
@@ -452,7 +624,9 @@ const NewQuoteRequest = () => {
         if (!ALLOWED_INFO_FILE_EXTENSIONS.includes(ext)) {
           newErrors.infoFiles = `File ${
             file.name
-          } has invalid extension. Allowed: ${ALLOWED_INFO_FILE_EXTENSIONS.join(", ")}`;
+          } has invalid extension. Allowed: ${ALLOWED_INFO_FILE_EXTENSIONS.join(
+            ", "
+          )}`;
           isValid = false;
           break;
         }
@@ -471,8 +645,8 @@ const NewQuoteRequest = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: "" }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleFileChange = (e) => {
@@ -531,7 +705,7 @@ const NewQuoteRequest = () => {
     });
 
     setTimeout(() => {
-      setNotification(prev => ({ ...prev, show: false }));
+      setNotification((prev) => ({ ...prev, show: false }));
     }, 5000);
   };
 
@@ -544,12 +718,20 @@ const NewQuoteRequest = () => {
     }
 
     setIsSubmitting(true);
+    let progress = 0;
+
+    // Update progress every 500ms to simulate progress
+    const progressInterval = setInterval(() => {
+      progress = Math.min(progress + 5, 90); // Stop at 90% to wait for actual submission
+      setProgress(progress);
+    }, 500);
 
     const formDataToSend = new FormData();
     formDataToSend.append("projectName", formData.projectName);
     formDataToSend.append("description", formData.description);
 
-    if (formData.resolution) formDataToSend.append("resolution", formData.resolution);
+    if (formData.resolution)
+      formDataToSend.append("resolution", formData.resolution);
     if (formData.deadline) formDataToSend.append("deadline", formData.deadline);
 
     const technicalInfoString = Object.entries(technicalInfo)
@@ -557,12 +739,14 @@ const NewQuoteRequest = () => {
       .map(([key]) => key)
       .join(", ");
 
+    // Create deliverables string
     let deliverablesString = "";
     if (technicalInfo.designIntent) {
-      deliverablesString = `Live Transfer: ${selectedSoftware} ${selectedVersion}, CAD Neutral Files: ${
-        deliverables.cadNeutralFiles ? "Yes" : "No"
-      }`;
+      deliverablesString = `Live Transfer: ${selectedSoftware} ${selectedVersion}, `;
     }
+    deliverablesString += `CAD Neutral Files: ${
+      deliverables.cadNeutralFiles ? "Yes" : "No"
+    }, 2D Drafting: ${deliverables.caddraftfiles ? "Yes" : "No"}`;
 
     formDataToSend.append("technicalInfo", technicalInfoString);
     formDataToSend.append("deliverables", deliverablesString);
@@ -577,15 +761,23 @@ const NewQuoteRequest = () => {
 
     try {
       await requestQuote(formDataToSend);
-      showTempNotification("Quote request submitted successfully!");
 
+      // Complete the progress bar
+      setProgress(100);
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait a bit for user to see 100%
+
+      showTempNotification("Quote request submitted successfully!");
       setTimeout(() => {
         navigate("/my-quotations");
       }, 4000);
     } catch (err) {
       console.error(err);
-      showTempNotification("Failed to submit quote request. Please try again.", "error");
+      showTempNotification(
+        "Failed to submit quote request. Please try again.",
+        "error"
+      );
     } finally {
+      clearInterval(progressInterval);
       setIsSubmitting(false);
     }
   };
@@ -639,16 +831,20 @@ const NewQuoteRequest = () => {
           <Notification
             message={notification.message}
             type={notification.type}
-            onClose={() => setNotification(prev => ({ ...prev, show: false }))}
+            onClose={() =>
+              setNotification((prev) => ({ ...prev, show: false }))
+            }
           />
         )}
       </AnimatePresence>
 
       {/* Show loader when submitting */}
       {isSubmitting && (
-        <Loader message="This may take a while up to 3-5 mins. Please do not navigate or close this window." />
+        <ProgressLoader
+          progress={progress}
+          message="This may take a while up to 3-5 mins. Please do not navigate or close this window."
+        />
       )}
-
       {/* Upload Popup */}
       {showUploadPopup && (
         <UploadPopup
@@ -674,7 +870,9 @@ const NewQuoteRequest = () => {
           </div>
 
           <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
-            <h2 className="text-2xl font-semibold text-gray-800">New Quote Request</h2>
+            <h2 className="text-2xl font-semibold text-gray-800">
+              New Quote Request
+            </h2>
 
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -682,7 +880,9 @@ const NewQuoteRequest = () => {
                 <div className="space-y-6">
                   {/* Project Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Project name</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Project name
+                    </label>
                     <input
                       type="text"
                       name="projectName"
@@ -690,17 +890,23 @@ const NewQuoteRequest = () => {
                       onChange={handleInputChange}
                       required
                       className={`mt-1 w-full px-4 py-2 border ${
-                        errors.projectName ? "border-red-500" : "border-gray-300"
+                        errors.projectName
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md focus:ring-blue-400 focus:border-blue-400`}
                     />
                     {errors.projectName && (
-                      <p className="mt-1 text-sm text-red-600">{errors.projectName}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.projectName}
+                      </p>
                     )}
                   </div>
 
                   {/* Description */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Description
+                    </label>
                     <textarea
                       name="description"
                       value={formData.description}
@@ -708,11 +914,15 @@ const NewQuoteRequest = () => {
                       rows={4}
                       placeholder="Enter project description or special notes..."
                       className={`mt-1 w-full px-4 py-2 border ${
-                        errors.description ? "border-red-500" : "border-gray-300"
+                        errors.description
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md focus:ring-blue-400 focus:border-blue-400`}
                     />
                     {errors.description && (
-                      <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.description}
+                      </p>
                     )}
                   </div>
 
@@ -732,11 +942,16 @@ const NewQuoteRequest = () => {
                               designIntent: e.target.checked,
                             };
                             setTechnicalInfo(newTechInfo);
-                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                            setErrors((prev) => ({
+                              ...prev,
+                              technicalInfo: "",
+                            }));
                           }}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 text-sm">Design Intent</span>
+                        <span className="text-gray-700 text-sm">
+                          Design Intent
+                        </span>
                         <InfoIcon infoText="We rebuild the original design by applying dimensions and constraints, ignoring manufacturing errors. This approach is suited for new product development and allows easy edits in CAD software, keeping design history intact." />
                       </label>
 
@@ -749,11 +964,16 @@ const NewQuoteRequest = () => {
                               ...technicalInfo,
                               hybridModelling: e.target.checked,
                             });
-                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                            setErrors((prev) => ({
+                              ...prev,
+                              technicalInfo: "",
+                            }));
                           }}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 text-sm">Hybrid Modelling</span>
+                        <span className="text-gray-700 text-sm">
+                          Hybrid Modelling
+                        </span>
                         <InfoIcon infoText="We use a mix of as-built/design intent for prismatic shapes and NURBS for organic ones. This method suits parts with both freeform and geometric shapes, allowing accurate CAD conversion and flexible editing in reverse engineering tools." />
                       </label>
 
@@ -766,11 +986,16 @@ const NewQuoteRequest = () => {
                               ...technicalInfo,
                               scansToNURBS: e.target.checked,
                             });
-                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                            setErrors((prev) => ({
+                              ...prev,
+                              technicalInfo: "",
+                            }));
                           }}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 text-sm">Scans to NURBS</span>
+                        <span className="text-gray-700 text-sm">
+                          Scans to NURBS
+                        </span>
                         <InfoIcon infoText="We turn scan data into smooth, accurate NURBS surfaces, ideal for organic shapes. Edits can only be made in reverse engineering software, and files are exportable in formats like IGES or STEP for further use." />
                       </label>
 
@@ -783,16 +1008,23 @@ const NewQuoteRequest = () => {
                               ...technicalInfo,
                               asBuildModelling: e.target.checked,
                             });
-                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                            setErrors((prev) => ({
+                              ...prev,
+                              technicalInfo: "",
+                            }));
                           }}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 text-sm">As-Build Modelling</span>
+                        <span className="text-gray-700 text-sm">
+                          As-Build Modelling
+                        </span>
                         <InfoIcon infoText="We create CAD models that exactly match the scanned object, including any manufacturing errors. This method ensures high accuracy and is ideal for replacing existing parts. The final model can be exported for manufacturing or mold development and edited in Geomagic Design X." />
                       </label>
                     </div>
                     {errors.technicalInfo && (
-                      <p className="mt-1 text-sm text-red-600">{errors.technicalInfo}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.technicalInfo}
+                      </p>
                     )}
                   </div>
 
@@ -800,13 +1032,16 @@ const NewQuoteRequest = () => {
                   <span className="block text-md font-medium text-gray-700 mb-2">
                     Live.transfer format
                   </span>
-                  
+
                   {/* Deliverables - Only shown when designIntent is selected */}
                   {technicalInfo.designIntent && (
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Software Selection */}
-                        <div>
+                        <div className="relative">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Software
+                          </label>
                           <select
                             value={selectedSoftware}
                             onChange={(e) => {
@@ -814,20 +1049,45 @@ const NewQuoteRequest = () => {
                               setSelectedVersion("");
                               setDeliverables({
                                 ...deliverables,
-                                liveTransferFormat: "",
+                                liveTransferFormat: `${e.target.value}`,
                               });
-                              setErrors((prev) => ({ ...prev, liveTransferFormat: "" }));
+                              setErrors((prev) => ({
+                                ...prev,
+                                liveTransferFormat: "",
+                              }));
                             }}
-                            className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-400 focus:border-blue-400"
+                            className="w-full appearance-none bg-white border border-gray-300 text-gray-800 px-4 py-2 pr-10 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2990F1] focus:border-[#2990F1]"
                           >
-                            {Object.entries(SOFTWARE_OPTIONS).map(([key, { name }]) => (
-                              <option key={key} value={key}>{name}</option>
-                            ))}
+                            {Object.entries(SOFTWARE_OPTIONS).map(
+                              ([key, { name }]) => (
+                                <option key={key} value={key}>
+                                  {name}
+                                </option>
+                              )
+                            )}
                           </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-3 top-5 flex items-center text-gray-400">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
                         </div>
 
                         {/* Version Selection */}
-                        <div>
+                        <div className="relative">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Version
+                          </label>
                           <select
                             value={selectedVersion}
                             onChange={(e) => {
@@ -836,23 +1096,49 @@ const NewQuoteRequest = () => {
                                 ...deliverables,
                                 liveTransferFormat: `${selectedSoftware}-${e.target.value}`,
                               });
-                              setErrors((prev) => ({ ...prev, liveTransferFormat: "" }));
+                              setErrors((prev) => ({
+                                ...prev,
+                                liveTransferFormat: "",
+                              }));
                             }}
                             disabled={!selectedSoftware}
-                            className={`mt-1 w-full px-4 py-2 border ${
-                              !selectedSoftware ? "border-gray-200" : "border-gray-300"
-                            } rounded-md focus:ring-blue-400 focus:border-blue-400 disabled:opacity-50`}
+                            className={`w-full appearance-none bg-white px-4 py-2 pr-10 text-gray-800 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2990F1] focus:border-[#2990F1] ${
+                              !selectedSoftware
+                                ? "border-gray-200 opacity-50 cursor-not-allowed"
+                                : "border-gray-300"
+                            }`}
                           >
                             <option value="">Select version</option>
-                            {SOFTWARE_OPTIONS[selectedSoftware]?.versions.map((version) => (
-                              <option key={version} value={version}>{version}</option>
-                            ))}
+                            {SOFTWARE_OPTIONS[selectedSoftware]?.versions.map(
+                              (version) => (
+                                <option key={version} value={version}>
+                                  {version}
+                                </option>
+                              )
+                            )}
                           </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-3 top-5 flex items-center text-gray-400">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
                         </div>
                       </div>
 
                       {errors.liveTransferFormat && (
-                        <p className="mt-1 text-sm text-red-600">{errors.liveTransferFormat}</p>
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors.liveTransferFormat}
+                        </p>
                       )}
                     </div>
                   )}
@@ -871,10 +1157,13 @@ const NewQuoteRequest = () => {
                         }
                         className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                       />
-                      <span className="text-gray-700 text-sm">CAD neutral files</span>
+                      <span className="text-gray-700 text-sm">
+                        CAD neutral files
+                      </span>
                       <InfoIcon infoText="Export files in neutral formats like STEP, IGES that can be opened in any CAD software." />
                     </label>
-                    {(technicalInfo.designIntent || technicalInfo.hybridModelling) && (
+                    {(technicalInfo.designIntent ||
+                      technicalInfo.hybridModelling) && (
                       <label className="inline-flex items-center space-x-2">
                         <input
                           type="checkbox"
@@ -887,7 +1176,9 @@ const NewQuoteRequest = () => {
                           }
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 text-sm">2D Drafting (.dwg)</span>
+                        <span className="text-gray-700 text-sm">
+                          2D Drafting (.dwg)
+                        </span>
                         <InfoIcon infoText="Include 2D technical drawings with dimensions and annotations in DWG format." />
                       </label>
                     )}
@@ -905,8 +1196,12 @@ const NewQuoteRequest = () => {
                       } rounded-lg cursor-pointer hover:bg-blue-50 transition`}
                     >
                       <FiUploadCloud className="text-3xl text-blue-400 mb-2" />
-                      <span className="text-sm text-blue-500">Click to upload supporting files</span>
-                      <span className="text-xs text-gray-500">You can select multiple files</span>
+                      <span className="text-sm text-blue-500">
+                        Click to upload supporting files
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        You can select multiple files
+                      </span>
                       <input
                         id="info-files-upload"
                         type="file"
@@ -916,12 +1211,16 @@ const NewQuoteRequest = () => {
                       />
                     </label>
                     {errors.infoFiles && (
-                      <p className="mt-1 text-sm text-red-600">{errors.infoFiles}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.infoFiles}
+                      </p>
                     )}
 
                     {infoFiles.length > 0 && (
                       <div className="mt-4 space-y-2">
-                        <h4 className="text-sm font-medium text-gray-700">Selected files:</h4>
+                        <h4 className="text-sm font-medium text-gray-700">
+                          Selected files:
+                        </h4>
                         <ul className="space-y-2">
                           {infoFiles.map((file, index) => (
                             <li
@@ -929,7 +1228,8 @@ const NewQuoteRequest = () => {
                               className="flex items-center justify-between bg-gray-50 p-2 rounded"
                             >
                               <span className="text-sm text-gray-700 truncate max-w-xs">
-                                {file.name} ({Math.round(file.size / 1024 / 1024)} MB)
+                                {file.name} (
+                                {Math.round(file.size / 1024 / 1024)} MB)
                               </span>
                               <button
                                 type="button"
@@ -958,17 +1258,19 @@ const NewQuoteRequest = () => {
                         Browse files
                       </button>
                       {errors.files && (
-                        <p className="mt-2 text-sm text-red-600">{errors.files}</p>
+                        <p className="mt-2 text-sm text-red-600">
+                          {errors.files}
+                        </p>
                       )}
                     </div>
                   ) : (
                     <>
                       {/* STL Viewer Section */}
-                      <FileViewer 
-                        files={selectedFiles} 
-                        currentIndex={currentFileIndex} 
-                        onNavigate={navigateFile} 
-                        onToggleFullScreen={toggleFullScreen} 
+                      <FileViewer
+                        files={selectedFiles}
+                        currentIndex={currentFileIndex}
+                        onNavigate={navigateFile}
+                        onToggleFullScreen={toggleFullScreen}
                         fullScreen={false}
                       />
 
@@ -986,7 +1288,7 @@ const NewQuoteRequest = () => {
                             }}
                             className="text-blue-500 hover:text-blue-700 text-sm"
                           >
-                            Edit Files
+                            Add Files
                           </button>
                         </div>
 
@@ -994,20 +1296,34 @@ const NewQuoteRequest = () => {
                           <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                               <tr>
-                                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th
+                                  scope="col"
+                                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
                                   File
                                 </th>
-                                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th
+                                  scope="col"
+                                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
                                   Size
                                 </th>
-                                <th scope="col" className="px-3 py-2 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th
+                                  scope="col"
+                                  className="px-3 py-2 text-end text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
                                   Actions
                                 </th>
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                               {selectedFiles.map((file, index) => (
-                                <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                                <tr
+                                  key={index}
+                                  className={
+                                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                  }
+                                >
                                   <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 truncate max-w-xs">
                                     {file.name}
                                   </td>
@@ -1070,7 +1386,9 @@ const NewQuoteRequest = () => {
           </div>
 
           <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
-            <h2 className="text-2xl font-semibold text-gray-800">New Quote Request</h2>
+            <h2 className="text-2xl font-semibold text-gray-800">
+              New Quote Request
+            </h2>
 
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1078,7 +1396,9 @@ const NewQuoteRequest = () => {
                 <div className="space-y-6">
                   {/* Project Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Project name</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Project name
+                    </label>
                     <input
                       type="text"
                       name="projectName"
@@ -1086,17 +1406,23 @@ const NewQuoteRequest = () => {
                       onChange={handleInputChange}
                       required
                       className={`mt-1 w-full px-4 py-2 border ${
-                        errors.projectName ? "border-red-500" : "border-gray-300"
+                        errors.projectName
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md focus:ring-blue-400 focus:border-blue-400`}
                     />
                     {errors.projectName && (
-                      <p className="mt-1 text-sm text-red-600">{errors.projectName}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.projectName}
+                      </p>
                     )}
                   </div>
 
                   {/* Description */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Description
+                    </label>
                     <textarea
                       name="description"
                       value={formData.description}
@@ -1104,11 +1430,15 @@ const NewQuoteRequest = () => {
                       rows={4}
                       placeholder="Enter project description or special notes..."
                       className={`mt-1 w-full px-4 py-2 border ${
-                        errors.description ? "border-red-500" : "border-gray-300"
+                        errors.description
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-md focus:ring-blue-400 focus:border-blue-400`}
                     />
                     {errors.description && (
-                      <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.description}
+                      </p>
                     )}
                   </div>
 
@@ -1128,11 +1458,16 @@ const NewQuoteRequest = () => {
                               designIntent: e.target.checked,
                             };
                             setTechnicalInfo(newTechInfo);
-                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                            setErrors((prev) => ({
+                              ...prev,
+                              technicalInfo: "",
+                            }));
                           }}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 text-sm">Design Intent</span>
+                        <span className="text-gray-700 text-sm">
+                          Design Intent
+                        </span>
                         <InfoIcon infoText="We rebuild the original design by applying dimensions and constraints, ignoring manufacturing errors. This approach is suited for new product development and allows easy edits in CAD software, keeping design history intact." />
                       </label>
 
@@ -1145,11 +1480,16 @@ const NewQuoteRequest = () => {
                               ...technicalInfo,
                               hybridModelling: e.target.checked,
                             });
-                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                            setErrors((prev) => ({
+                              ...prev,
+                              technicalInfo: "",
+                            }));
                           }}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 text-sm">Hybrid Modelling</span>
+                        <span className="text-gray-700 text-sm">
+                          Hybrid Modelling
+                        </span>
                         <InfoIcon infoText="We use a mix of as-built/design intent for prismatic shapes and NURBS for organic ones. This method suits parts with both freeform and geometric shapes, allowing accurate CAD conversion and flexible editing in reverse engineering tools." />
                       </label>
 
@@ -1162,11 +1502,16 @@ const NewQuoteRequest = () => {
                               ...technicalInfo,
                               scansToNURBS: e.target.checked,
                             });
-                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                            setErrors((prev) => ({
+                              ...prev,
+                              technicalInfo: "",
+                            }));
                           }}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 text-sm">Scans to NURBS</span>
+                        <span className="text-gray-700 text-sm">
+                          Scans to NURBS
+                        </span>
                         <InfoIcon infoText="We turn scan data into smooth, accurate NURBS surfaces, ideal for organic shapes. Edits can only be made in reverse engineering software, and files are exportable in formats like IGES or STEP for further use." />
                       </label>
 
@@ -1179,16 +1524,23 @@ const NewQuoteRequest = () => {
                               ...technicalInfo,
                               asBuildModelling: e.target.checked,
                             });
-                            setErrors((prev) => ({ ...prev, technicalInfo: "" }));
+                            setErrors((prev) => ({
+                              ...prev,
+                              technicalInfo: "",
+                            }));
                           }}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 text-sm">As-Build Modelling</span>
+                        <span className="text-gray-700 text-sm">
+                          As-Build Modelling
+                        </span>
                         <InfoIcon infoText="We create CAD models that exactly match the scanned object, including any manufacturing errors. This method ensures high accuracy and is ideal for replacing existing parts. The final model can be exported for manufacturing or mold development and edited in Geomagic Design X." />
                       </label>
                     </div>
                     {errors.technicalInfo && (
-                      <p className="mt-1 text-sm text-red-600">{errors.technicalInfo}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.technicalInfo}
+                      </p>
                     )}
                   </div>
 
@@ -1196,7 +1548,7 @@ const NewQuoteRequest = () => {
                   <span className="block text-md font-medium text-gray-700 mb-2">
                     Live.transfer format
                   </span>
-                  
+
                   {/* Deliverables - Only shown when designIntent is selected */}
                   {technicalInfo.designIntent && (
                     <div className="space-y-4">
@@ -1212,13 +1564,20 @@ const NewQuoteRequest = () => {
                                 ...deliverables,
                                 liveTransferFormat: "",
                               });
-                              setErrors((prev) => ({ ...prev, liveTransferFormat: "" }));
+                              setErrors((prev) => ({
+                                ...prev,
+                                liveTransferFormat: "",
+                              }));
                             }}
                             className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-400 focus:border-blue-400"
                           >
-                            {Object.entries(SOFTWARE_OPTIONS).map(([key, { name }]) => (
-                              <option key={key} value={key}>{name}</option>
-                            ))}
+                            {Object.entries(SOFTWARE_OPTIONS).map(
+                              ([key, { name }]) => (
+                                <option key={key} value={key}>
+                                  {name}
+                                </option>
+                              )
+                            )}
                           </select>
                         </div>
 
@@ -1232,23 +1591,34 @@ const NewQuoteRequest = () => {
                                 ...deliverables,
                                 liveTransferFormat: `${selectedSoftware}-${e.target.value}`,
                               });
-                              setErrors((prev) => ({ ...prev, liveTransferFormat: "" }));
+                              setErrors((prev) => ({
+                                ...prev,
+                                liveTransferFormat: "",
+                              }));
                             }}
                             disabled={!selectedSoftware}
                             className={`mt-1 w-full px-4 py-2 border ${
-                              !selectedSoftware ? "border-gray-200" : "border-gray-300"
+                              !selectedSoftware
+                                ? "border-gray-200"
+                                : "border-gray-300"
                             } rounded-md focus:ring-blue-400 focus:border-blue-400 disabled:opacity-50`}
                           >
                             <option value="">Select version</option>
-                            {SOFTWARE_OPTIONS[selectedSoftware]?.versions.map((version) => (
-                              <option key={version} value={version}>{version}</option>
-                            ))}
+                            {SOFTWARE_OPTIONS[selectedSoftware]?.versions.map(
+                              (version) => (
+                                <option key={version} value={version}>
+                                  {version}
+                                </option>
+                              )
+                            )}
                           </select>
                         </div>
                       </div>
 
                       {errors.liveTransferFormat && (
-                        <p className="mt-1 text-sm text-red-600">{errors.liveTransferFormat}</p>
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors.liveTransferFormat}
+                        </p>
                       )}
                     </div>
                   )}
@@ -1267,10 +1637,13 @@ const NewQuoteRequest = () => {
                         }
                         className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                       />
-                      <span className="text-gray-700 text-sm">CAD neutral files</span>
+                      <span className="text-gray-700 text-sm">
+                        CAD neutral files
+                      </span>
                       <InfoIcon infoText="Export files in neutral formats like STEP, IGES that can be opened in any CAD software." />
                     </label>
-                    {(technicalInfo.designIntent || technicalInfo.hybridModelling) && (
+                    {(technicalInfo.designIntent ||
+                      technicalInfo.hybridModelling) && (
                       <label className="inline-flex items-center space-x-2">
                         <input
                           type="checkbox"
@@ -1283,7 +1656,9 @@ const NewQuoteRequest = () => {
                           }
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 text-sm">2D Drafting (.dwg)</span>
+                        <span className="text-gray-700 text-sm">
+                          2D Drafting (.dwg)
+                        </span>
                         <InfoIcon infoText="Include 2D technical drawings with dimensions and annotations in DWG format." />
                       </label>
                     )}
@@ -1301,8 +1676,12 @@ const NewQuoteRequest = () => {
                       } rounded-lg cursor-pointer hover:bg-blue-50 transition`}
                     >
                       <FiUploadCloud className="text-3xl text-blue-400 mb-2" />
-                      <span className="text-sm text-blue-500">Click to upload supporting files</span>
-                      <span className="text-xs text-gray-500">You can select multiple files</span>
+                      <span className="text-sm text-blue-500">
+                        Click to upload supporting files
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        You can select multiple files
+                      </span>
                       <input
                         id="info-files-upload"
                         type="file"
@@ -1312,12 +1691,16 @@ const NewQuoteRequest = () => {
                       />
                     </label>
                     {errors.infoFiles && (
-                      <p className="mt-1 text-sm text-red-600">{errors.infoFiles}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.infoFiles}
+                      </p>
                     )}
 
                     {infoFiles.length > 0 && (
                       <div className="mt-4 space-y-2">
-                        <h4 className="text-sm font-medium text-gray-700">Selected files:</h4>
+                        <h4 className="text-sm font-medium text-gray-700">
+                          Selected files:
+                        </h4>
                         <ul className="space-y-2">
                           {infoFiles.map((file, index) => (
                             <li
@@ -1325,7 +1708,8 @@ const NewQuoteRequest = () => {
                               className="flex items-center justify-between bg-gray-50 p-2 rounded"
                             >
                               <span className="text-sm text-gray-700 truncate max-w-xs">
-                                {file.name} ({Math.round(file.size / 1024 / 1024)} MB)
+                                {file.name} (
+                                {Math.round(file.size / 1024 / 1024)} MB)
                               </span>
                               <button
                                 type="button"
@@ -1350,10 +1734,12 @@ const NewQuoteRequest = () => {
                       className="px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
                     >
                       <FiUploadCloud className="inline mr-2" />
-                      Upload STL Files
+                      Browse Files
                     </button>
                     {errors.files && (
-                      <p className="mt-2 text-sm text-red-600">{errors.files}</p>
+                      <p className="mt-2 text-sm text-red-600">
+                        {errors.files}
+                      </p>
                     )}
                   </div>
 

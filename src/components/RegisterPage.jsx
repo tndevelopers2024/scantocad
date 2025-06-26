@@ -37,12 +37,13 @@ const RegisterPage = () => {
     const seenCountries = new Set();
 
     countries.all.forEach((country) => {
-      if (country.name && country.currencies && country.currencies.length > 0) {
-        const key = `${country.name}-${country.currencies[0]}`;
+      if (country.name && country.alpha2 && country.currencies && country.currencies.length > 0) {
+        const key = `${country.alpha2}-${country.currencies[0]}`;
         if (!seenCountries.has(key)) {
           seenCountries.add(key);
           uniqueCountries.push({
             name: country.name,
+            code: country.alpha2,
             currency: country.currencies[0],
           });
         }
@@ -79,7 +80,7 @@ const RegisterPage = () => {
         password,
         phone: mobileNumber,
         role,
-        country: selectedCountry.name,
+        country: selectedCountry.code, // Using country code here
         currency: selectedCountry.currency,
       };
 
@@ -89,7 +90,6 @@ const RegisterPage = () => {
           address: companyAddress,
           website: companyWebsite,
           industry: companyIndustry,
-        
         };
       }
 
@@ -225,7 +225,7 @@ const RegisterPage = () => {
               >
                 <option value="">Select Country</option>
                 {countryCurrencyOptions.map((c) => (
-                  <option key={`${c.name}-${c.currency}`} value={c.name}>
+                  <option key={`${c.code}-${c.currency}`} value={c.name}>
                     {c.name} ({c.currency})
                   </option>
                 ))}
@@ -308,7 +308,6 @@ const RegisterPage = () => {
                     value={companyIndustry}
                     onChange={(e) => setCompanyIndustry(e.target.value)}
                   />
-                 
                 </div>
               )}
 

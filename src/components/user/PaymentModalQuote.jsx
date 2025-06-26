@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { countries } from 'country-data';
 import { 
   FiX, FiPlus, FiMinus, FiCheck, FiDollarSign,
   FiLoader, FiArrowRight, FiCheckCircle, FiAlertCircle, FiArrowLeft
 } from 'react-icons/fi';
-import { FaPaypal, FaRupeeSign } from 'react-icons/fa';
-import { SiRazorpay } from 'react-icons/si';
-import { getAllRates, getMe } from '../../api';
+import { FaPaypal } from 'react-icons/fa';
+import { getCurrentRateByCountry, getMe } from '../../api';
 
 const StepPaymentModal = ({ 
   isOpen, 
@@ -22,13 +22,27 @@ const StepPaymentModal = ({
   const [ratePerHour, setRatePerHour] = useState(0);
   const [loadingRate, setLoadingRate] = useState(true);
   const [rateError, setRateError] = useState(null);
-  const [currency, setCurrency] = useState('USD');
-  const [userCurrency, setUserCurrency] = useState('USD');
-  const [availableRates, setAvailableRates] = useState([]);
+  const [userCountry, setUserCountry] = useState('US');
+  const [countryName, setCountryName] = useState('United States');
+  const [paypalSdkLoaded, setPaypalSdkLoaded] = useState(false);
 
-  const totalPrice = hours * ratePerHour;
+  // Strict 2-decimal-place calculation
+  const calculateTotalPrice = () => {
+    const rawPrice = hours * ratePerHour;
+    // Round to exactly 2 decimal places
+    const rounded = Math.round((rawPrice + Number.EPSILON) * 100) / 100;
+    return rounded.toFixed(2); // Always returns string with 2 decimals
+  };
+
+  const totalPrice = calculateTotalPrice();
   const backendBaseUrl = 'https://ardpgimerchd.org/api/v1/payments';
   const token = localStorage.getItem('token');
+
+  // Get country name from country code
+  const getCountryName = (code) => {
+    const country = countries[code?.toUpperCase()];
+    return country ? country.name : code || 'United States';
+  };
 
   // Reset state when modal closes
   useEffect(() => {
@@ -41,75 +55,83 @@ const StepPaymentModal = ({
     }
   }, [isOpen, requiredHours]);
 
-// In your useEffect for fetching data
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      setLoadingRate(true);
-      setRateError(null);
-      
-      // Fetch rates first
-      const ratesResponse = await getAllRates();
-      if (!ratesResponse?.success || !ratesResponse?.data?.length) {
-        throw new Error(ratesResponse?.message || 'No rates available');
-      }
-      
-      setAvailableRates(ratesResponse.data);
-      
-      // Set initial rate (use first rate as fallback)
-      const initialRate = ratesResponse.data[0]?.ratePerHour || 0;
-      setRatePerHour(initialRate);
-      
-      // Then fetch user data to get preferred currency
-      if (token) {
-        const userResponse = await getMe();
-        if (userResponse?.success && userResponse.data?.currency) {
-          const userCurrency = userResponse.data.currency;
-          setUserCurrency(userCurrency);
+  // Fetch user's country and appropriate rate
+  useEffect(() => {
+    const fetchUserCountryAndRate = async () => {
+      if (isOpen) {
+        try {
+          setLoadingRate(true);
+          setRateError(null);
           
-          // Find matching rate for user's currency
-          const matchedRate = ratesResponse.data.find(
-            rate => rate.currency === userCurrency
-          );
+          // Get user's country from API
+          const userResponse = await getMe();
+          let detectedCountry = 'US';
           
-          if (matchedRate) {
-            setRatePerHour(matchedRate.ratePerHour);
-            setCurrency(matchedRate.currency);
+          if (userResponse?.success && userResponse.data?.country) {
+            detectedCountry = userResponse.data.country.toUpperCase();
           }
+          
+          setUserCountry(detectedCountry);
+          setCountryName(getCountryName(detectedCountry));
+          
+          // Try to fetch rate for user's country
+          try {
+            const response = await getCurrentRateByCountry(detectedCountry);
+            if (response.success && response.data) {
+              // Ensure rate has exactly 2 decimal places
+              const rate = parseFloat(response.data.ratePerHour).toFixed(2);
+              setRatePerHour(parseFloat(rate));
+              setLoadingRate(false);
+              return;
+            }
+          } catch (error) {
+            console.log(`No rate found for ${detectedCountry}, falling back to US`);
+          }
+          
+          // Fall back to US rate
+          const usResponse = await getCurrentRateByCountry('US');
+          if (usResponse.success && usResponse.data) {
+            const rate = parseFloat(usResponse.data.ratePerHour).toFixed(2);
+            setRatePerHour(parseFloat(rate));
+          } else {
+            throw new Error('Failed to load default US rate');
+          }
+          
+          setLoadingRate(false);
+        } catch (error) {
+          console.error('Failed to fetch rate:', error);
+          setRateError(error.message || 'Failed to load payment information');
+          setRatePerHour(0);
+          setLoadingRate(false);
         }
       }
-      
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-      setRateError(error.message || 'Failed to load payment information');
-      // Set default values if error occurs
-      setRatePerHour(0);
-      setCurrency('USD');
-    } finally {
-      setLoadingRate(false);
-    }
-  };
+    };
 
-  if (isOpen) {
-    fetchData();
-  }
-}, [isOpen, token]);
+    fetchUserCountryAndRate();
+  }, [isOpen, token]);
 
   const handleIncrement = () => setHours(prev => prev + 1);
   const handleDecrement = () => setHours(prev => (prev > 1 ? prev - 1 : 1));
 
-  const loadScript = (src) => {
+  const loadPaypalSdk = () => {
     setLoadingScript(true);
     return new Promise((resolve, reject) => {
+      if (window.paypal) {
+        setPaypalSdkLoaded(true);
+        setLoadingScript(false);
+        return resolve();
+      }
+
       const script = document.createElement("script");
-      script.src = src;
+      script.src = "https://www.paypal.com/sdk/js?client-id=${import.meta.env.ASJQyCyGK6uKYaMMyOXb1wXXW1Q4OEcSJfxV_xYzXlccJZ-efkhFTtgim2mECDU4qZRtajbrkJBtqifY}&currency=USD";
       script.onload = () => {
         setLoadingScript(false);
+        setPaypalSdkLoaded(true);
         resolve();
       };
       script.onerror = () => {
         setLoadingScript(false);
-        reject(new Error(`Script load error for ${src}`));
+        reject(new Error("Failed to load PayPal SDK"));
       };
       document.body.appendChild(script);
     });
@@ -117,13 +139,41 @@ useEffect(() => {
 
   const handlePaymentError = (error) => {
     console.error('Payment error:', error);
-    alert(error.message || 'Payment processing failed. Please try again.');
+    let errorMessage = 'Payment processing failed. Please try again.';
+    
+    if (typeof error === 'string' || 
+        error.message?.includes('DECIMAL_PRECISION') || 
+        error.message?.includes('UNPROCESSABLE_ENTITY')) {
+      errorMessage = 'Invalid amount format. Amount must have exactly 2 decimal places (e.g., 10.00)';
+    }
+    
+    alert(errorMessage);
     setIsProcessing(false);
+  };
+
+  const validateAmount = (amount) => {
+    // Convert to string if it's a number
+    const amountStr = typeof amount === 'number' ? amount.toFixed(2) : amount.toString();
+    
+    // Verify the amount has exactly 2 decimal places
+    const decimalParts = amountStr.split('.');
+    return decimalParts.length === 2 && decimalParts[1].length === 2;
   };
 
   const verifyPayment = async (gateway, verificationData) => {
     try {
       setIsProcessing(true);
+      
+      // Strict amount validation
+      if (!validateAmount(totalPrice)) {
+        throw new Error('Invalid amount format');
+      }
+
+      const paymentAmount = parseFloat(totalPrice);
+      if (isNaN(paymentAmount)) {
+        throw new Error('Invalid amount value');
+      }
+
       const verifyRes = await fetch(`${backendBaseUrl}/verify`, {
         method: 'POST',
         headers: {
@@ -132,9 +182,9 @@ useEffect(() => {
         },
         body: JSON.stringify({
           gateway,
-          amount: totalPrice,
+          amount: paymentAmount,
           hours,
-          currency,
+          country: userCountry,
           ...verificationData
         })
       });
@@ -152,87 +202,23 @@ useEffect(() => {
     }
   };
 
-  const startRazorpayPayment = async () => {
-    if (!token) {
-      alert('Please login to make a payment');
-      return;
-    }
-  
-    setIsProcessing(true);
-    try {
-      await loadScript("https://checkout.razorpay.com/v1/checkout.js");
-  
-      // Convert to smallest currency unit (paise for INR, cents for others)
-      const amountInSubunits = Math.round(totalPrice * (currency === 'INR' ? 100 : 100));
-  
-      const orderRes = await fetch(`${backendBaseUrl}/order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          amount: amountInSubunits,
-          hours, 
-          gateway: 'razorpay',
-          currency
-        })
-      });
-  
-      const orderData = await orderRes.json();
-      if (!orderData.success) throw new Error(orderData.message || "Failed to create order");
-  
-      const options = {
-        key: 'rzp_test_9prjSZS0QLvGyK', // Replace with your actual key
-        amount: orderData.order.amount,
-        currency,
-        name: "Your Company Name",
-        description: `Purchase of ${hours} hours`,
-        order_id: orderData.order.id,
-        handler: (response) => {
-          verifyPayment('razorpay', {
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature
-          });
-        },
-        theme: {
-          color: "#3399cc"
-        },
-        notes: {
-          hours: hours.toString(),
-          price: totalPrice.toString(),
-          currency
-        }
-      };
-  
-      const rzp = new window.Razorpay(options);
-      
-      rzp.on('payment.failed', (response) => {
-        handlePaymentError(new Error(
-          response.error.description || 
-          `Payment failed: ${response.error.code}`
-        ));
-      });
-      
-      rzp.open();
-    } catch (err) {
-      handlePaymentError(err);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const initializePaypal = async () => {
-    if (!window.paypal) return;
-
     try {
-      document.getElementById('paypal-button-container').innerHTML = '';
+      const container = document.getElementById('paypal-button-container');
+      if (!container) return;
       
-      // PayPal supports limited currencies, fallback to USD if needed
-      const paypalSupportedCurrencies = ['USD', 'EUR', 'AUD', 'CAD', 'GBP'];
-      const paypalCurrency = paypalSupportedCurrencies.includes(currency) ? currency : 'USD';
+      container.innerHTML = '';
       
+      // Strict amount validation before PayPal initialization
+      if (!validateAmount(totalPrice)) {
+        throw new Error('Invalid amount format');
+      }
+
+      const paymentAmount = parseFloat(totalPrice);
+      if (isNaN(paymentAmount)) {
+        throw new Error('Invalid amount value');
+      }
+
       window.paypal.Buttons({
         style: {
           shape: 'rect',
@@ -240,31 +226,46 @@ useEffect(() => {
           layout: 'vertical',
           label: 'paypal'
         },
-        createOrder: async function() {
-          const orderRes = await fetch(`${backendBaseUrl}/order`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-              amount: totalPrice, 
-              hours, 
-              gateway: 'paypal',
-              currency: paypalCurrency
-            })
-          });
-          const orderData = await orderRes.json();
-          if (!orderData.success) throw new Error("Failed to create order");
-          return orderData.order.id;
+        createOrder: async (data, actions) => {
+          try {
+            const orderRes = await fetch(`${backendBaseUrl}/order`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ 
+                amount: paymentAmount,
+                hours, 
+                gateway: 'paypal',
+                country: userCountry
+              })
+            });
+            
+            const orderData = await orderRes.json();
+            if (!orderData.success) {
+              throw new Error(orderData.message || "Failed to create order");
+            }
+            return orderData.order.id;
+          } catch (error) {
+            handlePaymentError(error);
+            throw error;
+          }
         },
-        onApprove: async function(data) {
-          await verifyPayment('paypal', {
-            paypal_order_id: data.orderID
-          });
+        onApprove: async (data, actions) => {
+          try {
+            await verifyPayment('paypal', {
+              paypal_order_id: data.orderID
+            });
+          } catch (error) {
+            handlePaymentError(error);
+          }
         },
-        onError: function(err) {
+        onError: (err) => {
           handlePaymentError(err);
+        },
+        onCancel: (data) => {
+          alert('Payment was cancelled');
         }
       }).render('#paypal-button-container');
     } catch (err) {
@@ -274,34 +275,15 @@ useEffect(() => {
 
   useEffect(() => {
     if (activeGateway === 'paypal' && step === 2) {
-      const paypalSupportedCurrencies = ['USD', 'EUR', 'AUD', 'CAD', 'GBP'];
-      const paypalCurrency = paypalSupportedCurrencies.includes(currency) ? currency : 'USD';
-      loadScript(`https://www.paypal.com/sdk/js?client-id=ASJQyCyGK6uKYaMMyOXb1wXXW1Q4OEcSJfxV_xYzXlccJZ-efkhFTtgim2mECDU4qZRtajbrkJBtqifY&currency=${paypalCurrency}`)
-        .then(() => initializePaypal())
-        .catch(err => handlePaymentError(err));
+      if (paypalSdkLoaded) {
+        initializePaypal();
+      } else {
+        loadPaypalSdk()
+          .then(() => initializePaypal())
+          .catch(err => handlePaymentError(err));
+      }
     }
-  }, [activeGateway, step, currency]);
-
-  const renderCurrencyIcon = () => {
-    switch (currency) {
-      case 'INR':
-        return <FaRupeeSign className="mr-1" />;
-      case 'USD':
-      case 'AUD':
-      case 'CAD':
-      case 'SGD':
-      case 'HKD':
-        return <FiDollarSign className="mr-1" />;
-      case 'EUR':
-        return <span className="mr-1">€</span>;
-      case 'GBP':
-        return <span className="mr-1">£</span>;
-      case 'JPY':
-        return <span className="mr-1">¥</span>;
-      default:
-        return <span className="mr-1">{currency}</span>;
-    }
-  };
+  }, [activeGateway, step, paypalSdkLoaded, totalPrice]);
 
   if (!isOpen) return null;
 
@@ -387,11 +369,9 @@ useEffect(() => {
           <div className="space-y-6">
             <div className="text-center">
               <h3 className="text-lg font-semibold text-gray-800 mb-1">Add credit hours</h3>
-              {availableRates.length > 1 && (
-                <div className="text-sm text-gray-500">
-                  Available in: {availableRates.map(rate => rate.currency).join(', ')}
-                </div>
-              )}
+              <div className="text-sm text-gray-500">
+                Rate for: {countryName} ({userCountry})
+              </div>
             </div>
 
             <div className="flex items-center justify-center mb-4">
@@ -418,9 +398,9 @@ useEffect(() => {
               <div className="p-4 rounded-lg text-center">
                 <div className="text-sm text-gray-500 mb-1">Total price</div>
                 <div className="text-2xl font-bold text-gray-800 flex items-center justify-center">
-                  {renderCurrencyIcon()} {totalPrice.toLocaleString()}
+                  <FiDollarSign className="mr-1" /> {totalPrice}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">({currency})</div>
+                <div className="text-xs text-gray-500 mt-1">(USD)</div>
               </div>
               <button
                 onClick={() => setStep(2)}
@@ -459,40 +439,26 @@ useEffect(() => {
             
             <div className="space-y-3">
               <button
-                onClick={() => {
-                  setActiveGateway('razorpay');
-                  startRazorpayPayment();
-                }}
-                disabled={isProcessing || loadingScript}
-                className="w-full bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-lg font-medium flex items-center justify-center hover:bg-indigo-100 hover:border-indigo-200 transition-all disabled:opacity-50"
-              >
-                {isProcessing ? (
-                  <>
-                    <FiLoader className="animate-spin mr-2" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <SiRazorpay className="mr-2 text-xl" /> Pay with Razorpay
-                  </>
-                )}
-              </button>
-              
-              <button
                 onClick={() => setActiveGateway('paypal')}
-                disabled={isProcessing || loadingScript || !['USD', 'EUR', 'AUD', 'CAD', 'GBP'].includes(currency)}
-                className="w-full bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-lg font-medium flex items-center justify-center hover:bg-blue-100 hover:border-blue-200 transition-all disabled:opacity-50"
+                disabled={isProcessing || loadingScript}
+                className={`w-full bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-lg font-medium flex items-center justify-center hover:bg-blue-100 hover:border-blue-200 transition-all ${
+                  activeGateway === 'paypal' ? 'ring-2 ring-blue-500' : ''
+                }`}
               >
                 <FaPaypal className="mr-2 text-xl" /> Pay with PayPal
-                {!['USD', 'EUR', 'AUD', 'CAD', 'GBP'].includes(currency) && (
-                  <span className="text-xs ml-2">(USD only)</span>
-                )}
+                {loadingScript && <FiLoader className="animate-spin ml-2" />}
               </button>
             </div>
 
             {activeGateway === 'paypal' && (
               <div className="mt-4">
-                <div id="paypal-button-container" className="mt-4"></div>
+                <div id="paypal-button-container"></div>
+                {loadingScript && (
+                  <div className="text-center py-4">
+                    <FiLoader className="animate-spin mx-auto text-blue-600" />
+                    <p className="text-sm text-gray-500 mt-2">Loading PayPal...</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -504,18 +470,18 @@ useEffect(() => {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500">Rate:</span>
                 <span className="font-medium flex items-center">
-                  {renderCurrencyIcon()} {ratePerHour}/hour
+                  <FiDollarSign className="mr-1" /> {ratePerHour.toFixed(2)}/hour
                 </span>
               </div>
               <div className="border-t border-gray-200 my-2"></div>
               <div className="flex justify-between items-center">
                 <span className="font-medium">Total:</span>
                 <span className="text-lg font-bold flex items-center">
-                  {renderCurrencyIcon()} {totalPrice.toLocaleString()}
+                  <FiDollarSign className="mr-1" /> {totalPrice}
                 </span>
               </div>
               <div className="text-xs text-gray-500 mt-2">
-                Currency: {currency}
+                Rate for: {countryName} ({userCountry})
               </div>
             </div>
           </div>
@@ -535,12 +501,12 @@ useEffect(() => {
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Amount Paid:</span>
                 <span className="font-medium flex items-center">
-                  {renderCurrencyIcon()} {totalPrice.toLocaleString()}
+                  <FiDollarSign className="mr-1" /> {totalPrice}
                 </span>
               </div>
               <div className="flex justify-between text-sm text-gray-600 mt-2">
-                <span>Currency:</span>
-                <span className="font-medium">{currency}</span>
+                <span>Country Rate:</span>
+                <span className="font-medium">{countryName} ({userCountry})</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600 mt-2">
                 <span>Total Available Hours:</span>
@@ -566,7 +532,9 @@ StepPaymentModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onPaymentSuccess: PropTypes.func.isRequired,
+  onPOUploadSuccess: PropTypes.func.isRequired,
   requiredHours: PropTypes.number,
+  quotationId: PropTypes.string.isRequired,
 };
 
 export default StepPaymentModal;

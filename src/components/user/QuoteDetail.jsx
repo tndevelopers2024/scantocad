@@ -57,8 +57,7 @@ export default function QuoteDetail() {
   const [notificationType, setNotificationType] = useState("success");
   const [notificationMessage, setNotificationMessage] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
-  const [showRejectionReasonInput, setShowRejectionReasonInput] =
-    useState(false);
+  const [showRejectionReasonInput, setShowRejectionReasonInput] = useState(false);
   const { socket } = useSocket();
   const [rejectionDetails, setRejectionDetails] = useState("");
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
@@ -70,6 +69,7 @@ export default function QuoteDetail() {
   const [fileReports, setFileReports] = useState([]);
   const [mainNote, setMainNote] = useState("");
   const [showIssueReportModal, setShowIssueReportModal] = useState(false);
+  const [previewingFileIndex, setPreviewingFileIndex] = useState(null);
 
   const fetchQuote = async () => {
     try {
@@ -150,7 +150,7 @@ export default function QuoteDetail() {
     try {
       await deleteFile(id, fileToDelete);
       showTempNotification("File deleted successfully", "success");
-      fetchQuote(); // Refresh the quote data
+      fetchQuote();
     } catch (error) {
       console.error("Error deleting file:", error);
       showTempNotification("Failed to delete file", "error");
@@ -276,6 +276,7 @@ export default function QuoteDetail() {
         prev < quote.files.length - 1 ? prev + 1 : 0
       );
     }
+    setPreviewingFileIndex(currentFileIndex);
   };
 
   const handleFileStatusChange = (index, status) => {
@@ -291,37 +292,36 @@ export default function QuoteDetail() {
   };
 
   const handleSubmitIssues = async () => {
-    try {
-      const fileReports = selectedFiles.map((index) => ({
-        index,
-        status: "issued",
-        note: issueNotes[index] || "",
-      }));
+  try {
+    const fileReports = selectedFiles.map((index) => ({
+      index,
+      status: "reported",
+      note: issueNotes[index] || "",
+    }));
 
-      await reportQuotationIssues(quote._id, {
-        fileReports,
-        mainNote: generalNote,
-      });
+    await reportQuotationIssues(quote._id, {
+      fileReports,
+      mainNote: generalNote,
+    });
 
-      showTempNotification("Issues reported successfully", "success");
-      setSelectedFiles([]);
-      setIssueNotes({});
-      setGeneralNote("");
-      fetchQuote();
-    } catch (error) {
-      console.error("Failed to report issues:", error);
-      showTempNotification(
-        error.userMessage || "Failed to report issues",
-        "error"
-      );
-    }
-  };
+    showTempNotification("Issues reported successfully", "success");
+    setSelectedFiles([]);
+    setIssueNotes({});
+    setGeneralNote("");
+    fetchQuote(); // This refreshes the data
+  } catch (error) {
+    console.error("Failed to report issues:", error);
+    showTempNotification(
+      error.userMessage || "Failed to report issues",
+      "error"
+    );
+  }
+};
 
   const handleSubmitIssueReport = async () => {
     try {
-      // Filter out empty reports
       const reportsToSubmit = fileReports.filter(
-        (report) => report && (report.status === "issued" || report.note)
+        (report) => report && (report.status === "reported" || report.note)
       );
 
       await reportQuotationIssues(quote._id, {
@@ -331,7 +331,7 @@ export default function QuoteDetail() {
 
       showTempNotification("Issue report submitted successfully", "success");
       setShowIssueReportModal(false);
-      fetchQuote(); // Refresh the quote data
+      fetchQuote();
     } catch (error) {
       console.error("Failed to submit issue report:", error);
       showTempNotification(
@@ -346,7 +346,6 @@ export default function QuoteDetail() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br p-4 md:p-8">
-      {/* Notification */}
       <AnimatePresence>
         {showNotification && (
           <Notification
@@ -363,7 +362,6 @@ export default function QuoteDetail() {
         transition={{ duration: 0.3 }}
         className="max-w-6xl mx-auto"
       >
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div className="flex items-start space-x-4">
             <motion.div
@@ -390,11 +388,8 @@ export default function QuoteDetail() {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Tabs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -449,7 +444,6 @@ export default function QuoteDetail() {
                 )}
               </div>
 
-              {/* Tab Content */}
               <div className="p-6">
                 <AnimatePresence mode="wait">
                   {activeTab === "details" && (
@@ -563,7 +557,6 @@ export default function QuoteDetail() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      {/* Original Files */}
                       <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-3">
                           Original Files
@@ -577,13 +570,15 @@ export default function QuoteDetail() {
                                 title={`File ${index + 1}`}
                                 requiredHour={file.requiredHour}
                                 fileUrl={file.originalFile}
-                                onPreview={() => setCurrentFileIndex(index)}
+                                onPreview={() => {
+                                  setCurrentFileIndex(index);
+                                  setPreviewingFileIndex(index);
+                                }}
                                 previewable={isSTLFile(file.originalFile)}
                                 status={file.status}
                                 uploadedAt={file.uploadedAt}
                                 onDelete={() => confirmDelete(file._id)}
                                 deletable={quote.status === "quoted"}
-                              
                               />
                             ))
                           ) : (
@@ -603,7 +598,6 @@ export default function QuoteDetail() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      {/* Supporting Documents */}
                       {quote.infoFiles?.length > 0 && (
                         <div>
                           <h3 className="text-lg font-semibold mb-3">
@@ -631,7 +625,6 @@ export default function QuoteDetail() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      {/* Completed Files */}
                       {quote.status === "completed" &&
                         quote.files?.some((f) => f.completedFile) && (
                           <div className="mb-6">
@@ -649,15 +642,15 @@ export default function QuoteDetail() {
                                     fileUrl={file.completedFile}
                                     className="mt-4"
                                     quote={quote}
-                                onReportIssue={() => {
-                                  if (!selectedFiles.includes(index)) {
-                                    setSelectedFiles((prev) => [
-                                      ...prev,
-                                      index,
-                                    ]);
-                                  }
-                                }}
-                                isReported={selectedFiles.includes(index)}
+                                    onReportIssue={() => {
+                                      if (!selectedFiles.includes(index)) {
+                                        setSelectedFiles((prev) => [
+                                          ...prev,
+                                          index,
+                                        ]);
+                                      }
+                                    }}
+                                    isReported={selectedFiles.includes(index)}
                                   />
                                 ))}
                             </div>
@@ -669,7 +662,6 @@ export default function QuoteDetail() {
               </div>
             </motion.div>
 
-            {/* Rejection Message Display */}
             {quote.status === "rejected" && quote.rejectionReason && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -686,10 +678,8 @@ export default function QuoteDetail() {
               </motion.div>
             )}
 
-            {/* Decision Panel */}
             {quote.status === "quoted" && (
               <>
-                {/* CASE: poStatus is null/empty or "approved" => show approve options */}
                 {(!quote.poStatus || quote.poStatus === "approved") && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -766,7 +756,6 @@ export default function QuoteDetail() {
                   </motion.div>
                 )}
 
-                {/* Rejection Message Input */}
                 {showRejectionReasonInput && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
@@ -843,7 +832,6 @@ export default function QuoteDetail() {
                   </motion.div>
                 )}
 
-                {/* CASE: poStatus is "requested" => show some text */}
                 {quote.poStatus === "requested" && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md shadow">
                     <p className="text-yellow-800 font-medium">
@@ -852,7 +840,6 @@ export default function QuoteDetail() {
                   </div>
                 )}
 
-                {/* CASE: poStatus is "rejected" => show purchase button with message */}
                 {quote.poStatus === "rejected" && (
                   <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow">
                     <div className="flex justify-between items-center">
@@ -873,10 +860,9 @@ export default function QuoteDetail() {
             )}
           </div>
 
-          {/* Right Column - Summary and STL Viewer */}
           <div className="space-y-6">
-            {/* STL Viewer Box */}
-            {quote.files?.length > 0 &&
+            {previewingFileIndex !== null && 
+              quote.files?.length > 0 &&
               isSTLFile(quote.files[currentFileIndex]?.originalFile) && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -906,11 +892,21 @@ export default function QuoteDetail() {
                         </>
                       )}
                       <button
-                        onClick={() => setShowSTLViewerFullscreen(true)}
+                        onClick={() => {
+                          setShowSTLViewerFullscreen(true);
+                          setPreviewingFileIndex(currentFileIndex);
+                        }}
                         className="p-1 text-gray-500 hover:text-gray-700"
                         title="Fullscreen"
                       >
                         <FiMaximize />
+                      </button>
+                      <button
+                        onClick={() => setPreviewingFileIndex(null)}
+                        className="p-1 text-gray-500 hover:text-gray-700"
+                        title="Close preview"
+                      >
+                        <FiX />
                       </button>
                     </div>
                   </div>
@@ -928,7 +924,21 @@ export default function QuoteDetail() {
                 </motion.div>
               )}
 
-            {/* Summary Card */}
+            {previewingFileIndex === null && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center justify-center"
+                style={{ minHeight: '300px' }}
+              >
+                <FiFile className="text-gray-400 text-4xl mb-4" />
+                <p className="text-gray-500 text-center">
+                  Select a file to preview 3D model
+                </p>
+              </motion.div>
+            )}
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -977,7 +987,6 @@ export default function QuoteDetail() {
                 )}
               </div>
 
-              {/* Add this section for approve option when rejected */}
               {quote.status === "rejected" && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">
@@ -1009,152 +1018,148 @@ export default function QuoteDetail() {
                   Project {`#CSC` + id.slice(-8).toUpperCase()} has been
                   successfully completed. Download CAD file.
                 </p>
-                {quote.files?.some((f) => f.completedFile) && (
-                  <div className="flex flex-col space-y-3 mt-4">
-                    <a
-                      href={
-                        quote.files.find((f) => f.completedFile)?.completedFile
-                      }
-                      download
-                      className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-                    >
-                      <FiDownload className="mr-2" />
-                      Download Final Files
-                    </a>
-                    <button
-                      onClick={() => setShowIssueReportModal(true)}
-                      className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                    >
-                      <FiAlertCircle className="mr-2" />
-                      Report Issues
-                    </button>
-                  </div>
-                )}
+               {quote.files?.some((f) => f.completedFile) && (
+  <div className="flex flex-col space-y-3 mt-4">
+    <button
+      onClick={() => {
+        quote.files
+          .filter((f) => f.completedFile)
+          .forEach((file) => {
+            const link = document.createElement('a');
+            link.href = file.completedFile;
+            link.download = file.completedFile.split('/').pop(); // optional: specify a filename
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          });
+      }}
+      className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+    >
+      <FiDownload className="mr-2" />
+      Download Final Files
+    </button>
+  </div>
+)}
+
               </motion.div>
             )}
           </div>
         </div>
       </motion.div>
+
       {quote.status === "completed" && (
-  <div className="bg-white rounded-xl shadow-lg p-6 mt-6 border border-gray-100">
-    <div className="flex items-center mb-6">
-      <div className="bg-blue-100 p-2 rounded-full mr-3">
-        <FiAlertTriangle className="text-blue-600 text-xl" />
-      </div>
-      <h3 className="text-xl font-semibold text-gray-800">Report File Issues</h3>
-    </div>
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-6 border border-gray-100">
+          <div className="flex items-center mb-6">
+            <div className="bg-blue-100 p-2 rounded-full mr-3">
+              <FiAlertTriangle className="text-blue-600 text-xl" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Report File Issues</h3>
+          </div>
 
-    {/* Selected files with issues */}
-    {selectedFiles.length > 0 && (
-      <div className="mb-8">
-        <h4 className="font-medium mb-3 text-gray-700">Files with Issues</h4>
-        <div className="space-y-4">
-          {selectedFiles.map((fileIndex) => {
-            const file = quote?.files?.[fileIndex];
-            if (!file) return null;
+          {selectedFiles.length > 0 && (
+            <div className="mb-8">
+              <h4 className="font-medium mb-3 text-gray-700">Files with Issues</h4>
+              <div className="space-y-4">
+                {selectedFiles.map((fileIndex) => {
+                  const file = quote?.files?.[fileIndex];
+                  if (!file) return null;
 
-            return (
-              <div
-                key={file._id || fileIndex}
-                className="border border-gray-200 rounded-lg p-4 flex justify-between items-start hover:bg-gray-50 transition-colors"
-              >
-                {/* File Info */}
-                <div className="flex items-center">
-                  <div className="bg-gray-100 p-2 rounded mr-3">
-                    <FiFile className="text-gray-500" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-800">File {fileIndex + 1}</p>
-                    <p className="text-sm text-gray-500 truncate max-w-xs">
-                      {file.originalFile?.split("/").pop()}
-                    </p>
-                  </div>
-                </div>
+                  return (
+                    <div
+                      key={file._id || fileIndex}
+                      className="border border-gray-200 rounded-lg p-4 flex justify-between items-start hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <div className="bg-gray-100 p-2 rounded mr-3">
+                          <FiFile className="text-gray-500" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">File {fileIndex + 1}</p>
+                          <p className="text-sm text-gray-500 truncate max-w-xs">
+                            {file.originalFile?.split("/").pop()}
+                          </p>
+                        </div>
+                      </div>
 
-                {/* Notes */}
-                <div className="flex-1 max-w-md mx-4">
-                  <div className="relative">
-                    <textarea
-                      value={issueNotes[fileIndex] || ""}
-                      onChange={(e) =>
-                        setIssueNotes((prev) => ({
-                          ...prev,
-                          [fileIndex]: e.target.value,
-                        }))
-                      }
-                      placeholder="Describe the issue..."
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none focus:border-transparent"
-                      rows={2}
-                    />
-                    <span className="absolute bottom-2 right-2 text-xs text-gray-400">
-                      {issueNotes[fileIndex]?.length || 0}/500
-                    </span>
-                  </div>
-                </div>
+                      <div className="flex-1 max-w-md mx-4">
+                        <div className="relative">
+                          <textarea
+                            value={issueNotes[fileIndex] || ""}
+                            onChange={(e) =>
+                              setIssueNotes((prev) => ({
+                                ...prev,
+                                [fileIndex]: e.target.value,
+                              }))
+                            }
+                            placeholder="Describe the issue..."
+                            className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none focus:border-transparent"
+                            rows={2}
+                          />
+                          <span className="absolute bottom-2 right-2 text-xs text-gray-400">
+                            {issueNotes[fileIndex]?.length || 0}/500
+                          </span>
+                        </div>
+                      </div>
 
-                {/* Remove */}
-                <button
-                  onClick={() => {
-                    setSelectedFiles((prev) =>
-                      prev.filter((idx) => idx !== fileIndex)
-                    );
-                    setIssueNotes((prev) => {
-                      const updated = { ...prev };
-                      delete updated[fileIndex];
-                      return updated;
-                    });
-                  }}
-                  className="ml-2 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                  aria-label="Remove file"
-                >
-                  <FiX className="text-lg" />
-                </button>
+                      <button
+                        onClick={() => {
+                          setSelectedFiles((prev) =>
+                            prev.filter((idx) => idx !== fileIndex)
+                          );
+                          setIssueNotes((prev) => {
+                            const updated = { ...prev };
+                            delete updated[fileIndex];
+                            return updated;
+                          });
+                        }}
+                        className="ml-2 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        aria-label="Remove file"
+                      >
+                        <FiX className="text-lg" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          )}
+
+          <div className="mb-8">
+            <div className="flex items-center mb-2">
+              <FiEdit2 className="text-gray-500 mr-2" />
+              <h4 className="font-medium text-gray-700">Additional Notes</h4>
+            </div>
+            <div className="relative">
+              <textarea
+                value={generalNote}
+                onChange={(e) => setGeneralNote(e.target.value)}
+                placeholder="Any other concerns or questions? Let us know..."
+                className="w-full p-4 border border-gray-300 rounded-lg resize-none  focus:border-transparent"
+                rows={4}
+              />
+              <span className="absolute bottom-3 right-3 text-xs text-gray-400">
+                {generalNote.length}/1000
+              </span>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleSubmitIssues}
+              disabled={selectedFiles.length === 0}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                selectedFiles.length > 0
+                  ? "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              } flex items-center`}
+            >
+              <FiSend className="mr-2" />
+              Submit Issues
+            </button>
+          </div>
         </div>
-      </div>
-    )}
+      )}
 
-    {/* General notes */}
-    <div className="mb-8">
-      <div className="flex items-center mb-2">
-        <FiEdit2 className="text-gray-500 mr-2" />
-        <h4 className="font-medium text-gray-700">Additional Notes</h4>
-      </div>
-      <div className="relative">
-        <textarea
-          value={generalNote}
-          onChange={(e) => setGeneralNote(e.target.value)}
-          placeholder="Any other concerns or questions? Let us know..."
-          className="w-full p-4 border border-gray-300 rounded-lg resize-none  focus:border-transparent"
-          rows={4}
-        />
-        <span className="absolute bottom-3 right-3 text-xs text-gray-400">
-          {generalNote.length}/1000
-        </span>
-      </div>
-    </div>
-
-    {/* Submit button */}
-    <div className="flex justify-end">
-      <button
-        onClick={handleSubmitIssues}
-        disabled={selectedFiles.length === 0}
-        className={`px-6 py-3 rounded-lg font-medium transition-all ${
-          selectedFiles.length > 0
-            ? "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg"
-            : "bg-gray-200 text-gray-500 cursor-not-allowed"
-        } flex items-center`}
-      >
-        <FiSend className="mr-2" />
-        Submit Issues
-      </button>
-    </div>
-  </div>
-)}
-
-      {/* Activity History Section */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -1167,7 +1172,6 @@ export default function QuoteDetail() {
         </div>
       </motion.div>
 
-      {/* Payment Modal */}
       <StepPaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
@@ -1201,7 +1205,6 @@ export default function QuoteDetail() {
         }}
       />
 
-      {/* Fullscreen STL Viewer Modal */}
       <AnimatePresence>
         {showSTLViewerFullscreen && quote.files?.length > 0 && (
           <motion.div

@@ -30,10 +30,10 @@ const FileCard = ({
         </div>
 
         {/* Required Hour */}
-        <div className="text-gray-500 text-center">{requiredHour || ""}</div>
+        <div className={`text-gray-500 ${quote.status === "completed" ? 'hidden' : 'col-span-1'} text-center`}>{requiredHour || ""}</div>
 
         {/* Actions */}
-        <div className="flex items-center space-x-3 justify-end">
+        <div className={`flex items-center ${quote.status === "completed" ? 'col-span-2' : 'col-span-1'} space-x-3 justify-end`}>
           {previewable && (
             <button
               onClick={onPreview}
@@ -49,7 +49,7 @@ const FileCard = ({
             className="text-blue-600 hover:text-blue-800"
             title="Download file"
           >
-            <FiDownload />
+            Download
           </a>
 
           {deletable && (
@@ -68,7 +68,7 @@ const FileCard = ({
            {quote.status === "completed" &&(
         <button
           onClick={onReportIssue}
-          className={`mt-2 text-sm ${isReported ? 'text-red-500' : 'text-blue-500'} hover:underline`}
+          className={`   text-sm ${isReported ? 'text-red-500' : 'text-blue-500'} hover:underline`}
         >
           {isReported ? 'Reported' : 'Report Issue'}
         </button>

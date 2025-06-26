@@ -15,8 +15,8 @@ const HorizontalTimeline = ({ status }) => {
     { id: 'quoted', title: 'Receive Quotation', icon: <FiMail />, description: 'Quote shared by Admin' },
     ...showDecisionStep,
     { id: 'ongoing', title: 'Work in Progress', icon: <FiUser />, description: 'Quote in progress' },
-    ...(status === 'issued'
-      ? [{ id: 'issued', title: 'Quote Issued', icon: <FiMail />, description: 'Quote has been issued' }]
+    ...(status === 'reported'
+      ? [{ id: 'reported', title: 'Quote Reported', icon: <FiMail />, description: 'Quote has been reported' }]
       : []),
     { id: 'completed', title: 'Receive Files', icon: <FiDownload />, description: 'CAD file delivered' },
   ];

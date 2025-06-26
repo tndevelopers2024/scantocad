@@ -9,11 +9,13 @@ import { motion, AnimatePresence } from "framer-motion"; // For notification ani
 const statusColor = {
   ongoing: "bg-indigo-100 text-indigo-800",
   completed: "bg-purple-100 text-purple-800",
+  reported: "bg-yellow-100 text-yellow-800", 
 };
 
 const statusIcon = {
   ongoing: "🔄",
   completed: "🏁",
+  reported: "⚠️", 
 };
 
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
@@ -63,37 +65,37 @@ export default function UserCompletedQuotations() {
   }, []);
 
   // Socket event listeners for real-time updates
-  useEffect(() => {
-    if (!socket) return;
+useEffect(() => {
+  if (!socket) return;
 
-    const events = [
-      "quotation:completed",
-      "quotation:ongoing",
-      "quotation:hour-updated",
-      "quotation:userUpdated"
-    ];
+  const events = [
+    "quotation:completed",
+    "quotation:ongoing",
+    "quotation:reported", // Add this new event
+    "quotation:hour-updated",
+    "quotation:userUpdated"
+  ];
 
-    const handleUpdate = () => {
-      fetchQuotations();
-      showTempNotification("Quotations updated", "info");
-    };
+  const handleUpdate = () => {
+    fetchQuotations();
+    showTempNotification("Quotations updated", "info");
+  };
 
+  events.forEach(event => {
+    socket.on(event, handleUpdate);
+  });
+
+  return () => {
     events.forEach(event => {
-      socket.on(event, handleUpdate);
+      socket.off(event, handleUpdate);
     });
-
-    return () => {
-      events.forEach(event => {
-        socket.off(event, handleUpdate);
-      });
-    };
-  }, [socket]);
+  };
+}, [socket]);
 
   // Filter quotes based on status
-  const filteredQuotes = statusFilter === "all"
-    ? quotes.filter((q) => ["ongoing", "completed"].includes(q.status?.toLowerCase()))
-    : quotes.filter((q) => q.status?.toLowerCase() === statusFilter);
-
+const filteredQuotes = statusFilter === "all"
+  ? quotes.filter((q) => ["ongoing", "completed", "reported"].includes(q.status?.toLowerCase()))
+  : quotes.filter((q) => q.status?.toLowerCase() === statusFilter);
   // Sort quotes by date (newest or oldest first)
   const sortedQuotes = [...filteredQuotes].sort((a, b) => {
     const dateA = new Date(a.createdAt);
@@ -147,22 +149,22 @@ export default function UserCompletedQuotations() {
                 <option value="oldest">Oldest First</option>
               </select>
             </div>
-            {["all", "ongoing", "completed"].map((status) => (
-              <button
-                key={status}
-                onClick={() => {
-                  setStatusFilter(status);
-                  setCurrentPage(1);
-                }}
-                className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors duration-200 ${
-                  statusFilter === status
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                }`}
-              >
-                {capitalize(status)}
-              </button>
-            ))}
+            {["all", "ongoing", "completed", "reported"].map((status) => (
+  <button
+    key={status}
+    onClick={() => {
+      setStatusFilter(status);
+      setCurrentPage(1);
+    }}
+    className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors duration-200 ${
+      statusFilter === status
+        ? "bg-blue-600 text-white border-blue-600"
+        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+    }`}
+  >
+    {capitalize(status)}
+  </button>
+))}
           </div>
         </div>
 
