@@ -27,14 +27,17 @@ const StepPaymentModal = ({
   const [paypalSdkLoaded, setPaypalSdkLoaded] = useState(false);
 
   // Strict 2-decimal-place calculation
-  const calculateTotalPrice = () => {
+    const calculateTotalPrice = () => {
     const rawPrice = hours * ratePerHour;
     // Round to exactly 2 decimal places
     const rounded = Math.round((rawPrice + Number.EPSILON) * 100) / 100;
-    return rounded.toFixed(2); // Always returns string with 2 decimals
+    return rounded;
   };
 
+  // Get the numeric total price
   const totalPrice = calculateTotalPrice();
+  // Format for display (string with 2 decimals)
+  const displayPrice = totalPrice.toFixed(2);
   const backendBaseUrl = 'https://ardpgimerchd.org/api/v1/payments';
   const token = localStorage.getItem('token');
 
@@ -113,6 +116,7 @@ const StepPaymentModal = ({
   const handleIncrement = () => setHours(prev => prev + 1);
   const handleDecrement = () => setHours(prev => (prev > 1 ? prev - 1 : 1));
 
+  
   const loadPaypalSdk = () => {
     setLoadingScript(true);
     return new Promise((resolve, reject) => {
@@ -123,7 +127,7 @@ const StepPaymentModal = ({
       }
 
       const script = document.createElement("script");
-      script.src = "https://www.paypal.com/sdk/js?client-id=${import.meta.env.ASJQyCyGK6uKYaMMyOXb1wXXW1Q4OEcSJfxV_xYzXlccJZ-efkhFTtgim2mECDU4qZRtajbrkJBtqifY}&currency=USD";
+      script.src = "https://www.paypal.com/sdk/js?client-id=ASJQyCyGK6uKYaMMyOXb1wXXW1Q4OEcSJfxV_xYzXlccJZ-efkhFTtgim2mECDU4qZRtajbrkJBtqifY&currency=USD";
       script.onload = () => {
         setLoadingScript(false);
         setPaypalSdkLoaded(true);
@@ -202,7 +206,7 @@ const StepPaymentModal = ({
     }
   };
 
-  const initializePaypal = async () => {
+    const initializePaypal = async () => {
     try {
       const container = document.getElementById('paypal-button-container');
       if (!container) return;
@@ -210,13 +214,8 @@ const StepPaymentModal = ({
       container.innerHTML = '';
       
       // Strict amount validation before PayPal initialization
-      if (!validateAmount(totalPrice)) {
-        throw new Error('Invalid amount format');
-      }
-
-      const paymentAmount = parseFloat(totalPrice);
-      if (isNaN(paymentAmount)) {
-        throw new Error('Invalid amount value');
+      if (totalPrice < 0.5) {
+        throw new Error('Minimum payment amount is $0.50');
       }
 
       window.paypal.Buttons({
@@ -228,6 +227,10 @@ const StepPaymentModal = ({
         },
         createOrder: async (data, actions) => {
           try {
+            // Log the amount being sent for debugging
+            const amountInCents = Math.round(totalPrice * 100);
+            console.log('Creating PayPal order for amount:', totalPrice);
+            
             const orderRes = await fetch(`${backendBaseUrl}/order`, {
               method: 'POST',
               headers: {
@@ -235,7 +238,7 @@ const StepPaymentModal = ({
                 'Authorization': `Bearer ${token}`
               },
               body: JSON.stringify({ 
-                amount: paymentAmount,
+                amount: amountInCents, // Send the full amount in cents
                 hours, 
                 gateway: 'paypal',
                 country: userCountry
@@ -255,7 +258,8 @@ const StepPaymentModal = ({
         onApprove: async (data, actions) => {
           try {
             await verifyPayment('paypal', {
-              paypal_order_id: data.orderID
+              paypal_order_id: data.orderID,
+              amount: totalPrice // Verify with the correct amount
             });
           } catch (error) {
             handlePaymentError(error);
@@ -263,15 +267,13 @@ const StepPaymentModal = ({
         },
         onError: (err) => {
           handlePaymentError(err);
-        },
-        onCancel: (data) => {
-          alert('Payment was cancelled');
         }
       }).render('#paypal-button-container');
     } catch (err) {
       handlePaymentError(err);
     }
   };
+
 
   useEffect(() => {
     if (activeGateway === 'paypal' && step === 2) {

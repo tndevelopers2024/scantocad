@@ -291,7 +291,7 @@ export default function QuoteDetail() {
     });
   };
 
-  const handleSubmitIssues = async () => {
+const handleSubmitIssues = async () => {
   try {
     const fileReports = selectedFiles.map((index) => ({
       index,
@@ -301,14 +301,18 @@ export default function QuoteDetail() {
 
     await reportQuotationIssues(quote._id, {
       fileReports,
-      mainNote: generalNote,
+      mainNote: generalNote || "Note not provided",
     });
 
     showTempNotification("Issues reported successfully", "success");
+
+    // Optionally clear state before reload
     setSelectedFiles([]);
     setIssueNotes({});
     setGeneralNote("");
-    fetchQuote(); // This refreshes the data
+
+    // Full page reload
+    window.location.reload();
   } catch (error) {
     console.error("Failed to report issues:", error);
     showTempNotification(
@@ -317,6 +321,7 @@ export default function QuoteDetail() {
     );
   }
 };
+
 
   const handleSubmitIssueReport = async () => {
     try {
@@ -858,6 +863,119 @@ export default function QuoteDetail() {
                 )}
               </>
             )}
+
+             {quote.status === "completed" && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-6 border border-gray-100">
+          <div className="flex items-center mb-6">
+            <div className="bg-blue-100 p-2 rounded-full mr-3">
+              <FiAlertTriangle className="text-blue-600 text-xl" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Report File Issues</h3>
+          </div>
+
+          {selectedFiles.length > 0 && (
+            <div className="mb-8">
+              <h4 className="font-medium mb-3 text-gray-700">Files with Issues</h4>
+              <div className="space-y-4">
+                {selectedFiles.map((fileIndex) => {
+                  const file = quote?.files?.[fileIndex];
+                  if (!file) return null;
+
+                  return (
+                    <div
+                      key={file._id || fileIndex}
+                      className="border border-gray-200 rounded-lg p-4 flex justify-between items-start hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <div className="bg-gray-100 p-2 rounded mr-3">
+                          <FiFile className="text-gray-500" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">File {fileIndex + 1}</p>
+                          <p className="text-sm text-gray-500 truncate max-w-xs">
+                            {file.originalFile?.split("/").pop()}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 max-w-md mx-4">
+                        <div className="relative">
+                          <textarea
+                            value={issueNotes[fileIndex] || ""}
+                            onChange={(e) =>
+                              setIssueNotes((prev) => ({
+                                ...prev,
+                                [fileIndex]: e.target.value,
+                              }))
+                            }
+                            placeholder="Describe the issue..."
+                            className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none focus:border-transparent"
+                            rows={2}
+                          />
+                          <span className="absolute bottom-2 right-2 text-xs text-gray-400">
+                            {issueNotes[fileIndex]?.length || 0}/500
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setSelectedFiles((prev) =>
+                            prev.filter((idx) => idx !== fileIndex)
+                          );
+                          setIssueNotes((prev) => {
+                            const updated = { ...prev };
+                            delete updated[fileIndex];
+                            return updated;
+                          });
+                        }}
+                        className="ml-2 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        aria-label="Remove file"
+                      >
+                        <FiX className="text-lg" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="mb-8">
+            <div className="flex items-center mb-2">
+              <FiEdit2 className="text-gray-500 mr-2" />
+              <h4 className="font-medium text-gray-700">Additional Notes</h4>
+            </div>
+            <div className="relative">
+              <textarea
+                value={generalNote}
+                onChange={(e) => setGeneralNote(e.target.value)}
+                placeholder="Any other concerns or questions? Let us know..."
+                className="w-full p-4 border border-gray-300 rounded-lg resize-none  focus:border-transparent"
+                rows={4}
+              />
+              <span className="absolute bottom-3 right-3 text-xs text-gray-400">
+                {generalNote.length}/1000
+              </span>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleSubmitIssues}
+              disabled={selectedFiles.length === 0}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                selectedFiles.length > 0
+                  ? "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              } flex items-center`}
+            >
+              <FiSend className="mr-2" />
+              Submit Issues
+            </button>
+          </div>
+        </div>
+      )}
           </div>
 
           <div className="space-y-6">
@@ -1047,118 +1165,7 @@ export default function QuoteDetail() {
         </div>
       </motion.div>
 
-      {quote.status === "completed" && (
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-6 border border-gray-100">
-          <div className="flex items-center mb-6">
-            <div className="bg-blue-100 p-2 rounded-full mr-3">
-              <FiAlertTriangle className="text-blue-600 text-xl" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800">Report File Issues</h3>
-          </div>
-
-          {selectedFiles.length > 0 && (
-            <div className="mb-8">
-              <h4 className="font-medium mb-3 text-gray-700">Files with Issues</h4>
-              <div className="space-y-4">
-                {selectedFiles.map((fileIndex) => {
-                  const file = quote?.files?.[fileIndex];
-                  if (!file) return null;
-
-                  return (
-                    <div
-                      key={file._id || fileIndex}
-                      className="border border-gray-200 rounded-lg p-4 flex justify-between items-start hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        <div className="bg-gray-100 p-2 rounded mr-3">
-                          <FiFile className="text-gray-500" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800">File {fileIndex + 1}</p>
-                          <p className="text-sm text-gray-500 truncate max-w-xs">
-                            {file.originalFile?.split("/").pop()}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 max-w-md mx-4">
-                        <div className="relative">
-                          <textarea
-                            value={issueNotes[fileIndex] || ""}
-                            onChange={(e) =>
-                              setIssueNotes((prev) => ({
-                                ...prev,
-                                [fileIndex]: e.target.value,
-                              }))
-                            }
-                            placeholder="Describe the issue..."
-                            className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none focus:border-transparent"
-                            rows={2}
-                          />
-                          <span className="absolute bottom-2 right-2 text-xs text-gray-400">
-                            {issueNotes[fileIndex]?.length || 0}/500
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          setSelectedFiles((prev) =>
-                            prev.filter((idx) => idx !== fileIndex)
-                          );
-                          setIssueNotes((prev) => {
-                            const updated = { ...prev };
-                            delete updated[fileIndex];
-                            return updated;
-                          });
-                        }}
-                        className="ml-2 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                        aria-label="Remove file"
-                      >
-                        <FiX className="text-lg" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="mb-8">
-            <div className="flex items-center mb-2">
-              <FiEdit2 className="text-gray-500 mr-2" />
-              <h4 className="font-medium text-gray-700">Additional Notes</h4>
-            </div>
-            <div className="relative">
-              <textarea
-                value={generalNote}
-                onChange={(e) => setGeneralNote(e.target.value)}
-                placeholder="Any other concerns or questions? Let us know..."
-                className="w-full p-4 border border-gray-300 rounded-lg resize-none  focus:border-transparent"
-                rows={4}
-              />
-              <span className="absolute bottom-3 right-3 text-xs text-gray-400">
-                {generalNote.length}/1000
-              </span>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              onClick={handleSubmitIssues}
-              disabled={selectedFiles.length === 0}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                selectedFiles.length > 0
-                  ? "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg"
-                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-              } flex items-center`}
-            >
-              <FiSend className="mr-2" />
-              Submit Issues
-            </button>
-          </div>
-        </div>
-      )}
+     
 
       <motion.div
         initial={{ opacity: 0 }}

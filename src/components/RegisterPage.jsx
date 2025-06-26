@@ -5,7 +5,11 @@ import logo from '../../public/img/logo/logo1.png';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
-import { countries } from 'country-data';
+import { 
+  getConsistentCountries,
+  getCountryName,
+  getCountryCurrency
+} from '../contexts/countryUtils';
 
 const RegisterPage = () => {
   const [firstName, setFirstName] = useState('');
@@ -31,27 +35,16 @@ const RegisterPage = () => {
   const [companyWebsite, setCompanyWebsite] = useState('');
   const [companyIndustry, setCompanyIndustry] = useState('');
 
-  // Create country + currency code options
-  const countryCurrencyOptions = useMemo(() => {
-    const uniqueCountries = [];
-    const seenCountries = new Set();
-
-    countries.all.forEach((country) => {
-      if (country.name && country.alpha2 && country.currencies && country.currencies.length > 0) {
-        const key = `${country.alpha2}-${country.currencies[0]}`;
-        if (!seenCountries.has(key)) {
-          seenCountries.add(key);
-          uniqueCountries.push({
-            name: country.name,
-            code: country.alpha2,
-            currency: country.currencies[0],
-          });
-        }
-      }
-    });
-
-    return uniqueCountries.sort((a, b) => a.name.localeCompare(b.name));
-  }, []);
+  // Get consistent country options
+const countryOptions = useMemo(() => {
+  return getConsistentCountries().map((country, index) => ({
+    name: country.name,
+    code: country.alpha2,
+    currency: getCountryCurrency(country.alpha2),
+    // Add index to ensure unique key
+    uniqueKey: `${country.alpha2}-${getCountryCurrency(country.alpha2)}-${index}`
+  }));
+}, []);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -65,7 +58,7 @@ const RegisterPage = () => {
     }
 
     if (!selectedCountry) {
-      setError('Please select both country and currency');
+      setError('Please select a country');
       return;
     }
 
@@ -80,7 +73,7 @@ const RegisterPage = () => {
         password,
         phone: mobileNumber,
         role,
-        country: selectedCountry.code, // Using country code here
+        country: selectedCountry.code,
         currency: selectedCountry.currency,
       };
 
@@ -92,8 +85,6 @@ const RegisterPage = () => {
           industry: companyIndustry,
         };
       }
-
-      console.log('Submitting:', userData); // For debugging
 
       const response = await register(userData);
 
@@ -214,22 +205,22 @@ const RegisterPage = () => {
                 />
               </div>
 
-              <select
-                value={selectedCountry?.name || ''}
-                onChange={(e) => {
-                  const selected = countryCurrencyOptions.find(c => c.name === e.target.value);
-                  setSelectedCountry(selected);
-                }}
-                required
-                className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Country</option>
-                {countryCurrencyOptions.map((c) => (
-                  <option key={`${c.code}-${c.currency}`} value={c.name}>
-                    {c.name} ({c.currency})
-                  </option>
-                ))}
-              </select>
+          <select
+  value={selectedCountry?.code || ''}
+  onChange={(e) => {
+    const selected = countryOptions.find(c => c.code === e.target.value);
+    setSelectedCountry(selected);
+  }}
+  required
+  className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+>
+  <option value="">Select Country</option>
+  {countryOptions.map((country) => (
+    <option key={country.uniqueKey} value={country.code}>
+      {country.name} ({country.currency})
+    </option>
+  ))}
+</select>
 
               <div className="relative">
                 <input

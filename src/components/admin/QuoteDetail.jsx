@@ -1255,46 +1255,77 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
     type: "",
   });
 
+  // Get all files that need reuploading (reported issues)
+  const reportedFiles = files.filter(file => file.userReportedStatus !== "ok");
+
+  // Check if all reported files have a selected file for reupload
+  const allReportedFilesSelected = reportedFiles.length > 0 && 
+    reportedFiles.every(file => filesToReupload[file._id]);
+
   const showNotification = (message, type = "success") => {
     setNotification({ show: true, message, type });
-    setTimeout(() => {
-      setNotification((prev) => ({ ...prev, show: false }));
-    }, 5000);
+    setTimeout(() => setNotification(prev => ({ ...prev, show: false })), 5000);
   };
 
   const handleFileChange = (fileId, file) => {
-    setFilesToReupload((prev) => ({
+    setFilesToReupload(prev => ({
       ...prev,
       [fileId]: file,
     }));
   };
 
-  const handleReupload = async () => {
-    if (Object.keys(filesToReupload).length === 0) {
-      alert("Please select at least one file to reupload");
-      return;
-    }
+ const handleReupload = async () => {
+  if (!allReportedFilesSelected) {
+    showNotification("Please select replacement files for all reported issues", "error");
+    return;
+  }
 
-    setUploading(true);
-    try {
-      await uploadIssuedFiles(quotationId, filesToReupload, {
-        onUploadProgress: (progress) => setProgress(progress),
-      });
-      alert("Files reuploaded successfully!");
-      window.location.reload(); // Refresh to show updated status
-    } catch (error) {
-      console.error("Reupload failed:", error);
-      alert(error.userMessage || "Failed to reupload files");
-    } finally {
-      setUploading(false);
-      setProgress(0);
+  setUploading(true);
+  setProgress(0);
+  
+  try {
+    // Get array of file IDs in order
+    const fileIds = reportedFiles.map(file => file._id);
+
+    await uploadIssuedFiles(
+      quotationId, 
+      filesToReupload, 
+      fileIds,
+      {
+        onUploadProgress: (progress) => {
+          setProgress(progress);
+          setNotification({
+            show: true,
+            message: progress < 100 
+              ? `Uploading... ${progress}%`
+              : "Finalizing upload...",
+            type: "info"
+          });
+        },
+      }
+    );
+
+    showNotification("Files reuploaded successfully!", "success");
+    setFilesToReupload({});
+
+    window.location.reload();
+  } catch (error) {
+    console.error("Reupload failed:", error);
+    
+    let errorMessage = error.userMessage || "Failed to reupload files";
+    if (error.response?.status === 400) {
+      errorMessage += ": " + (error.details || "Invalid file format or selection");
     }
-  };
+    
+    showNotification(errorMessage, "error");
+  } finally {
+    setUploading(false);
+  }
+};
 
   const downloadFile = (fileUrl, fileName) => {
     if (!fileUrl) return;
 
-    // Create a temporary anchor element
     const link = document.createElement("a");
     link.href = getAbsoluteUrl(fileUrl);
     link.download = fileName || fileUrl.split("/").pop();
@@ -1312,7 +1343,9 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
           className={`mb-4 p-3 rounded ${
             notification.type === "success"
               ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
+              : notification.type === "error"
+              ? "bg-red-100 text-red-800"
+              : "bg-blue-100 text-blue-800"
           }`}
         >
           {notification.message}
@@ -1342,7 +1375,6 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
                   <span className="ml-2 text-xs text-gray-500">
                     Estimated Hours: {file.requiredHour || 0}
                   </span>
-                 
                 </div>
                 {file.userNotes && (
                   <p className="ml-2 mt-2 block text-sm text-gray-500">
@@ -1352,7 +1384,7 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
               </div>
 
               <div className="flex items-center space-x-2">
-                {/* Download original file button */}
+                {/* Download buttons */}
                 {file.originalFile && (
                   <button
                     onClick={() =>
@@ -1361,14 +1393,13 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
                         `original_${file.originalFile.split("/").pop()}`
                       )
                     }
-                    className="p-2  flex items-center gap-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200  hover:text-gray-600 transition-colors"
+                    className="p-2 flex items-center gap-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 hover:text-gray-600 transition-colors"
                     title="Download Original File"
                   >
-                    <FiDownload className="h-4 w-4" /> Download
+                    <FiDownload className="h-4 w-4" /> Original
                   </button>
                 )}
 
-                {/* Download completed file button */}
                 {file.completedFile && (
                   <button
                     onClick={() =>
@@ -1377,10 +1408,10 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
                         `completed_${file.completedFile.split("/").pop()}`
                       )
                     }
-                    className="p-2  flex items-center gap-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200  hover:text-gray-600 transition-colors"
+                    className="p-2 flex items-center gap-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 hover:text-gray-600 transition-colors"
                     title="Download Completed File"
                   >
-                    <FiFile className="h-4 w-4" /> View
+                    <FiFile className="h-4 w-4" /> Completed
                   </button>
                 )}
 
@@ -1394,13 +1425,12 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
                         onChange={(e) =>
                           handleFileChange(file._id, e.target.files[0])
                         }
+                        disabled={uploading}
                       />
-                      {filesToReupload[file._id]
-                        ? "Change File"
-                        : "Select File"}
+                      {filesToReupload[file._id] ? "Change File" : "Select File"}
                     </label>
                     {filesToReupload[file._id] && (
-                      <span className="text-xs text-gray-500 mt-1">
+                      <span className="text-xs text-gray-500 mt-1 truncate max-w-xs">
                         {filesToReupload[file._id].name}
                       </span>
                     )}
@@ -1420,7 +1450,7 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
 
             {file.notes && (
               <div className="mt-3 bg-blue-50 p-3 rounded">
-                <h5 className="text-sm font-medium text-blue-800">Notes:</h5>
+                <h5 className="text-sm font-medium text-blue-800">Admin Notes:</h5>
                 <p className="text-sm text-blue-700 mt-1">{file.notes}</p>
               </div>
             )}
@@ -1428,12 +1458,18 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
         ))}
       </div>
 
-      {Object.keys(filesToReupload).length > 0 && (
+      {reportedFiles.length > 0 && (
         <div className="mt-6">
           <button
             onClick={handleReupload}
-            disabled={uploading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70 flex items-center justify-center w-full md:w-auto"
+            disabled={uploading || !allReportedFilesSelected}
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center w-full md:w-auto ${
+              uploading
+                ? "bg-blue-400 cursor-wait"
+                : !allReportedFilesSelected
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
           >
             {uploading ? (
               <>
@@ -1459,14 +1495,17 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
                 </svg>
                 Uploading {progress}%
               </>
+            ) : allReportedFilesSelected ? (
+              `Reupload ${reportedFiles.length} File${reportedFiles.length > 1 ? "s" : ""}`
             ) : (
-              "Reupload Selected Files"
+              `Select ${reportedFiles.length - Object.keys(filesToReupload).length} More File${reportedFiles.length - Object.keys(filesToReupload).length !== 1 ? "s" : ""}`
             )}
           </button>
+
           {uploading && (
             <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
               <div
-                className="bg-blue-600 h-2.5 rounded-full"
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>

@@ -678,14 +678,19 @@ export const reportQuotationIssues = async (quotationId, { fileReports = [], mai
   }
 };
 
-export const uploadIssuedFiles = async (quotationId, fileMap, { onUploadProgress } = {}) => {
+export const uploadIssuedFiles = async (quotationId, filesToReupload, fileIds, { onUploadProgress } = {}) => {
   try {
     const formData = new FormData();
 
-    // fileMap should be: { 0: File, 2: File, ... }
-    Object.entries(fileMap).forEach(([index, file]) => {
-      formData.append(`issuedFiles[${index}]`, file);
+    // Convert files to array format with proper indices
+    fileIds.forEach((fileId, index) => {
+      if (filesToReupload[fileId]) {
+        formData.append(`issuedFiles[${index}]`, filesToReupload[fileId]);
+      }
     });
+
+    // Add metadata about which files are being replaced
+    formData.append('fileIds', JSON.stringify(fileIds));
 
     const response = await axios.post(
       `${BASE_URL}/quotations/${quotationId}/upload-issued-files`,
@@ -696,7 +701,7 @@ export const uploadIssuedFiles = async (quotationId, fileMap, { onUploadProgress
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         onUploadProgress: (progressEvent) => {
-          if (onUploadProgress) {
+          if (onUploadProgress && progressEvent.total) {
             const percentCompleted = Math.round(
               (progressEvent.loaded * 100) / progressEvent.total
             );
@@ -709,11 +714,21 @@ export const uploadIssuedFiles = async (quotationId, fileMap, { onUploadProgress
     return response.data;
   } catch (error) {
     console.error('Uploading issued files failed:', error);
+    
+    // Extract meaningful error message
+    let userMessage = 'Failed to upload replacement files';
+    let details = '';
+    
+    if (error.response) {
+      userMessage = error.response.data?.message || userMessage;
+      details = error.response.data?.details || 
+               `Server responded with ${error.response.status}`;
+    }
 
     throw {
       ...error,
-      userMessage: 'Failed to upload replacement files.',
-      details: error.response?.data?.message || 'File or server error',
+      userMessage,
+      details,
     };
   }
 };

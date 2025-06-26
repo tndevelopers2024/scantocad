@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { countries } from 'country-data';
 import {
   FaEdit, FaSave, FaTimes, FaHistory, 
   FaMoneyBillWave, FaSearch, FaFilter, FaPlus,
@@ -14,42 +13,38 @@ import {
   getCurrentRateByCountry 
 } from '../../api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  getConsistentCountries,
+  getCountryName,
+  getCountryCurrency
+} from '../../contexts/countryUtils';
 
 const RateConfigPage = ({ user }) => {
   const [allRates, setAllRates] = useState([]);
   const [filteredRates, setFilteredRates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [formData, setFormData] = useState({
-    ratePerHour: '',
-    country: 'US',
-    isActive: true
-  });
+ const [formData, setFormData] = useState({
+  ratePerHour: '',
+  country: 'US',  
+  isActive: true
+});
   const [editMode, setEditMode] = useState(false);
   const [createMode, setCreateMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterActive, setFilterActive] = useState('all');
   const [successMessage, setSuccessMessage] = useState(null);
-  const [currentCountry, setCurrentCountry] = useState('US');
-  const [currentRate, setCurrentRate] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [allCountries, setAllCountries] = useState(getConsistentCountries());
 
   const navigate = useNavigate();
 
-  // Get all countries with their codes and names
-  const allCountries = Object.values(countries.all)
-    .map(country => ({
-      code: country.alpha2,
-      name: country.name
-    }))
-    .filter(country => country.code)
-    .sort((a, b) => a.name.localeCompare(b.name));
-
   useEffect(() => {
+    // Initialize countries
+    setAllCountries(getConsistentCountries());
     fetchRates();
-    fetchCurrentRate(currentCountry);
-  }, [user, navigate, currentCountry]);
+  }, [user, navigate]);
 
   useEffect(() => {
     filterRates();
@@ -74,20 +69,6 @@ const RateConfigPage = ({ user }) => {
     }
   };
 
-  const fetchCurrentRate = async (countryCode) => {
-    try {
-      const response = await getCurrentRateByCountry(countryCode);
-      if (response.success) {
-        setCurrentRate(response.data);
-      } else {
-        setCurrentRate(null);
-      }
-    } catch (err) {
-      console.error('Failed to fetch current rate:', err);
-      setCurrentRate(null);
-    }
-  };
-
   const filterRates = () => {
     let results = allRates;
     
@@ -106,11 +87,6 @@ const RateConfigPage = ({ user }) => {
     setFilteredRates(results);
   };
 
-  const getCountryName = (code) => {
-    const country = allCountries.find(c => c.code === code);
-    return country ? country.name : code;
-  };
-
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -125,10 +101,6 @@ const RateConfigPage = ({ user }) => {
 
   const handleFilterChange = (e) => {
     setFilterActive(e.target.value);
-  };
-
-  const handleCountryChange = (e) => {
-    setCurrentCountry(e.target.value);
   };
 
   const handleCreateNew = () => {
@@ -203,7 +175,6 @@ const RateConfigPage = ({ user }) => {
     try {
       setIsSubmitting(true);
       
-      // If making this rate active, deactivate previous rates for same country
       if (formData.isActive) {
         await updateRate(
           { country: formData.country, _id: { $ne: editingId } },
@@ -217,7 +188,6 @@ const RateConfigPage = ({ user }) => {
       }
 
       await fetchRates();
-      await fetchCurrentRate(formData.country);
       setSuccessMessage('Rate updated successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
       setEditMode(false);
@@ -237,7 +207,6 @@ const RateConfigPage = ({ user }) => {
     try {
       setIsSubmitting(true);
       
-      // For new rates, deactivate any existing active rate for this country
       if (formData.isActive) {
         await updateRate(
           { country: formData.country },
@@ -251,7 +220,6 @@ const RateConfigPage = ({ user }) => {
       }
 
       await fetchRates();
-      await fetchCurrentRate(formData.country);
       setSuccessMessage('Rate created successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
       setCreateMode(false);
@@ -335,323 +303,256 @@ const RateConfigPage = ({ user }) => {
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-md overflow-hidden">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                  <FaHistory className="text-blue-500" />
-                  Rate History
-                </h2>
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleCreateNew}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-                    disabled={editMode || createMode || isSubmitting}
-                  >
-                    <FaPlus /> New Rate
-                  </button>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaSearch className="text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Search rates..."
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <FaHistory className="text-blue-500" />
+                Rate History
+              </h2>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCreateNew}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                  disabled={editMode || createMode || isSubmitting}
+                >
+                  <FaPlus /> New Rate
+                </button>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaSearch className="text-gray-400" />
                   </div>
-                  <select
-                    value={filterActive}
-                    onChange={handleFilterChange}
-                    className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="all">All</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
+                  <input
+                    type="text"
+                    placeholder="Search rates..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
+                <select
+                  value={filterActive}
+                  onChange={handleFilterChange}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">All</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
               </div>
-
-              {filteredRates.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate (USD)</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredRates.map((rate) => (
-                        <motion.tr 
-                          key={rate._id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.3 }}
-                          className={rate.isActive ? 'bg-blue-50' : 'hover:bg-gray-50'}
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            <div className="flex items-center gap-2">
-                              <FaGlobeAmericas className="text-gray-400" />
-                              {getCountryName(rate.country)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${rate.ratePerHour.toFixed(2)}/hour
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${rate.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                              {rate.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(rate.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => handleEdit(rate)}
-                                className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
-                                disabled={createMode || isSubmitting}
-                              >
-                                <FaEdit className="inline" /> Edit
-                              </button>
-                              <button
-                                onClick={() => handleDelete(rate._id)}
-                                className="text-red-600 hover:text-red-900 flex items-center gap-1"
-                                disabled={isSubmitting}
-                              >
-                                <FaTrash className="inline" />
-                              </button>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      vectorEffect="non-scaling-stroke"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No rates found</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {searchTerm ? 'Try adjusting your search or filter' : 'No rates have been configured yet'}
-                  </p>
-                </div>
-              )}
             </div>
-          </div>
 
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">Current Active Rate</h2>
-                  <select
-                    value={currentCountry}
-                    onChange={handleCountryChange}
-                    className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    disabled={isSubmitting}
-                  >
-                    {allCountries.map(country => (
-                      <option key={country.code} value={country.code}>
-                        {country.name}
-                      </option>
+            {filteredRates.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate (USD)</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredRates.map((rate) => (
+                      <motion.tr 
+                        key={rate._id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className={rate.isActive ? 'bg-blue-50' : 'hover:bg-gray-50'}
+                      >
+                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+  <div className="flex items-center gap-2">
+    <FaGlobeAmericas className="text-gray-400" />
+    {getCountryName(rate.country)}
+  </div>
+</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          ${rate.ratePerHour.toFixed(2)}/hour
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${rate.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {rate.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(rate.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleEdit(rate)}
+                              className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
+                              disabled={createMode || isSubmitting}
+                            >
+                              <FaEdit className="inline" /> Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(rate._id)}
+                              className="text-red-600 hover:text-red-900 flex items-center gap-1"
+                              disabled={isSubmitting}
+                            >
+                              <FaTrash className="inline" />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
                     ))}
-                  </select>
-                </div>
-                {currentRate ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Country:</span>
-                      <span className="font-medium">
-                        {getCountryName(currentRate.country)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Rate:</span>
-                      <span className="font-medium">
-                        ${currentRate.ratePerHour.toFixed(2)}/hour
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Status:</span>
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Active
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Effective From:</span>
-                      <span className="text-sm text-gray-500">
-                        {new Date(currentRate.effectiveFrom).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-gray-500">No active rate configured for {getCountryName(currentCountry)}</p>
-                    <button
-                      onClick={() => {
-                        setFormData({
-                          ratePerHour: '',
-                          country: currentCountry,
-                          isActive: true
-                        });
-                        setCreateMode(true);
-                      }}
-                      className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-                      disabled={isSubmitting}
-                    >
-                      Create Rate
-                    </button>
-                  </div>
-                )}
+                  </tbody>
+                </table>
               </div>
-            </div>
-
-            {(editMode || createMode) && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl shadow-md overflow-hidden"
-              >
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                    {editMode ? 'Edit Rate' : 'Create New Rate'}
-                  </h2>
-                  {error && (
-                    <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm text-red-700">{error}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <form onSubmit={editMode ? handleSubmit : handleCreateSubmit} className="space-y-4">
-                    <div>
-                      <label htmlFor="ratePerHour" className="block text-sm font-medium text-gray-700 mb-1">
-                        Rate Per Hour (USD)
-                      </label>
-                      <div className="relative rounded-md shadow-sm">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <span className="text-gray-500 sm:text-sm">$</span>
-                        </div>
-                        <input
-                          type="number"
-                          id="ratePerHour"
-                          name="ratePerHour"
-                          value={formData.ratePerHour}
-                          onChange={handleInputChange}
-                          placeholder="0.00"
-                          className="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          required
-                          step="0.01"
-                          min="0"
-                          disabled={isSubmitting}
-                        />
-                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                          <span className="text-gray-500 sm:text-sm">/hour</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                        Country
-                      </label>
-                      <select
-                        id="country"
-                        name="country"
-                        value={formData.country}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        disabled={editMode || isSubmitting}
-                        required
-                      >
-                        {allCountries.map(country => (
-                          <option key={country.code} value={country.code}>
-                            {country.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input
-                        id="isActive"
-                        name="isActive"
-                        type="checkbox"
-                        checked={formData.isActive}
-                        onChange={handleInputChange}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        disabled={isSubmitting}
-                      />
-                      <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
-                        Set as active rate for this country
-                      </label>
-                    </div>
-                    
-                    <div className="flex space-x-3 pt-2">
-                      <button
-                        type="submit"
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            {editMode ? 'Updating...' : 'Creating...'}
-                          </>
-                        ) : (
-                          <>
-                            <FaSave /> {editMode ? 'Update' : 'Create'}
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={editMode ? handleCancelEdit : handleCancelCreate}
-                        className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                        disabled={isSubmitting}
-                      >
-                        <FaTimes /> Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </motion.div>
+            ) : (
+              <div className="text-center py-12">
+                <svg
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    vectorEffect="non-scaling-stroke"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No rates found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {searchTerm ? 'Try adjusting your search or filter' : 'No rates have been configured yet'}
+                </p>
+              </div>
             )}
           </div>
         </div>
+
+        {(editMode || createMode) && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-md overflow-hidden mt-6"
+          >
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                {editMode ? 'Edit Rate' : 'Create New Rate'}
+              </h2>
+              {error && (
+                <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <form onSubmit={editMode ? handleSubmit : handleCreateSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="ratePerHour" className="block text-sm font-medium text-gray-700 mb-1">
+                    Rate Per Hour (USD)
+                  </label>
+                  <div className="relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">$</span>
+                    </div>
+                    <input
+                      type="number"
+                      id="ratePerHour"
+                      name="ratePerHour"
+                      value={formData.ratePerHour}
+                      onChange={handleInputChange}
+                      placeholder="0.00"
+                      className="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                      step="1"
+                      min="1"
+                      disabled={isSubmitting}
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">/hour</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                    Country
+                  </label>
+                 <select
+  id="country"
+  name="country"
+  value={formData.country}
+  onChange={handleInputChange}
+  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  disabled={editMode || isSubmitting}
+  required
+>
+  {allCountries.map((country) => (
+    <option 
+      key={country.alpha2}
+      value={country.alpha2}
+    >
+      {country.name}
+    </option>
+  ))}
+</select>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    id="isActive"
+                    name="isActive"
+                    type="checkbox"
+                    checked={formData.isActive}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    disabled={isSubmitting}
+                  />
+                  <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
+                    Set as active rate for this country
+                  </label>
+                </div>
+                
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {editMode ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      <>
+                        <FaSave /> {editMode ? 'Update' : 'Create'}
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={editMode ? handleCancelEdit : handleCancelCreate}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <FaTimes /> Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

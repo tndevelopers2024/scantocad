@@ -203,7 +203,7 @@ const UploadPopup = ({
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
         }}
-        className="fixed inset-0 bg-white p-50 bg-opacity-50 flex gap-8 items-center justify-center z-50"
+        className="fixed inset-0 bg-white p-26 bg-opacity-50 flex gap-8 items-center justify-center z-50 m-0"
       >
         <div className="bg-white shadow rounded-lg overflow-hidden w-[50%]">
           <div className="p-8">
@@ -288,6 +288,7 @@ const UploadPopup = ({
             onNavigate={onNavigateFile}
             onToggleFullScreen={onToggleFullScreen}
             fullScreen={false}
+            firstFile="true"
           />
           <button
             onClick={onReviewComplete}
@@ -316,6 +317,7 @@ const FileViewer = ({
   onNavigate,
   onToggleFullScreen,
   fullScreen,
+  firstFile,
 }) => {
   if (files.length === 0) return null;
 
@@ -369,7 +371,7 @@ const FileViewer = ({
       </div>
       <div
         className={`${
-          fullScreen ? "h-[80vh]" : "h-64"
+          fullScreen ? "h-[80vh]" : firstFile ? "h-[400px]" : "h-64"
         } bg-gray-100 rounded overflow-hidden border border-gray-300`}
       >
         <STLViewer file={files[currentIndex]} />
@@ -742,7 +744,7 @@ const NewQuoteRequest = () => {
     // Create deliverables string
     let deliverablesString = "";
     if (technicalInfo.designIntent) {
-      deliverablesString = `Live Transfer: ${selectedSoftware} ${selectedVersion}, `;
+      deliverablesString = `Software: ${selectedSoftware}, Version: ${selectedVersion}, `;
     }
     deliverablesString += `CAD Neutral Files: ${
       deliverables.cadNeutralFiles ? "Yes" : "No"
