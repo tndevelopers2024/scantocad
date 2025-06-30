@@ -7,6 +7,7 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const handleFileSelect = (fileId, e) => {
     const file = e.target.files[0];
@@ -32,33 +33,34 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
     });
   };
 
- const handleBulkUpload = async () => {
-  if (Object.keys(selectedFiles).length === 0) {
-    setError('Please select at least one file to upload');
-    return;
-  }
+  const handleBulkUpload = async () => {
+    if (Object.keys(selectedFiles).length === 0) {
+      setError('Please select at least one file to upload');
+      return;
+    }
 
-  setIsUploading(true);
-  setUploadProgress(0);
-  setError(null);
+    setIsUploading(true);
+    setUploadProgress(0);
+    setError(null);
+    setSuccessMessage(null);
 
-  try {
-    const completedFiles = Object.values(selectedFiles); // only file values
+    try {
+      const completedFiles = Object.values(selectedFiles);
 
-    await completeQuotation(quotationId, completedFiles, {
-      onUploadProgress: (percent) => setUploadProgress(percent),
-    });
+      await completeQuotation(quotationId, completedFiles, {
+        onUploadProgress: (percent) => setUploadProgress(percent),
+      });
 
-    setSelectedFiles({});
-    if (onUploadSuccess) onUploadSuccess();
-  } catch (err) {
-    console.error('Bulk upload failed:', err);
-    setError(err.details || err.userMessage || 'Failed to upload files. Please try again.');
-  } finally {
-    setIsUploading(false);
-  }
-};
-
+      setSelectedFiles({});
+      setSuccessMessage('Files uploaded successfully!');
+      if (onUploadSuccess) onUploadSuccess();
+    } catch (err) {
+      console.error('Bulk upload failed:', err);
+      setError(err.details || err.userMessage || 'Failed to upload files. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const getAbsoluteUrl = (path) => {
     if (!path) return '#';
@@ -168,35 +170,34 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
             {Object.keys(selectedFiles).length} file(s) selected for upload
           </p>
           <button
-  onClick={handleBulkUpload}
-  disabled={
-    isUploading ||
-    Object.keys(selectedFiles).length !== files.length
-  }
-  className={`px-4 py-2 rounded-md flex items-center ${
-    isUploading
-      ? 'bg-blue-400 text-white'
-      : Object.keys(selectedFiles).length === files.length
-      ? 'bg-blue-600 text-white hover:bg-blue-700'
-      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-  }`}
->
-  {isUploading ? (
-    <>
-      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      Uploading...
-    </>
-  ) : (
-    <>
-      <FiUpload className="mr-1" />
-      Upload All Selected
-    </>
-  )}
-</button>
-
+            onClick={handleBulkUpload}
+            disabled={
+              isUploading ||
+              Object.keys(selectedFiles).length !== files.length
+            }
+            className={`px-4 py-2 rounded-md flex items-center ${
+              isUploading
+                ? 'bg-blue-400 text-white'
+                : Object.keys(selectedFiles).length === files.length
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            {isUploading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Uploading...
+              </>
+            ) : (
+              <>
+                <FiUpload className="mr-1" />
+                Upload All Selected
+              </>
+            )}
+          </button>
         </div>
 
         {isUploading && (
@@ -216,6 +217,13 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
         {error && (
           <div className="mt-3 p-2 bg-red-50 text-red-500 text-sm rounded">
             {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mt-3 p-2 bg-green-50 text-green-600 text-lg font-semibold rounded flex items-center">
+            <FiCheck className="mr-2" />
+            {successMessage}
           </div>
         )}
       </div>

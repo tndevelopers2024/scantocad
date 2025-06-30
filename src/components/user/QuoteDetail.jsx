@@ -567,8 +567,15 @@ const handleSubmitIssues = async () => {
                           Original Files
                         </h3>
                         <div className="space-y-3">
+                            <div className="grid grid-cols-12 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
+    <div className="col-span-1 text-center">#</div>
+    <div className="col-span-4">File</div>
+    <div className="col-span-2 text-center">Required Hours</div>
+    <div className="col-span-5 text-right">Actions</div>
+  </div>
                           {quote.files?.length > 0 ? (
                             quote.files.map((file, index) => (
+                              
                               <FileCard
                                 key={file._id}
                                 index={index}
@@ -609,6 +616,11 @@ const handleSubmitIssues = async () => {
                             Supporting Documents
                           </h3>
                           <div className="space-y-3">
+                              <div className="grid grid-cols-10 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
+    <div className="col-span-1 text-start">#</div>
+    <div className="col-span-4 text-start">File</div>
+    <div className="col-span-5 text-end">Actions</div>
+  </div>
                             {quote.infoFiles.map((file, index) => (
                               <FileCard
                                 index={index}
@@ -637,6 +649,11 @@ const handleSubmitIssues = async () => {
                               Completed Files
                             </h3>
                             <div className="space-y-3">
+                                <div className="grid grid-cols-12 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
+    <div className="col-span-1 text-center">#</div>
+    <div className="col-span-4">File</div>
+    <div className="col-span-5 text-right">Actions</div>
+  </div>
                               {quote.files
                                 .filter((f) => f.completedFile)
                                 .map((file, index) => (

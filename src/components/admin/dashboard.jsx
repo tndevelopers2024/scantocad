@@ -26,14 +26,21 @@ const statusConfig = {
     color: "bg-purple-100 text-purple-800",
     icon: "🏁",
   },
+  ongoing: {
+    color: "bg-orange-100 text-orange-800",
+    icon: "🚧",
+  },
+  reported: {
+    color: "bg-pink-100 text-pink-800",
+    icon: "⚠️",
+  },
   all: {
     color: "bg-gray-100 text-gray-800",
     icon: "📊",
   },
 };
 
-const statusList = ["all", "requested", "quoted", "approved", "rejected", "completed"];
-
+const statusList = ["all", "requested", "quoted", "approved", "rejected",  "ongoing", "reported" ,"completed"];
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
@@ -155,7 +162,7 @@ const fetchQuotations = () => {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-7 gap-3">
           {statusList.slice(1).map((status) => (
             <InfoCard
               key={status}
