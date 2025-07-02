@@ -46,104 +46,132 @@ const countryOptions = useMemo(() => {
   }));
 }, []);
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setError('');
-    setMessage('');
+const handleRegister = async (e) => {
+  e.preventDefault();
+  setError('');
+  setMessage('');
 
-    // Client-side validation
-    if (password !== confirmPassword) {
-      setError("Passwords don't match");
-      return;
-    }
+  if (password !== confirmPassword) {
+    setError("Passwords don't match.");
+    return;
+  }
 
-    if (!selectedCountry) {
-      setError('Please select a country');
-      return;
-    }
+  if (!selectedCountry) {
+    setError('Please select a country.');
+    return;
+  }
 
-    const name = `${firstName.trim()} ${lastName.trim()}`.trim();
+  const name = `${firstName.trim()} ${lastName.trim()}`.trim();
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const userData = {
-        name,
-        email,
-        password,
-        phone: mobileNumber,
-        role,
-        country: selectedCountry.code,
-        currency: selectedCountry.currency,
+    const userData = {
+      name,
+      email,
+      password,
+      phone: mobileNumber,
+      role,
+      country: selectedCountry.code,
+      currency: selectedCountry.currency,
+    };
+
+    if (role === 'company') {
+      userData.company = {
+        name: companyName,
+        address: companyAddress,
+        website: companyWebsite,
+        industry: companyIndustry,
       };
-
-      if (role === 'company') {
-        userData.company = {
-          name: companyName,
-          address: companyAddress,
-          website: companyWebsite,
-          industry: companyIndustry,
-        };
-      }
-
-      const response = await register(userData);
-
-      if (response.success) {
-        setMessage('Verification email sent. Please check your inbox.');
-        setStep(2);
-      } else {
-        setError(response.error || 'Registration failed. Please try again.');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Registration error');
-    } finally {
-      setLoading(false);
     }
-  };
+
+    const response = await register(userData);
+
+    if (response.success) {
+      setMessage('Verification email sent. Please check your inbox.');
+      setStep(2);
+    } else {
+      setError(response.error || 'Registration failed. Please try again.');
+    }
+  } catch (err) {
+    const status = err.response?.status;
+    const backendError = err.response?.data?.error || err.response?.data?.message;
+
+    if (status === 409) {
+      setError(backendError || 'User already exists. Please sign in.');
+    } else if (status === 400) {
+      setError(backendError || 'Invalid form data. Please check your inputs.');
+    } else {
+      setError(backendError || 'Something went wrong. Please try again.');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const handleVerify = async (e) => {
-    e.preventDefault();
-    setError('');
-    setMessage('');
+  e.preventDefault();
+  setError('');
+  setMessage('');
 
-    try {
-      setLoading(true);
-      const response = await verifyEmail(otp);
+  try {
+    setLoading(true);
+    const response = await verifyEmail(otp);
 
-      if (response.success) {
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('userId', response.user.id);
-        localStorage.setItem('userRole', response.user.role);
-        setStep(3);
-      } else {
-        setError('Verification failed. Please try again.');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Verification error');
-    } finally {
-      setLoading(false);
+    if (response.success) {
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('userId', response.user.id);
+      localStorage.setItem('userRole', response.user.role);
+      setStep(3);
+    } else {
+      setError(response.error || 'Verification failed. Invalid OTP.');
     }
-  };
+  } catch (err) {
+    const msg = err.response?.data?.message;
+    const code = err.response?.status;
 
-  const handleResend = async () => {
-    setError('');
-    setMessage('');
-
-    try {
-      setLoading(true);
-      const response = await resendVerification(email);
-
-      if (response.success) {
-        setMessage('New verification email sent. Please check your inbox.');
-      } else {
-        setError('Failed to resend verification email.');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Resend error');
-    } finally {
-      setLoading(false);
+    if (code === 401) {
+      setError(msg || 'Invalid or expired OTP. Please try again.');
+    } else {
+      setError(msg || 'Verification failed. Try again later.');
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+ const handleResend = async () => {
+  setError('');
+  setMessage('');
+
+  try {
+    setLoading(true);
+    const response = await resendVerification(email);
+
+    if (response.success) {
+      setMessage('New verification email sent.');
+    } else {
+      setError(response.error || 'Unable to resend verification email.');
+    }
+  } catch (err) {
+    const code = err.response?.status;
+    const msg = err.response?.data?.message;
+
+    if (code === 404) {
+      setError(msg || 'Email not found. Please register again.');
+    } else if (code === 409) {
+      setError(msg || 'Account already verified. You can log in now.');
+    } else {
+      setError(msg || 'Error sending verification email.');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="flex min-h-screen">

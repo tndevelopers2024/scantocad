@@ -17,26 +17,43 @@ const [showPassword, setShowPassword] = useState(false);
     setError('');
   };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-    try {
-      const response = await login(formData.email, formData.password);
-      if (response.success) {
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('userId', response.user.id);
-        localStorage.setItem('userRole', response.role);
-        navigate(response.role === 'admin' ? '/admin/dashboard' : '/my-quotations');
-      } else {
-        setError(response.message || 'Login failed. Please try again.');
-      }
-    } catch {
-      setError('An error occurred during login. Please try again.');
-    } finally {
-      setIsLoading(false);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
+  setError('');
+
+  try {
+    const response = await login(formData.email, formData.password);
+
+    if (response.success) {
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('userId', response.user.id);
+      localStorage.setItem('userRole', response.role);
+
+      navigate(response.role === 'admin' ? '/admin/dashboard' : '/my-quotations');
+    } else {
+      setError(response.message || 'Login failed. Please try again.');
     }
-  };
+  } catch (err) {
+    const status = err.response?.status;
+    const backendMessage = err.response?.data?.error || err.response?.data?.message;
+
+    if (status === 401) {
+      setError(backendMessage || 'Incorrect email or password.');
+    } else if (status === 403) {
+      setError(backendMessage || 'Your account is not verified yet. Please check your email.');
+    } else if (status === 404) {
+      setError(backendMessage || 'User not found. Please register.');
+    } else if (status === 500) {
+      setError('Server error. Please try again later.');
+    } else {
+      setError(backendMessage || 'An unexpected error occurred. Please try again.');
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex">

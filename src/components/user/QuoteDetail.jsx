@@ -29,7 +29,7 @@ import {
   FiAlertCircle,
   FiAlertTriangle,
   FiEdit2,
-  FiSend
+  FiSend,
 } from "react-icons/fi";
 import StatusBadge from "./QuoteDetail/StatusBadge";
 import DetailCard from "./QuoteDetail/DetailCard";
@@ -57,7 +57,8 @@ export default function QuoteDetail() {
   const [notificationType, setNotificationType] = useState("success");
   const [notificationMessage, setNotificationMessage] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
-  const [showRejectionReasonInput, setShowRejectionReasonInput] = useState(false);
+  const [showRejectionReasonInput, setShowRejectionReasonInput] =
+    useState(false);
   const { socket } = useSocket();
   const [rejectionDetails, setRejectionDetails] = useState("");
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
@@ -291,37 +292,36 @@ export default function QuoteDetail() {
     });
   };
 
-const handleSubmitIssues = async () => {
-  try {
-    const fileReports = selectedFiles.map((index) => ({
-      index,
-      status: "reported",
-      note: issueNotes[index] || "",
-    }));
+  const handleSubmitIssues = async () => {
+    try {
+      const fileReports = selectedFiles.map((index) => ({
+        index,
+        status: "reported",
+        note: issueNotes[index] || "",
+      }));
 
-    await reportQuotationIssues(quote._id, {
-      fileReports,
-      mainNote: generalNote || "Note not provided",
-    });
+      await reportQuotationIssues(quote._id, {
+        fileReports,
+        mainNote: generalNote || "Note not provided",
+      });
 
-    showTempNotification("Issues reported successfully", "success");
+      showTempNotification("Issues reported successfully", "success");
 
-    // Optionally clear state before reload
-    setSelectedFiles([]);
-    setIssueNotes({});
-    setGeneralNote("");
+      // Optionally clear state before reload
+      setSelectedFiles([]);
+      setIssueNotes({});
+      setGeneralNote("");
 
-    // Full page reload
-    window.location.reload();
-  } catch (error) {
-    console.error("Failed to report issues:", error);
-    showTempNotification(
-      error.userMessage || "Failed to report issues",
-      "error"
-    );
-  }
-};
-
+      // Full page reload
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to report issues:", error);
+      showTempNotification(
+        error.userMessage || "Failed to report issues",
+        "error"
+      );
+    }
+  };
 
   const handleSubmitIssueReport = async () => {
     try {
@@ -567,15 +567,16 @@ const handleSubmitIssues = async () => {
                           Original Files
                         </h3>
                         <div className="space-y-3">
-                            <div className="grid grid-cols-12 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
-    <div className="col-span-1 text-center">#</div>
-    <div className="col-span-4">File</div>
-    <div className="col-span-2 text-center">Required Hours</div>
-    <div className="col-span-5 text-right">Actions</div>
-  </div>
+                          <div className="grid grid-cols-12 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
+                            <div className="col-span-1 text-center">#</div>
+                            <div className="col-span-4">File</div>
+                            <div className="col-span-2 text-center">
+                              Required Hours
+                            </div>
+                            <div className="col-span-5 text-right">Actions</div>
+                          </div>
                           {quote.files?.length > 0 ? (
                             quote.files.map((file, index) => (
-                              
                               <FileCard
                                 key={file._id}
                                 index={index}
@@ -616,11 +617,11 @@ const handleSubmitIssues = async () => {
                             Supporting Documents
                           </h3>
                           <div className="space-y-3">
-                              <div className="grid grid-cols-10 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
-    <div className="col-span-1 text-start">#</div>
-    <div className="col-span-4 text-start">File</div>
-    <div className="col-span-5 text-end">Actions</div>
-  </div>
+                            <div className="grid grid-cols-10 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
+                              <div className="col-span-1 text-start">#</div>
+                              <div className="col-span-4 text-start">File</div>
+                              <div className="col-span-5 text-end">Actions</div>
+                            </div>
                             {quote.infoFiles.map((file, index) => (
                               <FileCard
                                 index={index}
@@ -649,11 +650,13 @@ const handleSubmitIssues = async () => {
                               Completed Files
                             </h3>
                             <div className="space-y-3">
-                                <div className="grid grid-cols-12 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
-    <div className="col-span-1 text-center">#</div>
-    <div className="col-span-4">File</div>
-    <div className="col-span-5 text-right">Actions</div>
-  </div>
+                              <div className="grid grid-cols-12 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
+                                <div className="col-span-1 text-center">#</div>
+                                <div className="col-span-4">File</div>
+                                <div className="col-span-5 text-right">
+                                  Actions
+                                </div>
+                              </div>
                               {quote.files
                                 .filter((f) => f.completedFile)
                                 .map((file, index) => (
@@ -881,122 +884,130 @@ const handleSubmitIssues = async () => {
               </>
             )}
 
-             {quote.status === "completed" && (
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-6 border border-gray-100">
-          <div className="flex items-center mb-6">
-            <div className="bg-blue-100 p-2 rounded-full mr-3">
-              <FiAlertTriangle className="text-blue-600 text-xl" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800">Report File Issues</h3>
-          </div>
+            {quote.status === "completed" && (
+              <div className="bg-white rounded-xl shadow-lg p-6 mt-6 border border-gray-100">
+                <div className="flex items-center mb-6">
+                  <div className="bg-blue-100 p-2 rounded-full mr-3">
+                    <FiAlertTriangle className="text-blue-600 text-xl" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    Report File Issues
+                  </h3>
+                </div>
 
-          {selectedFiles.length > 0 && (
-            <div className="mb-8">
-              <h4 className="font-medium mb-3 text-gray-700">Files with Issues</h4>
-              <div className="space-y-4">
-                {selectedFiles.map((fileIndex) => {
-                  const file = quote?.files?.[fileIndex];
-                  if (!file) return null;
+                {selectedFiles.length > 0 && (
+                  <div className="mb-8">
+                    <h4 className="font-medium mb-3 text-gray-700">
+                      Files with Issues
+                    </h4>
+                    <div className="space-y-4">
+                      {selectedFiles.map((fileIndex) => {
+                        const file = quote?.files?.[fileIndex];
+                        if (!file) return null;
 
-                  return (
-                    <div
-                      key={file._id || fileIndex}
-                      className="border border-gray-200 rounded-lg p-4 flex justify-between items-start hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        <div className="bg-gray-100 p-2 rounded mr-3">
-                          <FiFile className="text-gray-500" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800">File {fileIndex + 1}</p>
-                          <p className="text-sm text-gray-500 truncate max-w-xs">
-                            {file.originalFile?.split("/").pop()}
-                          </p>
-                        </div>
-                      </div>
+                        return (
+                          <div
+                            key={file._id || fileIndex}
+                            className="border border-gray-200 rounded-lg p-4 flex justify-between items-start hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="flex items-center">
+                              <div className="bg-gray-100 p-2 rounded mr-3">
+                                <FiFile className="text-gray-500" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-800">
+                                  File {fileIndex + 1}
+                                </p>
+                                <p className="text-sm text-gray-500 truncate max-w-xs">
+                                  {file.originalFile?.split("/").pop()}
+                                </p>
+                              </div>
+                            </div>
 
-                      <div className="flex-1 max-w-md mx-4">
-                        <div className="relative">
-                          <textarea
-                            value={issueNotes[fileIndex] || ""}
-                            onChange={(e) =>
-                              setIssueNotes((prev) => ({
-                                ...prev,
-                                [fileIndex]: e.target.value,
-                              }))
-                            }
-                            placeholder="Describe the issue..."
-                            className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none focus:border-transparent"
-                            rows={2}
-                          />
-                          <span className="absolute bottom-2 right-2 text-xs text-gray-400">
-                            {issueNotes[fileIndex]?.length || 0}/500
-                          </span>
-                        </div>
-                      </div>
+                            <div className="flex-1 max-w-md mx-4">
+                              <div className="relative">
+                                <textarea
+                                  value={issueNotes[fileIndex] || ""}
+                                  onChange={(e) =>
+                                    setIssueNotes((prev) => ({
+                                      ...prev,
+                                      [fileIndex]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Describe the issue..."
+                                  className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none focus:border-transparent"
+                                  rows={2}
+                                />
+                                <span className="absolute bottom-2 right-2 text-xs text-gray-400">
+                                  {issueNotes[fileIndex]?.length || 0}/500
+                                </span>
+                              </div>
+                            </div>
 
-                      <button
-                        onClick={() => {
-                          setSelectedFiles((prev) =>
-                            prev.filter((idx) => idx !== fileIndex)
-                          );
-                          setIssueNotes((prev) => {
-                            const updated = { ...prev };
-                            delete updated[fileIndex];
-                            return updated;
-                          });
-                        }}
-                        className="ml-2 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                        aria-label="Remove file"
-                      >
-                        <FiX className="text-lg" />
-                      </button>
+                            <button
+                              onClick={() => {
+                                setSelectedFiles((prev) =>
+                                  prev.filter((idx) => idx !== fileIndex)
+                                );
+                                setIssueNotes((prev) => {
+                                  const updated = { ...prev };
+                                  delete updated[fileIndex];
+                                  return updated;
+                                });
+                              }}
+                              className="ml-2 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                              aria-label="Remove file"
+                            >
+                              <FiX className="text-lg" />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                )}
+
+                <div className="mb-8">
+                  <div className="flex items-center mb-2">
+                    <FiEdit2 className="text-gray-500 mr-2" />
+                    <h4 className="font-medium text-gray-700">
+                      Additional Notes
+                    </h4>
+                  </div>
+                  <div className="relative">
+                    <textarea
+                      value={generalNote}
+                      onChange={(e) => setGeneralNote(e.target.value)}
+                      placeholder="Any other concerns or questions? Let us know..."
+                      className="w-full p-4 border border-gray-300 rounded-lg resize-none  focus:border-transparent"
+                      rows={4}
+                    />
+                    <span className="absolute bottom-3 right-3 text-xs text-gray-400">
+                      {generalNote.length}/1000
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleSubmitIssues}
+                    disabled={selectedFiles.length === 0}
+                    className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                      selectedFiles.length > 0
+                        ? "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg"
+                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    } flex items-center`}
+                  >
+                    <FiSend className="mr-2" />
+                    Submit Issues
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-
-          <div className="mb-8">
-            <div className="flex items-center mb-2">
-              <FiEdit2 className="text-gray-500 mr-2" />
-              <h4 className="font-medium text-gray-700">Additional Notes</h4>
-            </div>
-            <div className="relative">
-              <textarea
-                value={generalNote}
-                onChange={(e) => setGeneralNote(e.target.value)}
-                placeholder="Any other concerns or questions? Let us know..."
-                className="w-full p-4 border border-gray-300 rounded-lg resize-none  focus:border-transparent"
-                rows={4}
-              />
-              <span className="absolute bottom-3 right-3 text-xs text-gray-400">
-                {generalNote.length}/1000
-              </span>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              onClick={handleSubmitIssues}
-              disabled={selectedFiles.length === 0}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                selectedFiles.length > 0
-                  ? "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg"
-                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-              } flex items-center`}
-            >
-              <FiSend className="mr-2" />
-              Submit Issues
-            </button>
-          </div>
-        </div>
-      )}
+            )}
           </div>
 
           <div className="space-y-6">
-            {previewingFileIndex !== null && 
+            {previewingFileIndex !== null &&
               quote.files?.length > 0 &&
               isSTLFile(quote.files[currentFileIndex]?.originalFile) && (
                 <motion.div
@@ -1065,7 +1076,7 @@ const handleSubmitIssues = async () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 className="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center justify-center"
-                style={{ minHeight: '300px' }}
+                style={{ minHeight: "300px" }}
               >
                 <FiFile className="text-gray-400 text-4xl mb-4" />
                 <p className="text-gray-500 text-center">
@@ -1153,36 +1164,28 @@ const handleSubmitIssues = async () => {
                   Project {`#CSC` + id.slice(-8).toUpperCase()} has been
                   successfully completed. Download CAD file.
                 </p>
-               {quote.files?.some((f) => f.completedFile) && (
-  <div className="flex flex-col space-y-3 mt-4">
-    <button
-      onClick={() => {
-        quote.files
-          .filter((f) => f.completedFile)
-          .forEach((file) => {
-            const link = document.createElement('a');
-            link.href = file.completedFile;
-            link.download = file.completedFile.split('/').pop(); // optional: specify a filename
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          });
-      }}
-      className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-    >
-      <FiDownload className="mr-2" />
-      Download Final Files
-    </button>
-  </div>
-)}
-
+                {quote.files?.some((f) => f.completedFile) && (
+                  <div className="flex flex-col space-y-3 mt-4">
+                    <button
+                      onClick={() => {
+                        setActiveTab("completedFiles");
+                        window.scrollTo({ top: 0, behavior: "smooth" }); // 👈 scrolls to top smoothly
+                      }}
+                      className={`px-4 py-3 font-medium text-sm ${
+                        activeTab === "completedFiles"
+                          ? "text-green-600 border-b-2 border-green-600"
+                          : "w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-7000"
+                      }`}
+                    >
+                      View Completed Files
+                    </button>
+                  </div>
+                )}
               </motion.div>
             )}
           </div>
         </div>
       </motion.div>
-
-     
 
       <motion.div
         initial={{ opacity: 0 }}

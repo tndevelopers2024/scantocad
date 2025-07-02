@@ -152,13 +152,13 @@ const UploadPopup = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       const event = {
         target: {
-          files: files
-        }
+          files: files,
+        },
       };
       onFileChange(event);
     }
@@ -187,7 +187,11 @@ const UploadPopup = ({
             <label
               htmlFor="initial-files-upload"
               className={`flex flex-col items-center justify-center h-48 border-2 border-dashed ${
-                error ? "border-red-500" : isDragging ? "border-blue-500 bg-blue-50" : "border-blue-300"
+                error
+                  ? "border-red-500"
+                  : isDragging
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-blue-300"
               } rounded-lg cursor-pointer hover:bg-blue-50 transition mb-4`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
@@ -196,7 +200,9 @@ const UploadPopup = ({
             >
               <FiUploadCloud className="text-4xl text-blue-400 mb-3" />
               <span className="text-lg text-blue-500 font-medium">
-                {isDragging ? "Drop files here" : "Click to Upload or drag and drop"}
+                {isDragging
+                  ? "Drop files here"
+                  : "Click to Upload or drag and drop"}
               </span>
               <span className="text-sm text-gray-500 mt-1">
                 Supported format: .stl .ply .obj
@@ -246,30 +252,29 @@ const UploadPopup = ({
       >
         <div className="bg-white shadow rounded-lg overflow-hidden w-[50%]">
           <div className="p-8">
-          
-<div className="flex mb-6 justify-center">
-  <label
-    htmlFor="initial-files-upload"
-    className={`cursor-pointer px-6 py-2 text-center grid place-items-center gap-3 border-dashed border-2 ${
-      isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
-    } bg-[#F5EFFD] rounded-md font-medium text-gray-700 hover:bg-gray-50`}
-    onDragEnter={handleDragEnter}
-    onDragLeave={handleDragLeave}
-    onDragOver={handleDragOver}
-    onDrop={handleDrop}
-  >
-    <img className="w-8" src="/img/icon/upload.png" alt="" />
-    {isDragging ? "Drop files here" : "Add More Files"}
-    <input
-      id="initial-files-upload"
-      type="file"
-      multiple
-      accept=".stl,.ply,.obj"
-      className="hidden"
-      onChange={onFileChange}
-    />
-  </label>
-</div>
+            <div className="flex mb-6 justify-center">
+              <label
+                htmlFor="initial-files-upload"
+                className={`cursor-pointer px-6 py-2 text-center grid place-items-center gap-3 border-dashed border-2 ${
+                  isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                } bg-[#F5EFFD] rounded-md font-medium text-gray-700 hover:bg-gray-50`}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                <img className="w-8" src="/img/icon/upload.png" alt="" />
+                {isDragging ? "Drop files here" : "Add More Files"}
+                <input
+                  id="initial-files-upload"
+                  type="file"
+                  multiple
+                  accept=".stl,.ply,.obj"
+                  className="hidden"
+                  onChange={onFileChange}
+                />
+              </label>
+            </div>
 
             <p className="text-md inline border-b-[1px] font-medium text-gray-700">
               {selectedFiles.length} Files
@@ -550,7 +555,7 @@ const NewQuoteRequest = () => {
     resolution: "",
     deadline: "",
   });
- const [isDragging, setIsDragging] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [technicalInfo, setTechnicalInfo] = useState({
     designIntent: false,
     hybridModelling: false,
@@ -601,7 +606,7 @@ const NewQuoteRequest = () => {
 
   const navigate = useNavigate();
 
-   // Add these handlers
+  // Add these handlers
   const handleDragEnter = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -623,15 +628,15 @@ const NewQuoteRequest = () => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       setShowUploadPopup(true);
       // You might want to handle the files directly here or pass them to the upload popup
       const event = {
         target: {
-          files: files
-        }
+          files: files,
+        },
       };
       handleFileChange(event);
     }
@@ -1122,101 +1127,101 @@ const NewQuoteRequest = () => {
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Software Selection */}
-<div className="relative">
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Software
-  </label>
-  <select
-    value={selectedSoftware}
-    onChange={(e) => {
-      setSelectedSoftware(e.target.value);
-      setSelectedVersion("");
-      setDeliverables({
-        ...deliverables,
-        liveTransferFormat: `${e.target.value}`,
-      });
-      setErrors((prev) => ({
-        ...prev,
-        liveTransferFormat: "",
-      }));
-    }}
-    className="w-full appearance-none bg-white border border-gray-300 text-gray-800 px-4 py-2 pr-10 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2990F1] focus:border-[#2990F1]"
-  >
-    {Object.entries(SOFTWARE_OPTIONS).map(
-      ([key, { name }]) => (
-        <option key={key} value={key}>
-          {name}
-        </option>
-      )
-    )}
-  </select>
-  <div className="pointer-events-none absolute inset-y-0 right-3 top-7 flex items-center text-gray-400">
-    <svg
-      className="w-5 h-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19 9l-7 7-7-7"
-      />
-    </svg>
-  </div>
-</div>
+                        <div className="relative">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Software
+                          </label>
+                          <select
+                            value={selectedSoftware}
+                            onChange={(e) => {
+                              setSelectedSoftware(e.target.value);
+                              setSelectedVersion("");
+                              setDeliverables({
+                                ...deliverables,
+                                liveTransferFormat: `${e.target.value}`,
+                              });
+                              setErrors((prev) => ({
+                                ...prev,
+                                liveTransferFormat: "",
+                              }));
+                            }}
+                            className="w-full appearance-none bg-white border border-gray-300 text-gray-800 px-4 py-2 pr-10 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2990F1] focus:border-[#2990F1]"
+                          >
+                            {Object.entries(SOFTWARE_OPTIONS).map(
+                              ([key, { name }]) => (
+                                <option key={key} value={key}>
+                                  {name}
+                                </option>
+                              )
+                            )}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-3 top-7 flex items-center text-gray-400">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
+                        </div>
 
-{/* Version Selection */}
-<div className="relative">
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Version
-  </label>
-  <select
-    value={selectedVersion}
-    onChange={(e) => {
-      setSelectedVersion(e.target.value);
-      setDeliverables({
-        ...deliverables,
-        liveTransferFormat: `${selectedSoftware}-${e.target.value}`,
-      });
-      setErrors((prev) => ({
-        ...prev,
-        liveTransferFormat: "",
-      }));
-    }}
-    disabled={!selectedSoftware}
-    className={`w-full appearance-none bg-white px-4 py-2 pr-10 text-gray-800 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2990F1] focus:border-[#2990F1] ${
-      !selectedSoftware
-        ? "border-gray-200 opacity-50 cursor-not-allowed"
-        : "border-gray-300"
-    }`}
-  >
-    <option value="">Select version</option>
-    {SOFTWARE_OPTIONS[selectedSoftware]?.versions.map(
-      (version) => (
-        <option key={version} value={version}>
-          {version}
-        </option>
-      )
-    )}
-  </select>
-  <div className="pointer-events-none absolute inset-y-0 right-3 top-7 flex items-center text-gray-400">
-    <svg
-      className="w-5 h-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19 9l-7 7-7-7"
-      />
-    </svg>
-  </div>
-</div>
+                        {/* Version Selection */}
+                        <div className="relative">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Version
+                          </label>
+                          <select
+                            value={selectedVersion}
+                            onChange={(e) => {
+                              setSelectedVersion(e.target.value);
+                              setDeliverables({
+                                ...deliverables,
+                                liveTransferFormat: `${selectedSoftware}-${e.target.value}`,
+                              });
+                              setErrors((prev) => ({
+                                ...prev,
+                                liveTransferFormat: "",
+                              }));
+                            }}
+                            disabled={!selectedSoftware}
+                            className={`w-full appearance-none bg-white px-4 py-2 pr-10 text-gray-800 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2990F1] focus:border-[#2990F1] ${
+                              !selectedSoftware
+                                ? "border-gray-200 opacity-50 cursor-not-allowed"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            <option value="">Select version</option>
+                            {SOFTWARE_OPTIONS[selectedSoftware]?.versions.map(
+                              (version) => (
+                                <option key={version} value={version}>
+                                  {version}
+                                </option>
+                              )
+                            )}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-3 top-7 flex items-center text-gray-400">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
 
                       {errors.liveTransferFormat && (
@@ -1639,101 +1644,101 @@ const NewQuoteRequest = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Software Selection */}
                         {/* Software Selection */}
-<div className="relative">
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Software
-  </label>
-  <select
-    value={selectedSoftware}
-    onChange={(e) => {
-      setSelectedSoftware(e.target.value);
-      setSelectedVersion("");
-      setDeliverables({
-        ...deliverables,
-        liveTransferFormat: `${e.target.value}`,
-      });
-      setErrors((prev) => ({
-        ...prev,
-        liveTransferFormat: "",
-      }));
-    }}
-    className="w-full appearance-none bg-white border border-gray-300 text-gray-800 px-4 py-2 pr-10 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2990F1] focus:border-[#2990F1]"
-  >
-    {Object.entries(SOFTWARE_OPTIONS).map(
-      ([key, { name }]) => (
-        <option key={key} value={key}>
-          {name}
-        </option>
-      )
-    )}
-  </select>
-  <div className="pointer-events-none absolute inset-y-0 right-3 top-7 flex items-center text-gray-400">
-    <svg
-      className="w-5 h-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19 9l-7 7-7-7"
-      />
-    </svg>
-  </div>
-</div>
+                        <div className="relative">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Software
+                          </label>
+                          <select
+                            value={selectedSoftware}
+                            onChange={(e) => {
+                              setSelectedSoftware(e.target.value);
+                              setSelectedVersion("");
+                              setDeliverables({
+                                ...deliverables,
+                                liveTransferFormat: `${e.target.value}`,
+                              });
+                              setErrors((prev) => ({
+                                ...prev,
+                                liveTransferFormat: "",
+                              }));
+                            }}
+                            className="w-full appearance-none bg-white border border-gray-300 text-gray-800 px-4 py-2 pr-10 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2990F1] focus:border-[#2990F1]"
+                          >
+                            {Object.entries(SOFTWARE_OPTIONS).map(
+                              ([key, { name }]) => (
+                                <option key={key} value={key}>
+                                  {name}
+                                </option>
+                              )
+                            )}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-3 top-7 flex items-center text-gray-400">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
+                        </div>
 
-{/* Version Selection */}
-<div className="relative">
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Version
-  </label>
-  <select
-    value={selectedVersion}
-    onChange={(e) => {
-      setSelectedVersion(e.target.value);
-      setDeliverables({
-        ...deliverables,
-        liveTransferFormat: `${selectedSoftware}-${e.target.value}`,
-      });
-      setErrors((prev) => ({
-        ...prev,
-        liveTransferFormat: "",
-      }));
-    }}
-    disabled={!selectedSoftware}
-    className={`w-full appearance-none bg-white px-4 py-2 pr-10 text-gray-800 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2990F1] focus:border-[#2990F1] ${
-      !selectedSoftware
-        ? "border-gray-200 opacity-50 cursor-not-allowed"
-        : "border-gray-300"
-    }`}
-  >
-    <option value="">Select version</option>
-    {SOFTWARE_OPTIONS[selectedSoftware]?.versions.map(
-      (version) => (
-        <option key={version} value={version}>
-          {version}
-        </option>
-      )
-    )}
-  </select>
-  <div className="pointer-events-none absolute inset-y-0 right-3 top-7 flex items-center text-gray-400">
-    <svg
-      className="w-5 h-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19 9l-7 7-7-7"
-      />
-    </svg>
-  </div>
-</div>
+                        {/* Version Selection */}
+                        <div className="relative">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Version
+                          </label>
+                          <select
+                            value={selectedVersion}
+                            onChange={(e) => {
+                              setSelectedVersion(e.target.value);
+                              setDeliverables({
+                                ...deliverables,
+                                liveTransferFormat: `${selectedSoftware}-${e.target.value}`,
+                              });
+                              setErrors((prev) => ({
+                                ...prev,
+                                liveTransferFormat: "",
+                              }));
+                            }}
+                            disabled={!selectedSoftware}
+                            className={`w-full appearance-none bg-white px-4 py-2 pr-10 text-gray-800 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2990F1] focus:border-[#2990F1] ${
+                              !selectedSoftware
+                                ? "border-gray-200 opacity-50 cursor-not-allowed"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            <option value="">Select version</option>
+                            {SOFTWARE_OPTIONS[selectedSoftware]?.versions.map(
+                              (version) => (
+                                <option key={version} value={version}>
+                                  {version}
+                                </option>
+                              )
+                            )}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-3 top-7 flex items-center text-gray-400">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
 
                       {errors.liveTransferFormat && (
@@ -1849,31 +1854,31 @@ const NewQuoteRequest = () => {
 
                 {/* Right Column - Files Section */}
                 <div className="space-y-6 flex flex-col justify-between">
-                 <div>
-    <label className="block text-sm font-medium mb-2 text-gray-700">
-      Upload files
-    </label>
-    <div 
-      className="text-center py-8 border-2 border-dashed border-blue-500 rounded-lg"
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-    >
-      <button
-        onClick={() => setShowUploadPopup(true)}
-        className="px-6 py-3 w-full text-center grid text-blue-500 rounded-md font-lg"
-      >
-        <FiUploadCloud className="inline m-auto" />
-        {isDragging ? "Drop files here" : "Browse your files"}
-      </button>
-    </div>
-    {errors.files && (
-      <p className="mt-2 text-sm text-red-600">
-        {errors.files}
-      </p>
-    )}
-  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      Upload files
+                    </label>
+                    <div
+                      className="text-center py-8 border-2 border-dashed border-blue-500 rounded-lg"
+                      onDragEnter={handleDragEnter}
+                      onDragLeave={handleDragLeave}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                    >
+                      <button
+                        onClick={() => setShowUploadPopup(true)}
+                        className="px-6 py-3 w-full text-center grid text-blue-500 rounded-md font-lg"
+                      >
+                        <FiUploadCloud className="inline m-auto" />
+                        {isDragging ? "Drop files here" : "Browse your files"}
+                      </button>
+                    </div>
+                    {errors.files && (
+                      <p className="mt-2 text-sm text-red-600">
+                        {errors.files}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Submit Button */}
                   <div className="pt-4">
