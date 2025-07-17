@@ -17,6 +17,21 @@ const FileCard = ({
 }) => {
   const fileName = fileUrl?.split("/").pop() || "No file";
 
+  const forceDownload = async (url, filename) => {
+  const response = await fetch(url, { mode: 'cors' });
+  const blob = await response.blob();
+
+  const blobUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(blobUrl);
+};
+
+
   return (
     <div className={`border-b border-gray-200 py-3 px-2 text-sm ${className}`}>
       <div className="grid grid-cols-12 gap-3 items-center text-gray-700">
@@ -56,14 +71,13 @@ const FileCard = ({
             </button>
           )}
 
-          <a
-            href={getAbsoluteUrl(fileUrl)}
-            download
-            style={{textDecoration:'none'}}
-            className="bg-blue-600 text-white p-1 rounded-sm hover:underline"
-          >
-            Download
-          </a>
+         <button
+  onClick={() => forceDownload(getAbsoluteUrl(fileUrl), fileName)}
+  className="bg-blue-600 text-white p-1 rounded-sm hover:underline"
+>
+  Download
+</button>
+
 
           {deletable && (
             <button

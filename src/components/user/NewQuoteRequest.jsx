@@ -148,6 +148,7 @@ const NewQuoteRequest = () => {
         "At least one technical information option must be selected";
       isValid = false;
     }
+    
 // Design intent validation
 if (technicalInfo.designIntent) {
   if (selectedSoftware && !selectedVersion) {
@@ -155,7 +156,6 @@ if (technicalInfo.designIntent) {
     isValid = false;
   }
 }
-
 
     // Files validation
     if (selectedFiles.length === 0) {
@@ -473,14 +473,18 @@ if (technicalInfo.designIntent) {
             <div className="space-y-6 flex flex-col justify-between">
               {selectedFiles.length === 0 ? (
                 <UploadSection 
-                  setShowUploadPopup={setShowUploadPopup}
-                  errors={errors}
-                  isDragging={isDragging}
-                  handleDragEnter={handleDragEnter}
-                  handleDragLeave={handleDragLeave}
-                  handleDragOver={handleDragOver}
-                  handleDrop={handleDrop}
-                />
+  setShowUploadPopup={() => {
+    setUploadStep(0); 
+    setShowUploadPopup(true);
+  }}
+  errors={errors}
+  isDragging={isDragging}
+  handleDragEnter={handleDragEnter}
+  handleDragLeave={handleDragLeave}
+  handleDragOver={handleDragOver}
+  handleDrop={handleDrop}
+/>
+
               ) : (
                 <>
                   <FileViewer

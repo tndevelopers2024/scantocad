@@ -80,6 +80,8 @@ const fadeIn = {
   visible: { opacity: 1, y: 0 },
 };
 
+
+
 export default function QuoteDetail() {
   const { id } = useParams();
   const [quote, setQuote] = useState(null);
@@ -734,15 +736,6 @@ export default function QuoteDetail() {
                 </div>
               )}
 
-              {/* Supporting Documents Content */}
-              {activeTab === "supporting" && (
-                <div className="space-y-3">
-                  {quote.infoFiles?.map((file, index) => (
-                    <FileCard
-                    />
-                  ))}
-                </div>
-              )}
 
               {/* Supporting Documents Content */}
               {activeTab === "supporting" && (
@@ -1158,6 +1151,25 @@ const DetailCard = ({ icon, title, items }) => (
   </div>
 );
 
+const forceDownload = async (url, filename = "file") => {
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    const blob = await response.blob();
+
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    console.error("Download failed", err);
+    alert("Failed to download the file.");
+  }
+};
+
 const FileCard = ({
   title,
   filename,
@@ -1201,14 +1213,13 @@ const FileCard = ({
       </div>
       <div className="flex space-x-2">
         {isCompleted && originalFileUrl && (
-          <a
-            href={originalFileUrl}
-            download
+          <button
+            onClick={() => forceDownload(originalFileUrl, filename)}
             className="p-2 text-gray-500 hover:text-gray-700"
             title="Download Original"
           >
             <FiFile size={16} /> Download
-          </a>
+          </button>
         )}
         {canPreview && (
           <button
@@ -1218,14 +1229,13 @@ const FileCard = ({
             Preview
           </button>
         )}
-        <a
-          href={url}
-          download
+        <button
+          onClick={() => forceDownload(url, filename)}
           className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition-colors flex items-center"
         >
           <FiDownload className="mr-1" />
           Download
-        </a>
+        </button>
       </div>
     </div>
 

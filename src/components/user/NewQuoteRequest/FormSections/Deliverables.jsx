@@ -167,7 +167,7 @@ const Deliverables = ({
           <InfoIcon infoText="Export files in neutral formats like STEP, IGES that can be opened in any CAD software." />
         </label>
 
-        {(technicalInfo.designIntent || technicalInfo.hybridModelling) && (
+        {(technicalInfo.designIntent ) && (
           <label className="inline-flex items-center space-x-2">
             <input
               type="checkbox"
