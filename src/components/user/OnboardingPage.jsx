@@ -18,10 +18,10 @@ const OnboardingPage = () => {
           Register now and get 4 hours of credit to start converting your scans.
         </p>
         <div className="flex  flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-          <a href="/login" className="inline-block px-14 py-4 text-blue-600 border-2 border-blue-600 rounded-full hover:bg-blue-600 hover:text-white transition duration-300 ease-in-out text-lg font-semibold">
+          <a href="/app/login" className="inline-block px-14 py-4 text-blue-600 border-2 border-blue-600 rounded-full hover:bg-blue-600 hover:text-white transition duration-300 ease-in-out text-lg font-semibold">
             Login
           </a>
-          <a href="/register" className="inline-block px-10 py-4 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition duration-300 ease-in-out text-lg font-semibold">
+          <a href="/app/register" className="inline-block px-10 py-4 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition duration-300 ease-in-out text-lg font-semibold">
             Register Now
           </a>
         </div>

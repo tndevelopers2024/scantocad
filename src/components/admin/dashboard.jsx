@@ -317,7 +317,7 @@ const fetchQuotations = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
-                            onClick={() => navigate(`/admin/quotes/${q._id}`)}
+                            onClick={() => navigate(`/app/admin/quotes/${q._id}`)}
                             className="text-indigo-600 hover:text-indigo-900 mr-4"
                           >
                             {q.status === "requested" ? "Prepare Quote" : "View Details"}

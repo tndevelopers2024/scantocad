@@ -15,7 +15,7 @@ const Logout = () => {
     // await api.post('/logout')
 
     // Redirect user after logout
-    navigate('/login', { replace: true });
+    navigate('/app/login', { replace: true });
   }, [navigate]);
 
   return (

@@ -16,7 +16,7 @@
     "axios": "^1.9.0",
     "country-data": "^0.0.31",
     "dotenv": "^16.5.0",
-    "framer-motion": "^12.12.1",
+    "framer-motion": "^12.23.6",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
     "lottie-react": "^2.4.1",

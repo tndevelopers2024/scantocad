@@ -84,7 +84,7 @@ const HowItWorksPage = () => {
         </div>
 
         <button
-          onClick={() => navigate('/request-quote')}
+          onClick={() => navigate('/app/request-quote')}
           className="mt-12 bg-[#1C88ED] hover:bg-[#2980B9] text-white font-bold py-3 px-8 rounded-full shadow-lg transition"
         >
           Request New Quote

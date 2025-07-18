@@ -27,37 +27,37 @@ const Sidebar = () => {
     {
       id: "request-quote",
       title: "Request Quote",
-      path: "/request-quote",
+      path: "/app/request-quote",
       icon: FiPlusCircle,
     },
     {
       id: "my-quotations",
       title: "My Quotations",
-      path: "/my-quotations",
+      path: "/app/my-quotations",
       icon: FiFileText,
     },
     {
       id: "my-orders",
       title: "My Orders",
-      path: "/my-orders",
+      path: "/app/my-orders",
       icon: FiBriefcase,
     },
     {
       id: "recent-updates",
       title: "Recent Updates",
-      path: "/recent-updates",
+      path: "/app/recent-updates",
       icon: FiClock,
     },
     {
       id: "my-profile",
       title: "My Profile",
-      path: "/my-profile",
+      path: "/app/my-profile",
       icon: FiUser,
     },
     {
       id: "logout",
       title: "Logout",
-      path: "/logout",
+      path: "/app/logout",
       icon: FiLogOut, // use the logout icon
     },
   ];

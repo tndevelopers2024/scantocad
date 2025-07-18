@@ -30,7 +30,7 @@ const [showPassword, setShowPassword] = useState(false);
       localStorage.setItem('userId', response.user.id);
       localStorage.setItem('userRole', response.role);
 
-      navigate(response.role === 'admin' ? '/admin/dashboard' : '/my-quotations');
+      navigate(response.role === 'admin' ? '/app/admin/dashboard' : '/app/my-quotations');
     } else {
       setError(response.message || 'Login failed. Please try again.');
     }

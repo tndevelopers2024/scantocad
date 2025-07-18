@@ -374,7 +374,7 @@ const handleRegister = async (e) => {
               <h2 className="text-2xl font-bold text-green-700">Registration Successful!</h2>
               <p className="text-gray-600">Your email has been verified. You're all set to get started.</p>
               <button
-                onClick={() => navigate('/how-it-works')}
+                onClick={() => navigate('/app/how-it-works')}
                 className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
               >
                 Let's Start!

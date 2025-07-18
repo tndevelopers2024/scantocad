@@ -25,6 +25,7 @@ import EditQuoteRequest from "./components/user/EditQuoteRequest.jsx";
 import UsersList from "./components/admin/Customers.jsx";
 import UserDetailsPage from "./components/admin/User.jsx";
 import RateConfigPage from "./components/admin/RateConfigPage.jsx";
+import HomePage from "./components/Home.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -32,36 +33,36 @@ createRoot(document.getElementById("root")).render(
       <Router>
         <Routes>
           {/* Public routes without layout */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<OnboardingPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/app/login" element={<LoginPage />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/app/register" element={<RegisterPage />} />
           <Route path="/adminregister" element={<AdminRegisterPage />} />
-          <Route path="/logout" element={<Logout />} />
+          <Route path="/app/logout" element={<Logout />} />
           <Route 
-            path="/how-it-works" 
+            path="/app/how-it-works" 
             element={<ProtectedRoute><HowItWorksPage /></ProtectedRoute>} 
           />
           
           {/* Admin routes */}
           <Route element={<Layout1 />}>
             <Route 
-              path="/admin/customers" 
+              path="/app/admin/customers" 
               element={<ProtectedRoute><UsersList /></ProtectedRoute>} 
             />
              <Route 
-              path="/admin/dashboard" 
+              path="/app/admin/dashboard" 
               element={<ProtectedRoute><Dashboard /></ProtectedRoute>} 
             />
              <Route 
-              path="/admin/confiquration" 
+              path="/app/admin/confiquration" 
               element={<ProtectedRoute><RateConfigPage /></ProtectedRoute>} 
             />
             <Route 
-              path="/admin/quotes/:id" 
+              path="/app/admin/quotes/:id" 
               element={<ProtectedRoute><QuoteDetail /></ProtectedRoute>} 
             />
              <Route 
-              path="/admin/users/:id" 
+              path="/app/admin/users/:id" 
               element={<ProtectedRoute><UserDetailsPage /></ProtectedRoute>} 
             />
           </Route>
@@ -69,31 +70,31 @@ createRoot(document.getElementById("root")).render(
           {/* User routes with layout */}
           <Route element={<Layout />}>
             <Route 
-              path="/quotes/:id" 
+              path="/app/quotes/:id" 
               element={<ProtectedRoute><UserQuoteDetail /></ProtectedRoute>} 
             />
             <Route 
-              path="/my-orders" 
+              path="/app/my-orders" 
               element={<ProtectedRoute><UserCompletedQuotations /></ProtectedRoute>} 
             />
             <Route 
-              path="/request-quote" 
+              path="/app/request-quote" 
               element={<ProtectedRoute><NewQuoteRequest /></ProtectedRoute>} 
             />
             <Route 
-              path="/my-quotations" 
+              path="/app/my-quotations" 
               element={<ProtectedRoute><UserQuotations /></ProtectedRoute>} 
             />
             <Route 
-              path="/recent-updates" 
+              path="/app/recent-updates" 
               element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} 
             />
             <Route 
-              path="/my-profile" 
+              path="/app/my-profile" 
               element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} 
             />
             <Route 
-              path="/edit-quote/:id" 
+              path="/app/edit-quote/:id" 
               element={<ProtectedRoute><EditQuoteRequest /></ProtectedRoute>} 
             />
           </Route>

@@ -23,19 +23,19 @@ const Sidebar = () => {
   {
     id: 'dashboard',
     title: 'Dashboard',
-    path: '/admin/dashboard',
+    path: '/app/admin/dashboard',
     icon: FiHome,    
   },
   {
     id: 'customers',
     title: 'Customers',
-    path: '/admin/customers',
+    path: '/app/admin/customers',
     icon: FiUsers,   
   },
   {
     id: 'configurations',
     title: 'Configurations',
-    path: '/admin/confiquration',
+    path: '/app/admin/confiquration',
     icon: FiSettings,  
   },
   {

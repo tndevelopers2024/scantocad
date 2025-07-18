@@ -213,7 +213,7 @@ setQuotations(quotationsData.data || []);
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => navigate(`/admin/quotes/${quotation._id}`)}
+                          onClick={() => navigate(`/app/admin/quotes/${quotation._id}`)}
                           className="text-blue-600 hover:text-blue-900 mr-4"
                         >
                           View

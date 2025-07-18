@@ -329,7 +329,7 @@ if (technicalInfo.designIntent) {
 
       showTempNotification("Quote request submitted successfully!");
       setTimeout(() => {
-        navigate("/my-quotations");
+        navigate("/app/my-quotations");
       }, 4000);
     } catch (err) {
       console.error(err);

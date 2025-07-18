@@ -95,7 +95,7 @@ const EditQuoteRequest = () => {
       } catch (error) {
         console.error('Error fetching quote:', error);
         showTempNotification("Failed to load quote details", "error");
-        navigate('/my-quotations');
+        navigate('/app/my-quotations');
       }
     };
 
@@ -137,7 +137,7 @@ const EditQuoteRequest = () => {
       showTempNotification("Quote updated successfully!");
 
       setTimeout(() => {
-        navigate('/my-quotations');
+        navigate('/app/my-quotations');
       }, 2000);
 
     } catch (err) {

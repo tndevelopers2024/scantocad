@@ -241,7 +241,7 @@ const Header = () => {
           {showSettings && (
             <div className="absolute top-8 right-0 bg-white shadow-lg rounded-xl w-48 p-2 z-50">
               <Link
-                to="/help-center"
+                to="/app/help-center"
                 className="flex items-center gap-2 p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                 onClick={() => setShowSettings(false)}
               >
@@ -249,7 +249,7 @@ const Header = () => {
                 <span>Help Center</span>
               </Link>
               <Link
-                to="/logout"
+                to="/app/logout"
                 className="flex items-center gap-2 p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                 onClick={() => setShowSettings(false)}
               >

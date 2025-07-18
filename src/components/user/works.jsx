@@ -234,7 +234,7 @@ const filteredQuotes = statusFilter === "all"
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
-                            onClick={() => navigate(`/quotes/${q._id}`)}
+                            onClick={() => navigate(`/app/quotes/${q._id}`)}
                             className="text-blue-600 hover:text-blue-900 mr-4 transition-colors duration-200"
                           >
                             Details

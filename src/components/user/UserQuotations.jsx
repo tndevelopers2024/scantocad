@@ -364,7 +364,7 @@ export default function UserQuotations() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
-                            onClick={() => navigate(`/quotes/${q._id}`)}
+                            onClick={() => navigate(`/app/quotes/${q._id}`)}
                             className="text-blue-600 hover:text-blue-900 mr-4 transition-colors relative top-[-5px] duration-200"
                           >
                             {q.status === "requested" ? "View Quote" : "Details"}
@@ -387,7 +387,7 @@ export default function UserQuotations() {
                                 <div className="py-1">
                                   <button
                                     onClick={() => {
-                                      navigate(`/edit-quote/${q._id}`);
+                                      navigate(`/app/edit-quote/${q._id}`);
                                       setOpenDropdown(null);
                                     }}
                                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
@@ -474,7 +474,7 @@ export default function UserQuotations() {
               </p>
               <div className="mt-6">
                 <button
-                  onClick={() => navigate("/request-quote")} 
+                  onClick={() => navigate("/app/request-quote")} 
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   <FiPlus className="-ml-1 mr-2 h-5 w-5" />
