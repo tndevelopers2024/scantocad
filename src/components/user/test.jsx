@@ -15,7 +15,7 @@ function PurchaseOrderUploadForm() {
 
     try {
       const response = await fetch(
-        'https://api.convertscantocad.com/api/v1/payments/upload-po',
+        'https://ardpgimerchd.org/api/v1/payments/upload-po',
         {
           method: 'POST',
           headers: {

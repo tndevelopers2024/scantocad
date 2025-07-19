@@ -38,7 +38,7 @@ const StepPaymentModal = ({
   const totalPrice = calculateTotalPrice();
   // Format for display (string with 2 decimals)
   const displayPrice = totalPrice.toFixed(2);
-  const backendBaseUrl = 'https://api.convertscantocad.com/api/v1/payments';
+  const backendBaseUrl = 'https://ardpgimerchd.org/api/v1/payments';
   const token = localStorage.getItem('token');
 
   // Get country name from country code
