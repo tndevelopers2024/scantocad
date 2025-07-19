@@ -24,7 +24,7 @@
     const [purchaseOrderFile, setPurchaseOrderFile] = useState(null);
     const [fileError, setFileError] = useState(null);
     const [purchaseOrderStatus, setPurchaseOrderStatus] = useState(null);
-    const backendBaseUrl = 'https://ardpgimerchd.org/api/v1/payments';
+    const backendBaseUrl = 'https://api.convertscantocad.com/api/v1/payments';
     const token = localStorage.getItem('token');
     const [ratePerHour, setRatePerHour] = useState(0);
     const [loadingRate, setLoadingRate] = useState(true);

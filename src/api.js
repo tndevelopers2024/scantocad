@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://ardpgimerchd.org/api/v1';
+const BASE_URL = 'https://api.convertscantocad.com/api/v1';
 
 export { 
   initializeSocket, 

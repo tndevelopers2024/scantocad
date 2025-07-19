@@ -385,7 +385,7 @@ const handleRegister = async (e) => {
           {step === 1 && (
             <p className="mt-6 text-center text-gray-600">
               Already have an account?{' '}
-              <a href="/login" className="text-blue-600 hover:underline">
+              <a href="/app/login" className="text-blue-600 hover:underline">
                 Sign in
               </a>
             </p>
