@@ -19,7 +19,7 @@ export const register = async ({ name, email, password, phone, country, currency
       country,
       currency,
       role,
-      company // should be an object with keys: name, address, website, industry, gstNumber
+      company 
     });
     return response.data;
   } catch (error) {
