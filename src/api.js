@@ -65,7 +65,31 @@ export const login = async (email, password) => {
   }
 };
 
+// ✅ Forgot Password - Request OTP
+export const forgotPassword = async (email) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/auth/forgotpassword`, { email });
+    return response.data;
+  } catch (error) {
+    console.error('Forgot password failed:', error.response?.data || error.message);
+    throw error;
+  }
+};
 
+// ✅ Reset Password with OTP
+export const resetPassword = async ({ email, otp, newPassword }) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/auth/resetpassword`, {
+      email,
+      otp,
+      newPassword
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Reset password failed:', error.response?.data || error.message);
+    throw error;
+  }
+};
 
 export const avaiableHour = async (id) => {
   try {
