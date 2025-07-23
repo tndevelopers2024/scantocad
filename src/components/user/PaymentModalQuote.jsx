@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
 import PropTypes from 'prop-types';
 import { countries } from 'country-data';
 import { 
@@ -25,6 +25,7 @@ const StepPaymentModal = ({
   const [userCountry, setUserCountry] = useState('US');
   const [countryName, setCountryName] = useState('United States');
   const [paypalSdkLoaded, setPaypalSdkLoaded] = useState(false);
+const paypalButtonContainerRef = useRef(null);
 
   // Strict 2-decimal-place calculation
     const calculateTotalPrice = () => {
@@ -127,7 +128,7 @@ const StepPaymentModal = ({
       }
 
       const script = document.createElement("script");
-      script.src = "https://www.paypal.com/sdk/js?client-id=ASJQyCyGK6uKYaMMyOXb1wXXW1Q4OEcSJfxV_xYzXlccJZ-efkhFTtgim2mECDU4qZRtajbrkJBtqifY&currency=USD";
+      script.src = "https://www.paypal.com/sdk/js?client-id=AQs8LZvxayZ4NHhsoy2H2JVupJlFrpq9awpj0Wikn7YZLMy_411wOLA2rtsAWmQuWhsEdPf8zqIYleBp&currency=USD";
       script.onload = () => {
         setLoadingScript(false);
         setPaypalSdkLoaded(true);
@@ -454,7 +455,7 @@ const StepPaymentModal = ({
 
             {activeGateway === 'paypal' && (
               <div className="mt-4">
-                <div id="paypal-button-container"></div>
+                <div id="paypal-button-container" ref={paypalButtonContainerRef} />
                 {loadingScript && (
                   <div className="text-center py-4">
                     <FiLoader className="animate-spin mx-auto text-blue-600" />

@@ -1,4 +1,4 @@
-  import React, { useState, useEffect } from 'react';
+  import React, { useState, useEffect, useRef  } from 'react';
   import PropTypes from 'prop-types';
   import { countries } from 'country-data';
   import { 
@@ -31,6 +31,7 @@
     const [rateError, setRateError] = useState(null);
     const [userCountry, setUserCountry] = useState('US');
     const [countryName, setCountryName] = useState('United States');
+const paypalButtonContainerRef = useRef(null);
 
     // Calculate total price
     const totalPrice = hours * ratePerHour;
@@ -296,7 +297,7 @@
 
     useEffect(() => {
       if (activeGateway === 'paypal' && step === 2) {
-        loadScript(`https://www.paypal.com/sdk/js?client-id=ASJQyCyGK6uKYaMMyOXb1wXXW1Q4OEcSJfxV_xYzXlccJZ-efkhFTtgim2mECDU4qZRtajbrkJBtqifY&currency=USD`)
+        loadScript(`https://www.paypal.com/sdk/js?client-id=AQs8LZvxayZ4NHhsoy2H2JVupJlFrpq9awpj0Wikn7YZLMy_411wOLA2rtsAWmQuWhsEdPf8zqIYleBp&currency=USD`)
           .then(() => initializePaypal())
           .catch(err => handlePaymentError(err));
       }
@@ -547,7 +548,7 @@
 
               {activeGateway === 'paypal' && (
                 <div className="mt-4">
-                  <div id="paypal-button-container" className="mt-4"></div>
+                 <div id="paypal-button-container" ref={paypalButtonContainerRef} />
                 </div>
               )}
 
