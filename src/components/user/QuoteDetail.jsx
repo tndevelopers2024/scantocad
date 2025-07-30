@@ -430,8 +430,11 @@ export default function QuoteDetail() {
                       : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  Supporting Documents ({quote.infoFiles?.length || 0})
+                  Supporting Docs ({quote.infoFiles?.length || 0})
                 </button>
+
+                  
+
                 {quote.status === "completed" && (
                   <button
                     onClick={() => setActiveTab("completedFiles")}
@@ -447,6 +450,22 @@ export default function QuoteDetail() {
                     )
                   </button>
                 )}
+
+                 {(quote.quotationFile?.length > 0 || quote.completedQuotationFile?.length > 0) && (
+  <button
+    onClick={() => setActiveTab("quotationFile")}
+    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+      activeTab === "quotationFile"
+        ? "border-[#155DFC] text-[#155DFC]"
+        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+    }`}
+  >
+    Quotation Docs (
+    {(quote.quotationFile ? 1 : 0) + (quote.completedQuotationFile ? 1 : 0)}
+    )
+  </button>
+)}
+
               </div>
 
               <div className="p-6">
@@ -683,6 +702,47 @@ export default function QuoteDetail() {
                         )}
                     </motion.div>
                   )}
+
+                   {activeTab === "quotationFile" && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {quote.quotationFile?.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3">
+                            Quotation Documents
+                          </h3>
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-10 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
+                              <div className="col-span-1 text-start">#</div>
+                              <div className="col-span-4 text-start">File</div>
+                              <div className="col-span-5 text-end">Actions</div>
+                            </div>
+                             {quote.quotationFile && (
+                              <FileCard
+                                index={'1'}
+                             
+                                title={`Document`}
+                                fileUrl={quote.quotationFile}
+                              />
+                            )}
+                             {quote.completedQuotationFile && (
+                              <FileCard
+                                index={'2'}
+                                
+                                title={`Document `}
+                                fileUrl={quote.completedQuotationFile}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
                 </AnimatePresence>
               </div>
             </motion.div>

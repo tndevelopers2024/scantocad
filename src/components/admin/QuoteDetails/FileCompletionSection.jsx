@@ -1,6 +1,12 @@
-import React, { useState } from 'react';
-import { FiUpload, FiCheck, FiX, FiDownload, FiPaperclip } from 'react-icons/fi';
-import { completeQuotation } from '../../../api';
+import React, { useState } from "react";
+import {
+  FiUpload,
+  FiCheck,
+  FiX,
+  FiDownload,
+  FiPaperclip,
+} from "react-icons/fi";
+import { completeQuotation } from "../../../api";
 
 const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
   const [selectedFiles, setSelectedFiles] = useState({});
@@ -8,7 +14,7 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
-
+  const [completedQuotationFile, setCompletedQuotationFile] = useState(null);
   const handleFileSelect = (fileId, e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -18,15 +24,15 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
       return;
     }
 
-    setSelectedFiles(prev => ({
+    setSelectedFiles((prev) => ({
       ...prev,
-      [fileId]: file
+      [fileId]: file,
     }));
     setError(null);
   };
 
   const handleRemoveFile = (fileId) => {
-    setSelectedFiles(prev => {
+    setSelectedFiles((prev) => {
       const newState = { ...prev };
       delete newState[fileId];
       return newState;
@@ -35,7 +41,7 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
 
   const handleBulkUpload = async () => {
     if (Object.keys(selectedFiles).length === 0) {
-      setError('Please select at least one file to upload');
+      setError("Please select at least one file to upload");
       return;
     }
 
@@ -47,24 +53,33 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
     try {
       const completedFiles = Object.values(selectedFiles);
 
-      await completeQuotation(quotationId, completedFiles, {
-        onUploadProgress: (percent) => setUploadProgress(percent),
-      });
+      await completeQuotation(
+        quotationId,
+        completedFiles,
+        completedQuotationFile,
+        {
+          onUploadProgress: (percent) => setUploadProgress(percent),
+        }
+      );
 
       setSelectedFiles({});
-      setSuccessMessage('Files uploaded successfully!');
+      setSuccessMessage("Files uploaded successfully!");
       if (onUploadSuccess) onUploadSuccess();
     } catch (err) {
-      console.error('Bulk upload failed:', err);
-      setError(err.details || err.userMessage || 'Failed to upload files. Please try again.');
+      console.error("Bulk upload failed:", err);
+      setError(
+        err.details ||
+          err.userMessage ||
+          "Failed to upload files. Please try again."
+      );
     } finally {
       setIsUploading(false);
     }
   };
 
   const getAbsoluteUrl = (path) => {
-    if (!path) return '#';
-    if (path.startsWith('http')) return path;
+    if (!path) return "#";
+    if (path.startsWith("http")) return path;
     return `https://ardpgimerchd.org${path}`;
   };
 
@@ -77,25 +92,35 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Original File</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed File</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Original File
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Completed File
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {files.map((file) => {
-              const originalName = typeof file.originalFile === 'string'
-                ? file.originalFile.split('/').pop()
-                : file.originalFile?.name || 'N/A';
+              const originalName =
+                typeof file.originalFile === "string"
+                  ? file.originalFile.split("/").pop()
+                  : file.originalFile?.name || "N/A";
 
-              const completedFileUrl = typeof file.completedFile === 'string'
-                ? file.completedFile
-                : file.completedFile?.url;
+              const completedFileUrl =
+                typeof file.completedFile === "string"
+                  ? file.completedFile
+                  : file.completedFile?.url;
 
               const completedFileName = completedFileUrl
-                ? completedFileUrl.split('/').pop()
-                : '';
+                ? completedFileUrl.split("/").pop()
+                : "";
 
               return (
                 <tr key={file._id}>
@@ -108,12 +133,14 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      file.status === 'completed'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {file.status === 'completed' ? 'Completed' : 'Pending'}
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        file.status === "completed"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {file.status === "completed" ? "Completed" : "Pending"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -123,7 +150,8 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
                         download
                         className="text-blue-600 hover:text-blue-800 flex items-center"
                       >
-                        <FiDownload className="mr-1" />Download
+                        <FiDownload className="mr-1" />
+                        Download
                         {completedFileName}
                       </a>
                     ) : selectedFiles[file._id] ? (
@@ -139,11 +167,11 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
                         </button>
                       </div>
                     ) : (
-                      'Not uploaded yet'
+                      "Not uploaded yet"
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {file.status !== 'completed' && (
+                    {file.status !== "completed" && (
                       <label className="cursor-pointer bg-blue-50 text-blue-600 px-3 py-1 rounded-md inline-flex items-center hover:bg-blue-100 transition-colors">
                         <FiUpload className="mr-1" />
                         Select File
@@ -163,6 +191,23 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
         </table>
       </div>
 
+      <div className="w-56 mt-6">
+        <label
+          htmlFor="completedQuotationFile"
+          className="cursor-pointer flex items-center gap-3 border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 hover:border-blue-500 hover:bg-blue-50 transition text-sm text-gray-700"
+        >
+          <FiUpload className="text-blue-600 text-lg" />
+          <span>{completedQuotationFile?.name || "Upload Quotation PDF"}</span>
+        </label>
+        <input
+          id="completedQuotationFile"
+          type="file"
+          accept="application/pdf"
+          onChange={(e) => setCompletedQuotationFile(e.target.files[0])}
+          className="hidden"
+        />
+      </div>
+
       {/* Bulk Upload Section */}
       <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
         <div className="flex justify-between items-center">
@@ -172,22 +217,37 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
           <button
             onClick={handleBulkUpload}
             disabled={
-              isUploading ||
-              Object.keys(selectedFiles).length !== files.length
+              isUploading || Object.keys(selectedFiles).length !== files.length
             }
             className={`px-4 py-2 rounded-md flex items-center ${
               isUploading
-                ? 'bg-blue-400 text-white'
+                ? "bg-blue-400 text-white"
                 : Object.keys(selectedFiles).length === files.length
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-200 text-gray-500 cursor-not-allowed"
             }`}
           >
             {isUploading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Uploading...
               </>

@@ -38,7 +38,7 @@ const FileCard = ({
         {/* Index */}
         <div className="col-span-1 text-center">
           <div className="text-[#5D36F7] bg-[#E0E7FF] w-8 h-8 rounded-md flex items-center justify-center font-semibold">
-            {index + 1}
+          {quote.quotationFile?.length > 0 ? index+1 : index  }
           </div>
         </div>
 

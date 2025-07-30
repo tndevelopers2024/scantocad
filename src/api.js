@@ -252,18 +252,31 @@ export const getQuotationById = async (id) => {
   }
 };
 
-export const raiseQuote = async (id, totalHours, files) => {
+export const raiseQuote = async (id, totalHours, files, quotationFile) => {
   try {
-    const response = await axios.put(
+    const formData = new FormData();
+
+    // ✅ Append totalHours as string
+    formData.append('totalHours', totalHours.toString());
+
+    // ✅ Append files as JSON string
+    formData.append('files', JSON.stringify(files));
+
+
+      formData.append('quotationFile', quotationFile);
+    
+
+    const response = await axios.post(
       `${BASE_URL}/quotations/${id}/quote`,
-      { files, totalHours },
+      formData,
       {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          // DO NOT manually set 'Content-Type' – let Axios handle it for multipart
         },
       }
     );
+
     return response.data;
   } catch (error) {
     console.error('Raising quote failed:', error.response?.data || error.message);
@@ -290,36 +303,46 @@ export const deleteFile = async (id, fileId) => {
 };
 
 
-export const updateEstimatedHours = async (id, files, totalHours = null) => {
+export const updateEstimatedHours = async (id, files, totalHours = null, quotationFile = null) => {
   try {
-    const payload = {
-      files: files.map(file => ({
+    const formData = new FormData();
+
+    // Append file metadata as JSON string
+    formData.append('files', JSON.stringify(
+      files.map(file => ({
         fileId: file._id,
         requiredHour: file.requiredHour
       }))
-    };
+    ));
 
+    // Append totalHours if provided
     if (totalHours !== null) {
-      payload.totalHours = totalHours;
+      formData.append('totalHours', totalHours.toString());
+    }
+
+    // Append file if present
+    if (quotationFile) {
+      formData.append('quotationFile', quotationFile); // File object (e.g., from file input)
     }
 
     const response = await axios.put(
       `${BASE_URL}/quotations/${id}/update-hour`,
-      payload,
+      formData,
       {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          // Let axios set 'Content-Type' automatically for multipart
         },
       }
     );
 
     return response.data;
   } catch (error) {
-    console.error('Updating estimated hours failed:', error);
+    console.error('Updating estimated hours failed:', error.response?.data || error.message);
     throw error;
   }
 };
+
 
 
 export const getQuotationsByuser = async () => {
@@ -416,18 +439,30 @@ export const updateOngoing = async (id) => {
 };
 
 
-export const completeQuotation = async (id, completedFiles, { onUploadProgress } = {}) => {
+export const completeQuotation = async (
+  id,
+  completedFiles,
+  completedQuotationFile,
+  { onUploadProgress } = {}
+) => {
   try {
-    // Create FormData object
     const formData = new FormData();
-    
-    // Append all completed files
+
+    // Append completed supporting files
     if (Array.isArray(completedFiles)) {
-      completedFiles.forEach((file, index) => {
-        formData.append(`completedFiles`, file);
+      completedFiles.forEach((file) => {
+        formData.append('completedFiles', file);
       });
+    } else if (completedFiles) {
+      formData.append('completedFiles', completedFiles);
+    }
+
+    // ✅ Correct field name to match backend: 'quotationFile'
+    if (completedQuotationFile) {
+      console.log('📄 completedQuotationFile:', completedQuotationFile);
+      formData.append('completedQuotationFile', completedQuotationFile);
     } else {
-      formData.append(`completedFiles`, completedFiles);
+      console.warn('⚠️ No completedQuotationFile provided');
     }
 
     const response = await axios.put(
@@ -445,27 +480,30 @@ export const completeQuotation = async (id, completedFiles, { onUploadProgress }
             );
             onUploadProgress(percentCompleted);
           }
-        }
+        },
       }
     );
 
     return response.data;
   } catch (error) {
     console.error('Completing quotation failed:', error);
-    
-    // Enhance the error object with custom messages
+
     const enhancedError = {
       ...error,
       userMessage: 'Failed to submit completed files',
-      details: error.response?.data?.message || 
-               (error.response?.status === 413 
-                ? 'File size exceeds maximum limit' 
-                : 'Network or server error')
+      details:
+        error.response?.data?.message ||
+        (error.response?.status === 413
+          ? 'File size exceeds maximum limit'
+          : 'Network or server error'),
     };
-    
+
     throw enhancedError;
   }
 };
+
+
+
 
 export const rejectWithMessage = async (quotationId, payload) => {
   try {

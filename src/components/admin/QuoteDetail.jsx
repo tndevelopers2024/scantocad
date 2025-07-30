@@ -21,6 +21,7 @@ import {
   FiFile,
   FiUser,
   FiMail,
+  FiUpload,
   FiInfo,
   FiThumbsUp,
   FiThumbsDown,
@@ -80,8 +81,6 @@ const fadeIn = {
   visible: { opacity: 1, y: 0 },
 };
 
-
-
 export default function QuoteDetail() {
   const { id } = useParams();
   const [quote, setQuote] = useState(null);
@@ -99,6 +98,7 @@ export default function QuoteDetail() {
   const [updatingPoStatus, setUpdatingPoStatus] = useState(false);
   const [isEditingHours, setIsEditingHours] = useState(false);
   const [tempHours, setTempHours] = useState("");
+  const [quotationFile, setQuotationFile] = useState(null);
   const { socket } = useSocket();
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [fileHours, setFileHours] = useState({});
@@ -209,7 +209,12 @@ export default function QuoteDetail() {
 
     setSubmitting(true);
     try {
-      const res = await raiseQuote(id, totalHours, filesWithHours);
+      const res = await raiseQuote(
+        id,
+        totalHours,
+        filesWithHours,
+        quotationFile
+      );
       setQuote(res.data);
       showNotification("Quote raised successfully!", "success");
     } catch (err) {
@@ -270,7 +275,12 @@ export default function QuoteDetail() {
       );
 
       // Call the API with both individual file hours and total hours
-      const res = await updateEstimatedHours(id, filesWithHours, totalHours);
+      const res = await updateEstimatedHours(
+        id,
+        filesWithHours,
+        totalHours,
+        quotationFile
+      );
 
       setQuote(res.data);
       showNotification("Estimated hours updated successfully!", "success");
@@ -503,7 +513,8 @@ export default function QuoteDetail() {
                 >
                   Original Files ({quote.files?.length || 0})
                 </button>
-               {(quote.status === "completed" || quote.status === "reported") && (
+                {(quote.status === "completed" ||
+                  quote.status === "reported") && (
                   <button
                     onClick={() => setActiveTab("completed")}
                     className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
@@ -512,7 +523,10 @@ export default function QuoteDetail() {
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
-                    Completed Files ({quote.files?.filter((file) => file.status === "completed").length || 0})
+                    Completed Files (
+                    {quote.files?.filter((file) => file.status === "completed")
+                      .length || 0}
+                    )
                   </button>
                 )}
                 {quote.infoFiles?.length > 0 && (
@@ -527,6 +541,21 @@ export default function QuoteDetail() {
                     Supporting Documents ({quote.infoFiles.length})
                   </button>
                 )}
+               {(quote.quotationFile?.length > 0 || quote.completedQuotationFile?.length > 0) && (
+  <button
+    onClick={() => setActiveTab("quotationFile")}
+    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+      activeTab === "quotationFile"
+        ? "border-[#155DFC] text-[#155DFC]"
+        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+    }`}
+  >
+    Quotation Files (
+    {(quote.quotationFile ? 1 : 0) + (quote.completedQuotationFile ? 1 : 0)}
+    )
+  </button>
+)}
+
               </nav>
             </div>
 
@@ -623,27 +652,49 @@ export default function QuoteDetail() {
                           </div>
                         ))}
                       </div>
-
-                      <div className="mt-4 flex justify-between items-center">
-                        {quote.status === "quoted" && (
-                          <div className="text-md font-medium text-gray-700">
-                            Total Hours:{" "}
-                            <span className="font-bold text-blue-600">
-                              {quote.files?.reduce(
-                                (sum, file) => sum + (fileHours[file._id] || 0),
-                                0
-                              )}
+                      {quote.status === "quoted" && (
+                        <div className="text-md font-medium text-gray-700 mt-4">
+                          Total Hours:{" "}
+                          <span className="font-bold text-blue-600">
+                            {quote.files?.reduce(
+                              (sum, file) => sum + (fileHours[file._id] || 0),
+                              0
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        {/* File Upload */}
+                         {(quote.status === "quoted" || quote.status === "requested") && (
+                        <div className="w-full sm:w-auto">
+                          <label
+                            htmlFor="quotationFile"
+                            className="cursor-pointer flex items-center gap-3 border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 hover:border-blue-500 hover:bg-blue-50 transition text-sm text-gray-700"
+                          >
+                            <FiUpload className="text-blue-600 text-lg" />
+                            <span>
+                              {quotationFile?.name || "Upload Quotation PDF"}
                             </span>
-                          </div>
-                        )}
-
+                          </label>
+                          <input
+                            id="quotationFile"
+                            type="file"
+                            accept="application/pdf"
+                            onChange={(e) =>
+                              setQuotationFile(e.target.files[0])
+                            }
+                            className="hidden"
+                          />
+                        </div>
+                         )}
+                        {/* Update Button */}
                         {quote.status === "quoted" && (
                           <button
                             onClick={handleUpdateHours}
                             disabled={submitting}
-                            className="px-4 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+                            className="px-5 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition disabled:opacity-50"
                           >
-                            {submitting ? "updating..." : "Update Quote"}
+                            {submitting ? "Updating..." : "Update Quote"}
                           </button>
                         )}
                       </div>
@@ -736,7 +787,6 @@ export default function QuoteDetail() {
                 </div>
               )}
 
-
               {/* Supporting Documents Content */}
               {activeTab === "supporting" && (
                 <div className="space-y-3">
@@ -748,6 +798,29 @@ export default function QuoteDetail() {
                       url={getAbsoluteUrl(file)}
                     />
                   ))}
+                </div>
+              )}
+
+              {/* Completed Files Content */}
+              {activeTab === "quotationFile" && (
+                <div className="space-y-3">
+                  {/* Quotation File */}
+                  {quote.quotationFile && (
+                    <FileCard
+                      title="Quotation File"
+                      filename={quote.quotationFile.split("/").pop()}
+                      url={getAbsoluteUrl(quote.quotationFile)}
+                    />
+                  )}
+
+                  {/* Completed Quotation File */}
+                  {quote.completedQuotationFile && (
+                    <FileCard
+                      title="Completed Quotation File"
+                      filename={quote.completedQuotationFile.split("/").pop()}
+                      url={getAbsoluteUrl(quote.completedQuotationFile)}
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -1143,8 +1216,8 @@ const DetailCard = ({ icon, title, items }) => (
     <div className="space-y-3">
       {items.map((item, index) => (
         <div key={index}>
-          <p className="text-md text-black">{item.label} :</p>
-          <p className="text-gray-500">{item.value}</p>
+          <div className="text-md text-black">{item.label} :</div>
+          <div className="text-gray-500">{item.value}</div>
         </div>
       ))}
     </div>
@@ -1153,7 +1226,7 @@ const DetailCard = ({ icon, title, items }) => (
 
 const forceDownload = async (url, filename = "file") => {
   try {
-    const response = await fetch(url, { mode: 'cors' });
+    const response = await fetch(url, { mode: "cors" });
     const blob = await response.blob();
 
     const blobUrl = window.URL.createObjectURL(blob);
@@ -1186,8 +1259,8 @@ const FileCard = ({
   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
     <div className="flex justify-between items-start">
       <div>
-        <p className="text-sm text-gray-500">{title}</p>
-        <p className="text-gray-900 font-medium">{filename}</p>
+        <div className="text-sm text-gray-500">{title}</div>
+        <div className="text-gray-900 font-medium">{filename}</div>
         {status && (
           <span
             className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
@@ -1206,9 +1279,9 @@ const FileCard = ({
           </span>
         )}
         {uploadedAt && (
-          <p className="text-xs text-gray-500 mt-1">
+          <div className="text-xs text-gray-500 mt-1">
             {new Date(uploadedAt).toLocaleString()}
-          </p>
+          </div>
         )}
       </div>
       <div className="flex space-x-2">
@@ -1242,14 +1315,14 @@ const FileCard = ({
     {notes && (
       <div className="mt-3 bg-blue-50 p-3 rounded">
         <h5 className="text-sm font-medium text-blue-800">Notes:</h5>
-        <p className="text-sm text-blue-700 mt-1">{notes}</p>
+        <div className="text-sm text-blue-700 mt-1">{notes}</div>
       </div>
     )}
 
     {reported && (
       <div className="mt-3 bg-red-50 p-3 rounded">
         <h5 className="text-sm font-medium text-red-800">Issues:</h5>
-        <p className="text-sm text-red-700 mt-1">{reported}</p>
+        <div className="text-sm text-red-700 mt-1">{reported}</div>
       </div>
     )}
   </div>
@@ -1266,72 +1339,78 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
   });
 
   // Get all files that need reuploading (reported issues)
-  const reportedFiles = files.filter(file => file.userReportedStatus !== "ok");
+  const reportedFiles = files.filter(
+    (file) => file.userReportedStatus !== "ok"
+  );
 
   // Check if all reported files have a selected file for reupload
-  const allReportedFilesSelected = reportedFiles.length > 0 && 
-    reportedFiles.every(file => filesToReupload[file._id]);
+  const allReportedFilesSelected =
+    reportedFiles.length > 0 &&
+    reportedFiles.every((file) => filesToReupload[file._id]);
 
   const showNotification = (message, type = "success") => {
     setNotification({ show: true, message, type });
-    setTimeout(() => setNotification(prev => ({ ...prev, show: false })), 5000);
+    setTimeout(
+      () => setNotification((prev) => ({ ...prev, show: false })),
+      5000
+    );
   };
 
   const handleFileChange = (fileId, file) => {
-    setFilesToReupload(prev => ({
+    setFilesToReupload((prev) => ({
       ...prev,
       [fileId]: file,
     }));
   };
 
- const handleReupload = async () => {
-  if (!allReportedFilesSelected) {
-    showNotification("Please select replacement files for all reported issues", "error");
-    return;
-  }
+  const handleReupload = async () => {
+    if (!allReportedFilesSelected) {
+      showNotification(
+        "Please select replacement files for all reported issues",
+        "error"
+      );
+      return;
+    }
 
-  setUploading(true);
-  setProgress(0);
-  
-  try {
-    // Get array of file IDs in order
-    const fileIds = reportedFiles.map(file => file._id);
+    setUploading(true);
+    setProgress(0);
 
-    await uploadIssuedFiles(
-      quotationId, 
-      filesToReupload, 
-      fileIds,
-      {
+    try {
+      // Get array of file IDs in order
+      const fileIds = reportedFiles.map((file) => file._id);
+
+      await uploadIssuedFiles(quotationId, filesToReupload, fileIds, {
         onUploadProgress: (progress) => {
           setProgress(progress);
           setNotification({
             show: true,
-            message: progress < 100 
-              ? `Uploading... ${progress}%`
-              : "Finalizing upload...",
-            type: "info"
+            message:
+              progress < 100
+                ? `Uploading... ${progress}%`
+                : "Finalizing upload...",
+            type: "info",
           });
         },
+      });
+
+      showNotification("Files reuploaded successfully!", "success");
+      setFilesToReupload({});
+
+      window.location.reload();
+    } catch (error) {
+      console.error("Reupload failed:", error);
+
+      let errorMessage = error.userMessage || "Failed to reupload files";
+      if (error.response?.status === 400) {
+        errorMessage +=
+          ": " + (error.details || "Invalid file format or selection");
       }
-    );
 
-    showNotification("Files reuploaded successfully!", "success");
-    setFilesToReupload({});
-
-    window.location.reload();
-  } catch (error) {
-    console.error("Reupload failed:", error);
-    
-    let errorMessage = error.userMessage || "Failed to reupload files";
-    if (error.response?.status === 400) {
-      errorMessage += ": " + (error.details || "Invalid file format or selection");
+      showNotification(errorMessage, "error");
+    } finally {
+      setUploading(false);
     }
-    
-    showNotification(errorMessage, "error");
-  } finally {
-    setUploading(false);
-  }
-};
+  };
 
   const downloadFile = (fileUrl, fileName) => {
     if (!fileUrl) return;
@@ -1437,7 +1516,9 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
                         }
                         disabled={uploading}
                       />
-                      {filesToReupload[file._id] ? "Change File" : "Select File"}
+                      {filesToReupload[file._id]
+                        ? "Change File"
+                        : "Select File"}
                     </label>
                     {filesToReupload[file._id] && (
                       <span className="text-xs text-gray-500 mt-1 truncate max-w-xs">
@@ -1460,7 +1541,9 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
 
             {file.notes && (
               <div className="mt-3 bg-blue-50 p-3 rounded">
-                <h5 className="text-sm font-medium text-blue-800">Admin Notes:</h5>
+                <h5 className="text-sm font-medium text-blue-800">
+                  Admin Notes:
+                </h5>
                 <p className="text-sm text-blue-700 mt-1">{file.notes}</p>
               </div>
             )}
@@ -1506,9 +1589,17 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
                 Uploading {progress}%
               </>
             ) : allReportedFilesSelected ? (
-              `Reupload ${reportedFiles.length} File${reportedFiles.length > 1 ? "s" : ""}`
+              `Reupload ${reportedFiles.length} File${
+                reportedFiles.length > 1 ? "s" : ""
+              }`
             ) : (
-              `Select ${reportedFiles.length - Object.keys(filesToReupload).length} More File${reportedFiles.length - Object.keys(filesToReupload).length !== 1 ? "s" : ""}`
+              `Select ${
+                reportedFiles.length - Object.keys(filesToReupload).length
+              } More File${
+                reportedFiles.length - Object.keys(filesToReupload).length !== 1
+                  ? "s"
+                  : ""
+              }`
             )}
           </button>
 
