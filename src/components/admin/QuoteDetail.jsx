@@ -550,7 +550,7 @@ export default function QuoteDetail() {
         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
     }`}
   >
-    Quotation Files (
+    Quotation & Invoice Files (
     {(quote.quotationFile ? 1 : 0) + (quote.completedQuotationFile ? 1 : 0)}
     )
   </button>
@@ -673,18 +673,16 @@ export default function QuoteDetail() {
                           >
                             <FiUpload className="text-blue-600 text-lg" />
                             <span>
-                              {quotationFile?.name || "Upload Quotation PDF"}
+                              {quotationFile?.name || "Upload Quotation"}
                             </span>
                           </label>
-                          <input
-                            id="quotationFile"
-                            type="file"
-                            accept="application/pdf"
-                            onChange={(e) =>
-                              setQuotationFile(e.target.files[0])
-                            }
-                            className="hidden"
-                          />
+                         <input
+  id="quotationFile"
+  type="file"
+  accept=".pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  onChange={(e) => setQuotationFile(e.target.files[0])}
+  className="hidden"
+/>
                         </div>
                          )}
                         {/* Update Button */}
@@ -816,7 +814,7 @@ export default function QuoteDetail() {
                   {/* Completed Quotation File */}
                   {quote.completedQuotationFile && (
                     <FileCard
-                      title="Completed Quotation File"
+                      title="Invoice File"
                       filename={quote.completedQuotationFile.split("/").pop()}
                       url={getAbsoluteUrl(quote.completedQuotationFile)}
                     />

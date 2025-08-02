@@ -197,15 +197,16 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
           className="cursor-pointer flex items-center gap-3 border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 hover:border-blue-500 hover:bg-blue-50 transition text-sm text-gray-700"
         >
           <FiUpload className="text-blue-600 text-lg" />
-          <span>{completedQuotationFile?.name || "Upload Quotation PDF"}</span>
+          <span>{completedQuotationFile?.name || "Upload Invoice"}</span>
         </label>
         <input
-          id="completedQuotationFile"
-          type="file"
-          accept="application/pdf"
-          onChange={(e) => setCompletedQuotationFile(e.target.files[0])}
-          className="hidden"
-        />
+  id="completedQuotationFile"
+  type="file"
+  accept=".pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  onChange={(e) => setCompletedQuotationFile(e.target.files[0])}
+  className="hidden"
+/>
+
       </div>
 
       {/* Bulk Upload Section */}
