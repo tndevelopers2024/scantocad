@@ -589,35 +589,45 @@ export default function QuoteDetail() {
                           <div className="grid grid-cols-12 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
                             <div className="col-span-1 text-center">#</div>
                             <div className="col-span-4">File</div>
+                            {quote.status !=="requested" &&
                             <div className="col-span-2 text-center">
                               Required Hours
                             </div>
-                            <div className="col-span-5 text-right">Actions</div>
+                            }
+                            <div className={`${quote.status !=="requested"? "col-span-5" : "col-span-7"} text-right`}>Actions</div>
                           </div>
                           {quote.files?.length > 0 ? (
-                            quote.files.map((file, index) => (
-                              <FileCard
-                                key={file._id}
-                                index={index}
-                                title={`File ${index + 1}`}
-                                requiredHour={file.requiredHour}
-                                fileUrl={file.originalFile}
-                                onPreview={() => {
-                                  setCurrentFileIndex(index);
-                                  setPreviewingFileIndex(index);
-                                }}
-                                previewable={isSTLFile(file.originalFile)}
-                                status={file.status}
-                                uploadedAt={file.uploadedAt}
-                                onDelete={() => confirmDelete(file._id)}
-                                deletable={quote.status === "quoted"}
-                              />
-                            ))
-                          ) : (
-                            <p className="text-gray-500 text-center py-4">
-                              No original files uploaded
-                            </p>
-                          )}
+  <>
+    {quote.files.map((file, index) => (
+      <FileCard
+        key={file._id}
+        index={index}
+        title={
+          file.fileSourceType === 'cloud_link'
+            ? `Cloud File ${index + 1}`
+            : `File ${index + 1}`
+        }
+        requiredHour={file.requiredHour}
+        fileUrl={file.originalFile}
+        fileSourceType={file.fileSourceType}
+        onPreview={() => {
+          setCurrentFileIndex(index);
+          setPreviewingFileIndex(index);
+        }}
+        previewable={isSTLFile(file.originalFile)}
+        status={file.status}
+        uploadedAt={file.uploadedAt}
+        onDelete={() => confirmDelete(file._id)}
+        deletable={quote.status === "quoted"}
+      />
+    ))}
+  </>
+) : (
+  <p className="text-gray-500 text-center py-4">
+    No original files uploaded
+  </p>
+)}
+
                         </div>
                       </div>
                     </motion.div>

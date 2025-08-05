@@ -2,12 +2,16 @@ import React, { useState, useEffect } from "react";
 import { requestQuote } from "../../api";
 import { useNavigate } from "react-router-dom";
 import CreditHours from "./CreditHours";
-import { STEPS, SOFTWARE_OPTIONS, ALLOWED_INFO_FILE_EXTENSIONS } from "./NewQuoteRequest/constants";
+import {
+  STEPS,
+  SOFTWARE_OPTIONS,
+  ALLOWED_INFO_FILE_EXTENSIONS,
+} from "./NewQuoteRequest/constants";
 import FileViewer from "./NewQuoteRequest/FileUpload/FileViewer";
 import FullScreenViewer from "./NewQuoteRequest/FileUpload/FullScreenViewer";
 import UploadPopup from "./NewQuoteRequest/FileUpload/UploadPopup";
 import ProjectDetails from "./NewQuoteRequest/FormSections/ProjectDetails";
-import InfoFiles from "./NewQuoteRequest/FormSections/InfoFiles"
+import InfoFiles from "./NewQuoteRequest/FormSections/InfoFiles";
 import Deliverables from "./NewQuoteRequest/FormSections/Deliverables";
 import TechnicalInfo from "./NewQuoteRequest/FormSections/TechnicalInfo";
 import InfoIcon from "./NewQuoteRequest/UI/InfoIcon";
@@ -58,6 +62,10 @@ const NewQuoteRequest = () => {
   const [uploadStep, setUploadStep] = useState(0);
   const [showUploadPopup, setShowUploadPopup] = useState(false); // Changed to false initially
   const [progress, setProgress] = useState(0);
+  const [fileInputType, setFileInputType] = useState("upload");
+  const [fileLinks, setFileLinks] = useState([""]);
+const [isLinkReviewing, setIsLinkReviewing] = useState(false);
+
   // Notification state
   const [notification, setNotification] = useState({
     show: false,
@@ -148,34 +156,45 @@ const NewQuoteRequest = () => {
         "At least one technical information option must be selected";
       isValid = false;
     }
-    
-// Design intent validation
-if (technicalInfo.designIntent) {
-  if (selectedSoftware && !selectedVersion) {
-    newErrors.liveTransferFormat = "Please select a version for the chosen software.";
+
+    // Design intent validation
+    if (technicalInfo.designIntent) {
+      if (selectedSoftware && !selectedVersion) {
+        newErrors.liveTransferFormat =
+          "Please select a version for the chosen software.";
+        isValid = false;
+      }
+    }
+
+    // Files validation
+    // Files validation
+if (fileInputType === "upload") {
+  if (selectedFiles.length === 0) {
+    newErrors.files = "At least one file is required";
+    isValid = false;
+  } else {
+    for (const file of selectedFiles) {
+      if (file.size > 1024 * 1024 * 1024) {
+        newErrors.files = `File ${file.name} exceeds 1GB size limit`;
+        isValid = false;
+        break;
+      }
+      const ext = file.name.split(".").pop().toLowerCase();
+      if (!["stl", "ply", "obj"].includes(ext)) {
+        newErrors.files = `File ${file.name} has invalid extension. Allowed: .stl, .ply, .obj`;
+        isValid = false;
+        break;
+      }
+    }
+  }
+} else if (fileInputType === "link") {
+  const hasValidLink = fileLinks.some((link) => link.trim() !== "");
+  if (!hasValidLink) {
+    newErrors.files = "Please provide at least one valid cloud/drive link";
     isValid = false;
   }
 }
 
-    // Files validation
-    if (selectedFiles.length === 0) {
-      newErrors.files = "At least one file is required";
-      isValid = false;
-    } else {
-      for (const file of selectedFiles) {
-        if (file.size > 1024 * 1024 * 1024) {
-          newErrors.files = `File ${file.name} exceeds 1GB size limit`;
-          isValid = false;
-          break;
-        }
-        const ext = file.name.split(".").pop().toLowerCase();
-        if (!["stl", "ply", "obj"].includes(ext)) {
-          newErrors.files = `File ${file.name} has invalid extension. Allowed: .stl, .ply, .obj`;
-          isValid = false;
-          break;
-        }
-      }
-    }
 
     // Info files validation
     if (infoFiles.length > 0) {
@@ -312,9 +331,22 @@ if (technicalInfo.designIntent) {
     formDataToSend.append("technicalInfo", technicalInfoString);
     formDataToSend.append("deliverables", deliverablesString);
 
-    selectedFiles.forEach((file) => {
-      formDataToSend.append("originalFiles", file);
-    });
+ // Always add uploaded files if present
+if (selectedFiles.length > 0) {
+  selectedFiles.forEach((file) => {
+    formDataToSend.append("originalFiles", file);
+  });
+}
+
+// Always add links if present
+const validLinks = fileLinks
+  .map((link) => link.trim())
+  .filter((link) => link !== "");
+
+if (validLinks.length > 0) {
+  formDataToSend.append("originalLinks", JSON.stringify(validLinks));
+}
+
 
     infoFiles.forEach((file) => {
       formDataToSend.append("infoFiles", file);
@@ -383,7 +415,7 @@ if (technicalInfo.designIntent) {
     setCurrentFileIndex(index);
     if (fullScreenViewer) setFullScreenViewer(true);
   };
-  
+
   return (
     <div className="mx-auto p-6 space-y-8 max-w-7xl">
       {/* Notification */}
@@ -392,7 +424,9 @@ if (technicalInfo.designIntent) {
           <Notification
             message={notification.message}
             type={notification.type}
-            onClose={() => setNotification((prev) => ({ ...prev, show: false }))}
+            onClose={() =>
+              setNotification((prev) => ({ ...prev, show: false }))
+            }
           />
         )}
       </AnimatePresence>
@@ -428,7 +462,9 @@ if (technicalInfo.designIntent) {
       </div>
 
       <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
-        <h2 className="text-2xl font-semibold text-gray-800">New Quote Request</h2>
+        <h2 className="text-2xl font-semibold text-gray-800">
+          New Quote Request
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -439,14 +475,14 @@ if (technicalInfo.designIntent) {
                 errors={errors}
                 handleInputChange={handleInputChange}
               />
-              
+
               <TechnicalInfo
                 technicalInfo={technicalInfo}
                 setTechnicalInfo={setTechnicalInfo}
                 errors={errors}
                 setErrors={setErrors}
               />
-              
+
               <Deliverables
                 technicalInfo={technicalInfo}
                 deliverables={deliverables}
@@ -459,7 +495,7 @@ if (technicalInfo.designIntent) {
                 setErrors={setErrors}
                 SOFTWARE_OPTIONS={SOFTWARE_OPTIONS}
               />
-              
+
               <InfoFiles
                 infoFiles={infoFiles}
                 handleInfoFilesChange={handleInfoFilesChange}
@@ -471,20 +507,25 @@ if (technicalInfo.designIntent) {
 
             {/* Right Column - Files Section */}
             <div className="space-y-6 flex flex-col justify-between">
-              {selectedFiles.length === 0 ? (
-                <UploadSection 
-  setShowUploadPopup={() => {
-    setUploadStep(0); 
-    setShowUploadPopup(true);
-  }}
-  errors={errors}
-  isDragging={isDragging}
-  handleDragEnter={handleDragEnter}
-  handleDragLeave={handleDragLeave}
-  handleDragOver={handleDragOver}
-  handleDrop={handleDrop}
-/>
-
+              {(fileInputType === "upload" && selectedFiles.length === 0) ||
+ (fileInputType === "link" && !isLinkReviewing) ? (
+                <UploadSection
+                  setShowUploadPopup={() => {
+                    setUploadStep(0);
+                    setShowUploadPopup(true);
+                  }}
+                  errors={errors}
+                  isDragging={isDragging}
+                  handleDragEnter={handleDragEnter}
+                  handleDragLeave={handleDragLeave}
+                  handleDragOver={handleDragOver}
+                  handleDrop={handleDrop}
+                  fileInputType={fileInputType}
+                  setFileInputType={setFileInputType}
+                  fileLinks={fileLinks}
+                  setFileLinks={setFileLinks}
+                   onLinkReviewComplete={() => setIsLinkReviewing(true)}
+                />
               ) : (
                 <>
                   <FileViewer
@@ -495,30 +536,46 @@ if (technicalInfo.designIntent) {
                     fullScreen={false}
                   />
 
-                  <UploadSummary
-                    selectedFiles={selectedFiles}
-                    setUploadStep={setUploadStep}
-                    setShowUploadPopup={setShowUploadPopup}
-                    setCurrentFile={setCurrentFile}
-                    removeFile={removeFile}
-                  />
+                <UploadSummary
+  selectedFiles={selectedFiles}
+  fileLinks={fileLinks}
+  setFileLinks={setFileLinks} 
+  setUploadStep={setUploadStep}
+  setShowUploadPopup={setShowUploadPopup}
+  setCurrentFile={setCurrentFile}
+  removeFile={removeFile}
+  removeFileLink={(index) => {
+    const newLinks = [...fileLinks];
+    newLinks.splice(index, 1);
+    setFileLinks(newLinks);
+  }}
+/>
                 </>
               )}
 
               {/* Submit Button */}
               <div className="pt-4">
                 <button
-                  type="submit"
-                  disabled={isSubmitting || selectedFiles.length === 0}
-                  className={`w-full px-6 py-3 bg-blue-600 text-white rounded-md font-medium
-                    ${
-                      isSubmitting || selectedFiles.length === 0
-                        ? "opacity-70 cursor-not-allowed"
-                        : "hover:bg-blue-700"
-                    }`}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit Quote Request"}
-                </button>
+  type="submit"
+  disabled={
+    isSubmitting ||
+    (fileInputType === "upload" && selectedFiles.length === 0) ||
+    (fileInputType === "link" &&
+      fileLinks.every((link) => link.trim() === ""))
+  }
+  className={`w-full px-6 py-3 bg-blue-600 text-white rounded-md font-medium
+    ${
+      isSubmitting ||
+      (fileInputType === "upload" && selectedFiles.length === 0) ||
+      (fileInputType === "link" &&
+        fileLinks.every((link) => link.trim() === ""))
+        ? "opacity-70 cursor-not-allowed"
+        : "hover:bg-blue-700"
+    }`}
+>
+  {isSubmitting ? "Submitting..." : "Submit Quote Request"}
+</button>
+
               </div>
             </div>
           </div>

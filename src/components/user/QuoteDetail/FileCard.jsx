@@ -5,6 +5,7 @@ const FileCard = ({
   index,
   title,
   fileUrl,
+  fileSourceType,
   requiredHour,
   onDelete,
   deletable,
@@ -49,7 +50,7 @@ const FileCard = ({
         </div>
 
         {/* Required Hours */}
-        {quote.status !== "completed" && (
+        {quote.status !== "completed" && quote.requiredHour !=="" &&(
           <div className="col-span-2 text-center text-gray-600">
             {requiredHour || ""}
           </div>
@@ -70,13 +71,23 @@ const FileCard = ({
               Preview
             </button>
           )}
-
-         <button
-  onClick={() => forceDownload(getAbsoluteUrl(fileUrl), fileName)}
-  className="bg-blue-600 text-white p-1 rounded-sm hover:underline"
->
-  Download
-</button>
+     {fileSourceType === "upload" ? (
+  <button
+    onClick={() => forceDownload(getAbsoluteUrl(fileUrl), fileName)}
+    className="bg-blue-600 text-white p-1 rounded-sm hover:underline"
+  >
+    Download
+  </button>
+) : (
+  <a
+    href={fileUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-blue-600 hover:underline"
+  >
+    Get Drive/Cloud Link
+  </a>
+)}
 
 
           {deletable && (

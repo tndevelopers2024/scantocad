@@ -629,25 +629,39 @@ export default function QuoteDetail() {
 
                             {/* Actions */}
                             <div className="col-span-3 flex items-center justify-end space-x-3">
-                              {isSTLFile(file.originalFile) && (
-                                <button
-                                  onClick={() => {
-                                    setCurrentFileIndex(index);
-                                    setPreviewingFileIndex(index);
-                                  }}
-                                  className="text-blue-600 text-sm hover:underline"
-                                >
-                                  Preview
-                                </button>
-                              )}
-                              <a
-                                href={getAbsoluteUrl(file.originalFile)}
-                                download
-                                className="text-gray-700 hover:text-gray-900"
-                                title="Download"
-                              >
-                                <FiDownload size={16} />
-                              </a>
+                            {file.fileSourceType === "upload" ? (
+  <>
+    {isSTLFile(file.originalFile) && (
+      <button
+        onClick={() => {
+          setCurrentFileIndex(index);
+          setPreviewingFileIndex(index);
+        }}
+        className="text-blue-600 text-sm hover:underline"
+      >
+        Preview
+      </button>
+    )}
+    <a
+      href={getAbsoluteUrl(file.originalFile)}
+      download
+      className="text-gray-700 hover:text-gray-900 ml-2"
+      title="Download"
+    >
+      <FiDownload size={16} />
+    </a>
+  </>
+) : (
+  <a
+    href={file.originalFile}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-blue-600 hover:underline"
+  >
+    Get Link
+  </a>
+)}
+
                             </div>
                           </div>
                         ))}

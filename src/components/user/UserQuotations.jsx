@@ -385,7 +385,7 @@ export default function UserQuotations() {
                             {q.status?.toLowerCase() === "requested" && openDropdown === q._id && (
                               <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white focus:outline-none z-10">
                                 <div className="py-1">
-                                  <button
+                                  {/* <button
                                     onClick={() => {
                                       navigate(`/app/edit-quote/${q._id}`);
                                       setOpenDropdown(null);
@@ -393,7 +393,7 @@ export default function UserQuotations() {
                                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                                   >
                                     <FiEdit2 className="mr-2" /> Edit
-                                  </button>
+                                  </button> */}
                                   <button
                                     onClick={() => openDeleteConfirmation(q._id)}
                                     className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 hover:text-red-900"
