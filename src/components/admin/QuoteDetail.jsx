@@ -313,8 +313,8 @@ export default function QuoteDetail() {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 1024 * 1024 * 1024) {
-      setFileError("File exceeds 1GB limit");
+    if (file.size > 5 * 1024 * 1024 * 1024) {
+      setFileError("File exceeds 5GB limit");
       return;
     }
 
@@ -656,7 +656,7 @@ export default function QuoteDetail() {
     href={file.originalFile}
     target="_blank"
     rel="noopener noreferrer"
-    className="text-blue-600 hover:underline"
+    className="text-blue-600 text-sm hover:underline"
   >
     Get Link
   </a>

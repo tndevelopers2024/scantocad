@@ -167,21 +167,24 @@ const [isLinkReviewing, setIsLinkReviewing] = useState(false);
     }
 
     // Files validation
-    // Files validation
 if (fileInputType === "upload") {
   if (selectedFiles.length === 0) {
     newErrors.files = "At least one file is required";
     isValid = false;
   } else {
     for (const file of selectedFiles) {
-      if (file.size > 1024 * 1024 * 1024) {
-        newErrors.files = `File ${file.name} exceeds 1GB size limit`;
+      const MAX_SIZE = 5 * 1024 * 1024 * 1024; // 5GB in bytes
+      const allowedExtensions = ["stl", "ply", "obj"];
+
+      if (file.size > MAX_SIZE) {
+        newErrors.files = `File ${file.name} exceeds 5GB size limit`;
         isValid = false;
         break;
       }
+
       const ext = file.name.split(".").pop().toLowerCase();
-      if (!["stl", "ply", "obj"].includes(ext)) {
-        newErrors.files = `File ${file.name} has invalid extension. Allowed: .stl, .ply, .obj`;
+      if (!allowedExtensions.includes(ext)) {
+        newErrors.files = `File ${file.name} has invalid extension. Allowed: .${allowedExtensions.join(", .")}`;
         isValid = false;
         break;
       }
@@ -194,6 +197,7 @@ if (fileInputType === "upload") {
     isValid = false;
   }
 }
+
 
 
     // Info files validation

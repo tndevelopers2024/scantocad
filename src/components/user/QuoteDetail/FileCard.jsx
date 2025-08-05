@@ -19,19 +19,18 @@ const FileCard = ({
   const fileName = fileUrl?.split("/").pop() || "No file";
 
   const forceDownload = async (url, filename) => {
-  const response = await fetch(url, { mode: 'cors' });
-  const blob = await response.blob();
+    const response = await fetch(url, { mode: "cors" });
+    const blob = await response.blob();
 
-  const blobUrl = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = blobUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(blobUrl);
-};
-
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  };
 
   return (
     <div className={`border-b border-gray-200 py-3 px-2 text-sm ${className}`}>
@@ -39,7 +38,7 @@ const FileCard = ({
         {/* Index */}
         <div className="col-span-1 text-center">
           <div className="text-[#5D36F7] bg-[#E0E7FF] w-8 h-8 rounded-md flex items-center justify-center font-semibold">
-          {quote.quotationFile?.length > 0 ? index+1 : index  }
+            {quote.quotationFile?.length > 0 ? index + 1 : index}
           </div>
         </div>
 
@@ -50,7 +49,7 @@ const FileCard = ({
         </div>
 
         {/* Required Hours */}
-        {quote.status !== "completed" && quote.requiredHour !=="" &&(
+        {quote.status !== "completed" && quote.requiredHour !== "" && (
           <div className="col-span-2 text-center text-gray-600">
             {requiredHour || ""}
           </div>
@@ -64,31 +63,30 @@ const FileCard = ({
         >
           {previewable && (
             <button
-            style={{textDecoration:'none'}}
+              style={{ textDecoration: "none" }}
               onClick={onPreview}
               className="bg-blue-600 text-white p-1 rounded-sm hover:underline "
             >
               Preview
             </button>
           )}
-     {fileSourceType === "upload" ? (
-  <button
-    onClick={() => forceDownload(getAbsoluteUrl(fileUrl), fileName)}
-    className="bg-blue-600 text-white p-1 rounded-sm hover:underline"
-  >
-    Download
-  </button>
-) : (
-  <a
-    href={fileUrl}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-blue-600 hover:underline"
-  >
-    Get Drive/Cloud Link
-  </a>
-)}
-
+         {fileSourceType === "cloud_link" ? (
+          <a
+              href={fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              Get Drive/Cloud Link
+            </a>
+          ) : (
+              <button
+              onClick={() => forceDownload(getAbsoluteUrl(fileUrl), fileName)}
+              className="bg-blue-600 text-white p-1 rounded-sm hover:underline"
+            >
+              Download
+            </button>
+          )}
 
           {deletable && (
             <button
@@ -96,7 +94,6 @@ const FileCard = ({
                 e.stopPropagation();
                 onDelete();
               }}
-
               className="text-red-500 hover:text-red-700"
               title="Delete"
             >
@@ -106,10 +103,12 @@ const FileCard = ({
 
           {quote.status === "completed" && (
             <button
-            style={{textDecoration:'none'}}
+              style={{ textDecoration: "none" }}
               onClick={onReportIssue}
               className={`text-sm ${
-                isReported ? "bg-red-500 text-white p-1 rounded-sm" : "bg-blue-600 text-white p-1 rounded-sm"
+                isReported
+                  ? "bg-red-500 text-white p-1 rounded-sm"
+                  : "bg-blue-600 text-white p-1 rounded-sm"
               } hover:underline`}
             >
               {isReported ? "Reported" : "Report Issue"}

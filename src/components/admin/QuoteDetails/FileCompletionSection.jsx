@@ -19,10 +19,11 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 1024 * 1024 * 1024) {
-      setError(`File ${file.name} exceeds 1GB limit`);
-      return;
-    }
+    if (file.size > 5 * 1024 * 1024 * 1024) {
+  setError(`File ${file.name} exceeds 5GB limit`);
+  return;
+}
+
 
     setSelectedFiles((prev) => ({
       ...prev,

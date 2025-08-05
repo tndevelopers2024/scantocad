@@ -404,7 +404,7 @@ export default function QuoteDetail() {
               <div className="flex border-b border-gray-200">
                 <button
                   onClick={() => setActiveTab("details")}
-                  className={`px-4 py-3 font-medium text-sm ${
+                  className={`px-3 py-3 font-medium text-sm ${
                     activeTab === "details"
                       ? "text-blue-600 border-b-2 border-blue-600"
                       : "text-gray-500 hover:text-gray-700"
@@ -414,7 +414,7 @@ export default function QuoteDetail() {
                 </button>
                 <button
                   onClick={() => setActiveTab("originalFiles")}
-                  className={`px-4 py-3 font-medium text-sm ${
+                  className={`px-3 py-3 font-medium text-sm ${
                     activeTab === "originalFiles"
                       ? "text-blue-600 border-b-2 border-blue-600"
                       : "text-gray-500 hover:text-gray-700"
@@ -424,7 +424,7 @@ export default function QuoteDetail() {
                 </button>
                 <button
                   onClick={() => setActiveTab("supportingDocuments")}
-                  className={`px-4 py-3 font-medium text-sm ${
+                  className={`px-3 py-3 font-medium text-sm ${
                     activeTab === "supportingDocuments"
                       ? "text-blue-600 border-b-2 border-blue-600"
                       : "text-gray-500 hover:text-gray-700"
@@ -438,7 +438,7 @@ export default function QuoteDetail() {
                 {quote.status === "completed" && (
                   <button
                     onClick={() => setActiveTab("completedFiles")}
-                    className={`px-4 py-3 font-medium text-sm ${
+                    className={`px-3 py-3 font-medium text-sm ${
                       activeTab === "completedFiles"
                         ? "text-blue-600 border-b-2 border-blue-600"
                         : "text-gray-500 hover:text-gray-700"
@@ -454,7 +454,7 @@ export default function QuoteDetail() {
                  {(quote.quotationFile?.length > 0 || quote.completedQuotationFile?.length > 0) && (
   <button
     onClick={() => setActiveTab("quotationFile")}
-    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+    className={`whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm ${
       activeTab === "quotationFile"
         ? "border-[#155DFC] text-[#155DFC]"
         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
