@@ -76,6 +76,13 @@ const UploadSection = ({
             >
               <FiUploadCloud className="inline m-auto text-2xl mb-2" />
               {isDragging ? "Drop files here" : "Browse your files"}
+              <span className="text-sm" >
+Supported format: .stl .ply .obj 
+<br />
+<span className="block text-sm text-gray-500 mt-1">
+  You can upload files up to 5GB in size.
+</span>
+</span>
             </button>
           </div>
         </div>

@@ -291,6 +291,7 @@ const handleRegister = async (e) => {
               >
                 <option value="user">Individual</option>
                 <option value="company">Company</option>
+                <option value="freelancer">Freelancer</option>
               </select>
 
               {role === 'company' && (
