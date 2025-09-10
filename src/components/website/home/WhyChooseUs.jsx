@@ -13,7 +13,7 @@ export const WhyChooseUs = () => {
     <section className="mt-24 container mx-auto px-4">
       <h2 className="text-center text-4xl font-bold">
         Why <span className="text-blue-500">Choose</span>{' '}
-        <img src="/img/website/home/logo2.png" alt="logo" className="inline w-32 h-auto" />?
+        <img src="/img/website/home/new-logo2.png" alt="logo" className="inline w-62 h-auto" />?
       </h2>
 
       <div className="mt-10 space-y-5">

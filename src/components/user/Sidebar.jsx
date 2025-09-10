@@ -14,8 +14,8 @@ import {
   FiList,
   FiLogOut,
 } from "react-icons/fi";
-import logo from "../../../public/img/logo/logo1.png";
-import logo1 from "../../../public/img/logo/logo2.png";
+import logo from "../../../public/img/logo/new-logo.png";
+import logo1 from "../../../public/img/logo/new-logo.png";
 
 const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState({});

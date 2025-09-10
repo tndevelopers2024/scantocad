@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../../../public/img/logo/logo1.png'; 
+import logo from '../../../public/img/logo/new-logo.png'; 
 import bg from '../../../public/img/Onbording.png'; 
 const OnboardingPage = () => {
   // You would ideally replace these with actual image paths or SVG components

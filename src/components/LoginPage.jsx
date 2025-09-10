@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { login, forgotPassword, resetPassword } from '../api';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../public/img/logo/logo1.png';
+import logo from '../../public/img/logo/new-logo.png';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 function LoginPage() {
@@ -108,7 +108,7 @@ function LoginPage() {
       <div className="flex w-full lg:w-1/2 justify-center items-center p-24">
         <div className="max-w-md w-full space-y-6">
           <div className="text-center">
-            <img src={logo} alt="Convertscantocad" className="mx-auto w-auto" />
+            <img src={logo} alt="Convertscantocad" className="mx-auto w-62" />
             <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
               {mode === 'login'
                 ? 'Sign in!'

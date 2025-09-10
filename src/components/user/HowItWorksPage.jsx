@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiArrowSmRight } from 'react-icons/hi';
-import logo from '../../../public/img/logo/logo1.png';
+import logo from '../../../public/img/logo/new-logo.png';
 
 const HowItWorksPage = () => {
   const navigate = useNavigate();

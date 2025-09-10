@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { register, verifyEmail, resendVerification } from '../api';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../public/img/logo/logo1.png';
+import logo from '../../public/img/logo/new-logo.png';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';

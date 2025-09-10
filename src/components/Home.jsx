@@ -12,12 +12,17 @@ export default function HomePage() {
   return (
     <div className="overflow-x-hidden ">
       {/* Header */}
-      <header className=" bg-[linear-gradient(18.16deg,_#424242_30.16%,_#A8A8A8_284.6%)] flex justify-between items-center px-10 py-5 bg-gradient-to-r from-neutral-700 to-neutral-400 rounded-b-[50px] w-[98%] mx-auto max-sm:justify-center flex-wrap">
+      <header className="bg-[linear-gradient(18.16deg,_#424242_30.16%,_#A8A8A8_284.6%)] flex justify-between items-center px-10 py-5 bg-gradient-to-r from-neutral-700 to-neutral-400 rounded-b-[50px] w-[98%] mx-auto max-sm:justify-center flex-wrap">
         <img
-          src="/img/website/home/logo.png"
+          src="/img/website/home/new-logo.png"
           alt="Logo"
           className="w-[160px]"
         />
+        <div className="flex space-x-10 max-sm:my-4 max-sm:space-x-4">
+          <a href="#home" className="text-white font-semibold hover:underline">Home</a>
+          <a href="#about" className="text-white font-semibold hover:underline">About Us</a>
+          <a href="#blog" className="text-white font-semibold hover:underline">Blog</a>
+        </div>
         <div className="flex items-center gap-6">
             <Link to='/app/login' className="px-6 py-2 text-blue-500 font-semibold border border-blue-400 rounded-lg hover:bg-blue-50 transition duration-300">Log in</Link>
             
