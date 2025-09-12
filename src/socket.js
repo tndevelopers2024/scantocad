@@ -1,7 +1,7 @@
 // src/utils/socket.js
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'https://ardpgimerchd.org';
+const SOCKET_URL = 'http://31.97.202.82';
 
 let socket;
 

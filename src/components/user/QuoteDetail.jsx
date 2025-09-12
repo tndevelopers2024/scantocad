@@ -39,6 +39,7 @@ import SummaryItem from "./QuoteDetail/SummaryItem";
 import Timeline from "./QuoteDetail/Timeline";
 import LoadingSpinner from "./QuoteDetail/LoadingSpinner";
 import NotFoundMessage from "./QuoteDetail/NotFoundMessage";
+import PayOnlyModal from "./QuoteDetail/PayOnlyModal";
 import StepPaymentModal from "./PaymentModal";
 import Notification from "../../contexts/Notification";
 
@@ -71,6 +72,7 @@ export default function QuoteDetail() {
   const [mainNote, setMainNote] = useState("");
   const [showIssueReportModal, setShowIssueReportModal] = useState(false);
   const [previewingFileIndex, setPreviewingFileIndex] = useState(null);
+const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
 
   const fetchQuote = async () => {
     try {
@@ -1253,6 +1255,21 @@ export default function QuoteDetail() {
                 )}
               </motion.div>
             )}
+
+            {(quote.payment.gateway === "purchase_order" ) && (
+  <div className="mt-4">
+    <p className="text-sm text-gray-600 mb-2">
+      Pay your invoice amount here.
+    </p>
+    <button
+      onClick={() => setShowPayOnlyModal(true)}
+      className="w-full px-4 py-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium hover:opacity-95"
+    >
+      Pay Invoice / Pay Only
+    </button>
+  </div>
+)}
+
           </div>
         </div>
       </motion.div>
@@ -1301,6 +1318,19 @@ export default function QuoteDetail() {
             .catch(console.error);
         }}
       />
+
+<PayOnlyModal
+  isOpen={showPayOnlyModal}
+  onClose={() => setShowPayOnlyModal(false)}
+  quotationId={id}
+  requiredHours={quote.requiredHour || 1}
+  onSuccess={() => {
+    setShowPayOnlyModal(false);
+    showTempNotification("Payment recorded successfully", "success");
+    fetchQuote(); // refresh
+  }}
+  showNotification={showTempNotification}
+/>
 
       <AnimatePresence>
         {showSTLViewerFullscreen && quote.files?.length > 0 && (

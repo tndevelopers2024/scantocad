@@ -40,6 +40,15 @@ const statusConfig = {
   },
 };
 
+// --- NEW: payment gateway badge styles/icons
+const paymentConfig = {
+  paypal: { color: "bg-blue-100 text-blue-800", icon: "🅿️", label: "PayPal" },
+  razorpay: { color: "bg-green-100 text-green-800", icon: "💚", label: "Razorpay" },
+  purchase_order: { color: "bg-yellow-100 text-yellow-800", icon: "📄", label: "Purchase Order" },
+  cash: { color: "bg-gray-100 text-gray-800", icon: "💵", label: "Cash" },
+  unknown: { color: "bg-gray-100 text-gray-800", icon: "⏳", label: "Hours" },
+};
+
 const statusList = ["all", "requested", "quoted", "approved", "rejected",  "ongoing", "reported" ,"completed"];
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -53,11 +62,11 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
-const { socket } = useSocket();
+  const { socket } = useSocket();
 
   const QUOTATIONS_PER_PAGE = 10;
 
-const fetchQuotations = () => {
+  const fetchQuotations = () => {
     setIsLoading(true);
     getQuotations()
       .then((res) => {
@@ -108,7 +117,6 @@ const fetchQuotations = () => {
     };
   }, [socket]);
 
-
   const countByStatus = (status) =>
     quotes.filter((q) => q.status?.toLowerCase() === status).length;
 
@@ -123,30 +131,73 @@ const fetchQuotations = () => {
 
     return matchesStatus && matchesSearch;
   });
+
   // Pagination logic
-  const totalPages = Math.ceil(filteredQuotes.length / QUOTATIONS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(filteredQuotes.length / QUOTATIONS_PER_PAGE));
   const indexOfLastQuote = currentPage * QUOTATIONS_PER_PAGE;
   const indexOfFirstQuote = indexOfLastQuote - QUOTATIONS_PER_PAGE;
   const currentQuotes = filteredQuotes.slice(indexOfFirstQuote, indexOfLastQuote);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  useEffect(() => {
+    // if current page becomes out of range due to filtering, clamp it
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginate = (pageNumber) => {
+    if (pageNumber < 1 || pageNumber > totalPages) return;
+    setCurrentPage(pageNumber);
+    // optional: scroll into view or focus top of table
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handlePrevious = () => {
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+      paginate(currentPage - 1);
     }
   };
 
   const handleNext = () => {
     if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+      paginate(currentPage + 1);
     }
+  };
+
+  // Build compact page items (numbers and "..." strings)
+  const getPageItems = (total, current, neighbors = 2) => {
+    // neighbors = how many pages to show on each side of current
+    // always show first and last
+    const pages = [];
+
+    if (total <= 1) return [1];
+
+    const start = Math.max(2, current - neighbors);
+    const end = Math.min(total - 1, current + neighbors);
+
+    pages.push(1);
+
+    if (start > 2) {
+      pages.push("start-ellipsis");
+    }
+
+    for (let p = start; p <= end; p++) {
+      pages.push(p);
+    }
+
+    if (end < total - 1) {
+      pages.push("end-ellipsis");
+    }
+
+    if (total > 1) pages.push(total);
+
+    return pages;
   };
 
   return (
     <div className="p-4 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
       {/* Header with Stats */}
-      <motion.div 
+      <motion.div
         initial="hidden"
         animate="visible"
         variants={fadeIn}
@@ -156,9 +207,7 @@ const fetchQuotations = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Quotation Dashboard</h1>
-            <p className="text-indigo-100 mt-1">
-              {quotes.length} total quotations 
-            </p>
+            <p className="text-indigo-100 mt-1">{quotes.length} total quotations</p>
           </div>
         </div>
 
@@ -171,7 +220,7 @@ const fetchQuotations = () => {
               active={statusFilter === status}
               onClick={() => {
                 setStatusFilter(status);
-                setCurrentPage(1); // Reset to first page when filter changes
+                setCurrentPage(1);
               }}
               config={statusConfig[status]}
             />
@@ -180,7 +229,7 @@ const fetchQuotations = () => {
       </motion.div>
 
       {/* Filters */}
-      <motion.div 
+      <motion.div
         variants={fadeIn}
         transition={{ delay: 0.1, duration: 0.5 }}
         className="mb-6 bg-white rounded-xl p-4 shadow-sm"
@@ -201,7 +250,7 @@ const fetchQuotations = () => {
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                 {capitalize(status)}
+                {capitalize(status)}
               </button>
             ))}
           </div>
@@ -238,7 +287,7 @@ const fetchQuotations = () => {
       </motion.div>
 
       {/* Table */}
-      <motion.div 
+      <motion.div
         variants={fadeIn}
         transition={{ delay: 0.2, duration: 0.5 }}
         className="bg-white rounded-xl shadow overflow-hidden"
@@ -262,6 +311,12 @@ const fetchQuotations = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Contact
                     </th>
+
+                    {/* --- NEW: Payment Gateway column header --- */}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Payment Gateway
+                    </th>
+
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
@@ -272,67 +327,84 @@ const fetchQuotations = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentQuotes.length > 0 ? (
-                    currentQuotes.map((q, i) => (
-                      <motion.tr
-                        key={q._id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className="hover:bg-gray-50"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 font-bold">
-                              {indexOfFirstQuote + i + 1}
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {q.projectName}
+                    currentQuotes.map((q, i) => {
+                      // determine gateway safely
+                      const gwKey = (q.payment && q.payment.gateway) ? q.payment.gateway : "unknown";
+                      const gw = paymentConfig[gwKey] ? paymentConfig[gwKey] : { ...paymentConfig.unknown, label: gwKey };
+
+                      return (
+                        <motion.tr
+                          key={q._id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3 }}
+                          className="hover:bg-gray-50"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 font-bold">
+                                {indexOfFirstQuote + i + 1}
                               </div>
-                              <div className="text-sm text-gray-500">
-                                {new Date(q.createdAt).toLocaleDateString()}
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {q.projectName}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {new Date(q.createdAt).toLocaleDateString()}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{q.user?.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{q.user?.email}</div>
-                          <div className="text-sm text-gray-500">
-                            {q.user?.phone}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              statusConfig[q.status?.toLowerCase()]?.color ||
-                              "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {statusConfig[q.status?.toLowerCase()]?.icon || "📄"}{" "}
-                            {capitalize(q.status)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => navigate(`/app/admin/quotes/${q._id}`)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-4"
-                          >
-                            {q.status === "requested" ? "Prepare Quote" : "View Details"}
-                          </button>
-                          {q.status === "quoted" && (
-                            <button className="text-green-600 hover:text-green-900">
-                              Send Reminder
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{q.user?.name}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{q.user?.email}</div>
+                            <div className="text-sm text-gray-500">{q.user?.phone}</div>
+                          </td>
+
+                          {/* --- NEW: payment gateway cell --- */}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                gw.color
+                              }`}
+                            >
+                              <span className="mr-1">{gw.icon}</span>
+                              <span>{gw.label}</span>
+                            </span>
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                statusConfig[q.status?.toLowerCase()]?.color ||
+                                "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {statusConfig[q.status?.toLowerCase()]?.icon || "📄"}{" "}
+                              {capitalize(q.status)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              onClick={() => navigate(`/app/admin/quotes/${q._id}`)}
+                              className="text-indigo-600 hover:text-indigo-900 mr-4"
+                            >
+                              {q.status === "requested" ? "Prepare Quote" : "View Details"}
                             </button>
-                          )}
-                        </td>
-                      </motion.tr>
-                    ))
+                            {q.status === "quoted" && (
+                              <button className="text-green-600 hover:text-green-900">
+                                Send Reminder
+                              </button>
+                            )}
+                          </td>
+                        </motion.tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center">
+                      <td colSpan={6} className="px-6 py-8 text-center">
                         <div className="text-gray-500">
                           <svg
                             className="mx-auto h-12 w-12 text-gray-400"
@@ -347,9 +419,7 @@ const fetchQuotations = () => {
                               d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                             />
                           </svg>
-                          <h3 className="mt-2 text-lg font-medium">
-                            No quotations found
-                          </h3>
+                          <h3 className="mt-2 text-lg font-medium">No quotations found</h3>
                           <p className="mt-1">
                             {statusFilter !== "all"
                               ? `Try changing your filter or search query`
@@ -362,50 +432,70 @@ const fetchQuotations = () => {
                 </tbody>
               </table>
             </div>
+
             {filteredQuotes.length > 0 && (
               <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
                 <div className="text-sm text-gray-500">
                   Showing <span className="font-medium">{indexOfFirstQuote + 1}</span> to{" "}
-                  <span className="font-medium">
-                    {Math.min(indexOfLastQuote, filteredQuotes.length)}
-                  </span> of{" "}
+                  <span className="font-medium">{Math.min(indexOfLastQuote, filteredQuotes.length)}</span> of{" "}
                   <span className="font-medium">{filteredQuotes.length}</span> results
                 </div>
-                <div className="flex space-x-2">
-                  <button 
+
+                {/* Compact pagination */}
+                <div className="flex items-center space-x-2">
+                  <button
                     onClick={handlePrevious}
                     disabled={currentPage === 1}
                     className={`px-3 py-1 border rounded text-sm font-medium ${
-                      currentPage === 1 
-                        ? "text-gray-400 bg-gray-100 cursor-not-allowed" 
+                      currentPage === 1
+                        ? "text-gray-400 bg-gray-100 cursor-not-allowed"
                         : "text-gray-700 bg-white hover:bg-gray-50"
                     }`}
+                    aria-label="Previous page"
                   >
                     Previous
                   </button>
-                  <div className="flex space-x-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
-                      <button
-                        key={number}
-                        onClick={() => paginate(number)}
-                        className={`px-3 py-1 border rounded text-sm font-medium ${
-                          currentPage === number
-                            ? "bg-indigo-600 text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        {number}
-                      </button>
-                    ))}
-                  </div>
-                  <button 
+
+                  <nav aria-label="Pagination" className="flex items-center space-x-1">
+                    {getPageItems(totalPages, currentPage, 2).map((item, idx) => {
+                      if (typeof item === "number") {
+                        const isActive = item === currentPage;
+                        return (
+                          <button
+                            key={item + "-" + idx}
+                            onClick={() => paginate(item)}
+                            className={`px-3 py-1 border rounded text-sm font-medium ${
+                              isActive ? "bg-indigo-600 text-white" : "bg-white text-gray-700 hover:bg-gray-50"
+                            }`}
+                            aria-current={isActive ? "page" : undefined}
+                          >
+                            {item}
+                          </button>
+                        );
+                      }
+
+                      // ellipsis items
+                      return (
+                        <span
+                          key={item + "-" + idx}
+                          className="px-3 py-1 border rounded text-sm font-medium text-gray-500 bg-white"
+                          aria-hidden="true"
+                        >
+                          &hellip;
+                        </span>
+                      );
+                    })}
+                  </nav>
+
+                  <button
                     onClick={handleNext}
                     disabled={currentPage === totalPages}
                     className={`px-3 py-1 border rounded text-sm font-medium ${
-                      currentPage === totalPages 
-                        ? "text-gray-400 bg-gray-100 cursor-not-allowed" 
+                      currentPage === totalPages
+                        ? "text-gray-400 bg-gray-100 cursor-not-allowed"
                         : "text-gray-700 bg-white hover:bg-gray-50"
                     }`}
+                    aria-label="Next page"
                   >
                     Next
                   </button>

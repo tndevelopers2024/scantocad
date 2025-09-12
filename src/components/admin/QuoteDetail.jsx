@@ -1632,7 +1632,7 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
 const getAbsoluteUrl = (path) => {
   if (!path) return "#";
   if (path.startsWith("http")) return path;
-  return `https://ardpgimerchd.org${path}`;
+  return `http://31.97.202.82${path}`;
 };
 
 const capitalize = (str) =>

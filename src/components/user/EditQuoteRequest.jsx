@@ -88,7 +88,7 @@ const EditQuoteRequest = () => {
         
         // Set file URL if exists
         if (quote.file) {
-          setFileUrl(`https://ardpgimerchd.org${quote.file}`);
+          setFileUrl(`http://31.97.202.82${quote.file}`);
         }
         
         setIsLoading(false);

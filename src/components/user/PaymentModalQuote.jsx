@@ -39,7 +39,7 @@ const paypalButtonContainerRef = useRef(null);
   const totalPrice = calculateTotalPrice();
   // Format for display (string with 2 decimals)
   const displayPrice = totalPrice.toFixed(2);
-  const backendBaseUrl = 'https://ardpgimerchd.org/api/v1/payments';
+  const backendBaseUrl = 'http://31.97.202.82/api/v1/payments';
   const token = localStorage.getItem('token');
 
   // Get country name from country code

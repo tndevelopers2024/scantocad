@@ -15,6 +15,7 @@
     onPOUploadSuccess,
     requiredHours = 1,
     quotationId,
+    hidePOUpload = true,
   }) => {
     const [step, setStep] = useState(1);
     const [hours, setHours] = useState(requiredHours);
@@ -24,7 +25,7 @@
     const [purchaseOrderFile, setPurchaseOrderFile] = useState(null);
     const [fileError, setFileError] = useState(null);
     const [purchaseOrderStatus, setPurchaseOrderStatus] = useState(null);
-    const backendBaseUrl = 'https://ardpgimerchd.org/api/v1/payments';
+    const backendBaseUrl = 'http://31.97.202.82/api/v1/payments';
     const token = localStorage.getItem('token');
     const [ratePerHour, setRatePerHour] = useState(0);
     const [loadingRate, setLoadingRate] = useState(true);
@@ -32,12 +33,12 @@
     const [userCountry, setUserCountry] = useState('US');
     const [countryName, setCountryName] = useState('United States');
 const paypalButtonContainerRef = useRef(null);
-
+console.log('hidePOUpload:', hidePOUpload);
     // Calculate total price
     const totalPrice = hours * ratePerHour;
 
     // File validation constants
-    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    const maxFileSize = 100 * 1024 * 1024; // 100MB
     const allowedFileTypes = [
       'application/pdf', 
       'image/jpeg', 
@@ -451,6 +452,7 @@ const paypalButtonContainerRef = useRef(null);
                   )}
                 </button>
               </div>
+              {!hidePOUpload && (
               <div className="flex flex-col space-y-3">
                 <div className="relative flex items-center py-2">
                   <div className="flex-grow border-t border-gray-200"></div>
@@ -477,7 +479,7 @@ const paypalButtonContainerRef = useRef(null);
                               <FiCheck className="mr-1" /> {purchaseOrderFile.name}
                             </span>
                           ) : (
-                            'PDF, DOC, JPG, PNG (Max 10MB)'
+                            'PDF, DOC, JPG, PNG (Max 100MB)'
                           )}
                         </div>
                       </div>
@@ -518,6 +520,7 @@ const paypalButtonContainerRef = useRef(null);
                   </button>
                 </div>
               </div>
+              )}
             </div>
           )}
 
@@ -625,6 +628,7 @@ const paypalButtonContainerRef = useRef(null);
     onPOUploadSuccess: PropTypes.func.isRequired,
     requiredHours: PropTypes.number,
     quotationId: PropTypes.string.isRequired,
+    hidePOUpload: PropTypes.bool,
   };
 
   export default StepPaymentModal;

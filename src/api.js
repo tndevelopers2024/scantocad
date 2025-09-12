@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://ardpgimerchd.org/api/v1';
+const BASE_URL = 'http://31.97.202.82/api/v1';
 
 export { 
   initializeSocket, 
