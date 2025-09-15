@@ -5,7 +5,7 @@ import { countries } from "country-data";
 import { FiX, FiLoader, FiDollarSign, FiCheckCircle } from "react-icons/fi";
 import { getCurrentRateByCountry, getMe } from "../../../api";
 
-const BACKEND_BASE = "http://31.97.202.82/api/v1/payments"; // keep for order creation
+const BACKEND_BASE = "https://convertscantocad.in/api/v1/payments"; // keep for order creation
 const PAYONLY_ENDPOINT = "/api/payment/pay-only"; // your payOnly endpoint (relative)
 const PAYPAL_CLIENT_ID = "AQs8LZvxayZ4NHhsoy2H2JVupJlFrpq9awpj0Wikn7YZLMy_411wOLA2rtsAWmQuWhsEdPf8zqIYleBp"; // replace if needed
 

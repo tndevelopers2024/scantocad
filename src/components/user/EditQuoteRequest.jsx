@@ -88,7 +88,7 @@ const EditQuoteRequest = () => {
         
         // Set file URL if exists
         if (quote.file) {
-          setFileUrl(`http://31.97.202.82${quote.file}`);
+          setFileUrl(`https://convertscantocad.in${quote.file}`);
         }
         
         setIsLoading(false);

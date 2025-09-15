@@ -15,7 +15,7 @@ function PurchaseOrderUploadForm() {
 
     try {
       const response = await fetch(
-        'http://31.97.202.82/api/v1/payments/upload-po',
+        'https://convertscantocad.in/api/v1/payments/upload-po',
         {
           method: 'POST',
           headers: {

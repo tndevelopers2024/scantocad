@@ -19,7 +19,7 @@ const useCreditHours = () => {
         }
 
         const response = await fetch(
-          `http://31.97.202.82/api/v1/users/${userId}/hours`,
+          `https://convertscantocad.in/api/v1/users/${userId}/hours`,
           {
             method: 'GET',
             headers: {

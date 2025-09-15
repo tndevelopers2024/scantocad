@@ -25,7 +25,7 @@
     const [purchaseOrderFile, setPurchaseOrderFile] = useState(null);
     const [fileError, setFileError] = useState(null);
     const [purchaseOrderStatus, setPurchaseOrderStatus] = useState(null);
-    const backendBaseUrl = 'http://31.97.202.82/api/v1/payments';
+    const backendBaseUrl = 'https://convertscantocad.in/api/v1/payments';
     const token = localStorage.getItem('token');
     const [ratePerHour, setRatePerHour] = useState(0);
     const [loadingRate, setLoadingRate] = useState(true);
