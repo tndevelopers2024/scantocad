@@ -1256,7 +1256,7 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
               </motion.div>
             )}
 
-            {(quote.payment.gateway === "purchase_order" ) && (
+         {quote.payment?.gateway === "purchase_order" && (
   <div className="mt-4">
     <p className="text-sm text-gray-600 mb-2">
       Pay your invoice amount here.
@@ -1269,6 +1269,7 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
     </button>
   </div>
 )}
+
 
           </div>
         </div>

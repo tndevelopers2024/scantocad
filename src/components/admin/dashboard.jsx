@@ -45,7 +45,7 @@ const paymentConfig = {
   paypal: { color: "bg-blue-100 text-blue-800", icon: "🅿️", label: "PayPal" },
   razorpay: { color: "bg-green-100 text-green-800", icon: "💚", label: "Razorpay" },
   purchase_order: { color: "bg-yellow-100 text-yellow-800", icon: "📄", label: "Purchase Order" },
-  cash: { color: "bg-gray-100 text-gray-800", icon: "💵", label: "Cash" },
+  admin_manual: { color: "bg-gray-100 text-gray-800", icon: "💵", label: "Admin Manual" },
   unknown: { color: "bg-gray-100 text-gray-800", icon: "⏳", label: "Hours" },
 };
 

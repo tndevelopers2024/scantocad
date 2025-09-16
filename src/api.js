@@ -740,6 +740,42 @@ export const reportQuotationIssues = async (quotationId, { fileReports = [], mai
   }
 };
 
+// ✅ Admin: Mark Lead as Paid
+export const markLeadAsPaid = async ({ quotationId, amount, hours = 0 }) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/payments/mark-lead-paid`,
+      { quotationId, amount, hours },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`, // admin token required
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Mark lead as paid failed:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// ✅ Get user details by ID (safer than getMe)
+export const getUserDetailsById = async (id) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/users/${id}/details`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch user details:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+
 export const uploadIssuedFiles = async (quotationId, filesToReupload, fileIds, { onUploadProgress } = {}) => {
   try {
     const formData = new FormData();

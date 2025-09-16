@@ -8,6 +8,8 @@ import {
   updatePoStatus,
   updateEstimatedHours,
   uploadIssuedFiles,
+  markLeadAsPaid,
+  getCurrentRateByCountry, getUserDetailsById ,
 } from "../../api";
 import Notification from "../../contexts/Notification";
 import STLViewer from "../../contexts/STLViewer";
@@ -106,6 +108,11 @@ export default function QuoteDetail() {
   const [tempFileHour, setTempFileHour] = useState("");
   const [activeTab, setActiveTab] = useState("original");
   const [previewingFileIndex, setPreviewingFileIndex] = useState(null);
+const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
+const [manualAmount, setManualAmount] = useState("");
+const [calculatedAmount, setCalculatedAmount] = useState(null);
+const [currency, setCurrency] = useState("USD");
+const [markingPaid, setMarkingPaid] = useState(false);
 
   const fetchQuote = async () => {
     try {
@@ -360,6 +367,58 @@ export default function QuoteDetail() {
     return storedUser ? JSON.parse(storedUser) : null;
   };
 
+ const calculateAmount = async () => {
+  try {
+    const userId = quote.user?._id;
+    const userRes = await getUserDetailsById(userId);
+    const user = userRes.data;
+    const countryCode = user.country;
+
+    const rateRes = await getCurrentRateByCountry(countryCode);
+
+    const rate =  rateRes.data.ratePerHour;
+    setCurrency(rateRes.currency || "USD");
+    console.log("Fetched rate:", rateRes.data.ratePerHour, "for country:", countryCode);
+    const amount = (quote.requiredHour || 0) * rate;
+    setCalculatedAmount(amount.toFixed(2));
+  } catch (err) {
+    console.error("Failed to calculate amount:", err);
+    setCalculatedAmount(null);
+  }
+};
+
+useEffect(() => {
+  if (showMarkPaidModal) {
+    calculateAmount();
+  }
+}, [showMarkPaidModal]);
+
+const handleConfirmMarkAsPaid = async () => {
+  setMarkingPaid(true);
+  try {
+    const finalAmount = manualAmount || calculatedAmount || 0;
+
+    await markLeadAsPaid({
+      quotationId: quote._id,
+      amount: finalAmount,
+      hours: quote.requiredHour || 0,
+    });
+
+    // 🔄 Re-fetch the updated quote
+    await fetchQuote();
+
+    showNotification("Quotation marked as paid successfully!", "success");
+    setShowMarkPaidModal(false);
+    setManualAmount("");
+  } catch (err) {
+    console.error(err);
+    showNotification("Failed to mark as paid", "error");
+  } finally {
+    setMarkingPaid(false);
+  }
+};
+
+
   const userDetails = getUserDetailsFromStorage();
   const isSTLFile = (filename) => {
     if (!filename) return false;
@@ -454,36 +513,51 @@ export default function QuoteDetail() {
         {/* Main Content */}
         <div className="p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <DetailCard
-              icon={<FiInfo className="text-indigo-500" />}
-              title="Project Details"
-              items={[
-                {
-                  label: "Description",
-                  value: quote.description || "Not provided",
-                },
-                {
-                  label: "Technical Details",
-                  value: quote.technicalInfo || "Not specified",
-                },
-                {
-                  label: "Live Transfer Format",
-                  value: quote.deliverables ? (
-                    <ul>
-                      {quote.deliverables.split(",").map((item, index) => (
-                        <li key={index}>{item.trim()}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    "Not specified"
-                  ),
-                },
-                {
-                  label: "Required Hours",
-                  value: quote.requiredHour || "Not estimated yet",
-                },
-              ]}
-            />
+           <DetailCard
+  icon={<FiInfo className="text-indigo-500" />}
+  title="Project Details"
+  items={[
+    {
+      label: "Description",
+      value: quote.description || "Not provided",
+    },
+    {
+      label: "Technical Details",
+      value: quote.technicalInfo || "Not specified",
+    },
+    {
+      label: "Live Transfer Format",
+      value: quote.deliverables ? (
+        <ul>
+          {quote.deliverables.split(",").map((item, index) => (
+            <li key={index}>{item.trim()}</li>
+          ))}
+        </ul>
+      ) : (
+        "Not specified"
+      ),
+    },
+    {
+      label: "Required Hours",
+      value: quote.requiredHour || "Not estimated yet",
+    },
+    ...(quote.payment
+      ? [
+          {
+            label: "Payment Gateway",
+            value: quote.payment.gateway || "Not specified",
+          },
+          {
+            label: "Paid Amount",
+            value: quote.payment.amount
+              ? `${quote.payment.amount} ${quote.payment.currency || "USD"}`
+              : "N/A",
+          },
+        ]
+      : []),
+  ]}
+/>
+
 
             <DetailCard
               icon={<FiUser className="text-indigo-500" />}
@@ -498,6 +572,21 @@ export default function QuoteDetail() {
               ]}
             />
           </div>
+{(quote.poStatus === "approved" || 
+  quote.status === "completed" || 
+  quote.status === "reported" || 
+  quote.status === "ongoing") && 
+  quote.payment?.gateway === "purchase_order" && (
+    <div className="mt-4 flex justify-end">
+      <button
+        onClick={() => setShowMarkPaidModal(true)}
+        className="px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+      >
+        Mark as Paid
+      </button>
+    </div>
+)}
+
 
           <div className="space-y-6 mb-8">
             {/* Tabs */}
@@ -1215,6 +1304,55 @@ export default function QuoteDetail() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {showMarkPaidModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+      <h2 className="text-xl font-semibold mb-4">Mark Quotation as Paid</h2>
+
+      <p className="text-sm text-gray-600 mb-2">
+        Required Hours: <b>{quote.requiredHour || 0}</b>
+      </p>
+
+      {calculatedAmount !== null ? (
+        <p className="text-sm text-gray-600 mb-4">
+          Auto-calculated Amount:{" "}
+          <b>
+            {calculatedAmount} {currency}
+          </b>
+        </p>
+      ) : (
+        <p className="text-red-600 mb-4">Could not fetch rate.</p>
+      )}
+
+      <input
+        type="number"
+        placeholder="Enter custom amount (optional)"
+        value={manualAmount}
+        onChange={(e) => setManualAmount(e.target.value)}
+        className="w-full border rounded px-3 py-2 mb-4"
+      />
+
+      <div className="flex justify-end space-x-3">
+        <button
+          onClick={() => setShowMarkPaidModal(false)}
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleConfirmMarkAsPaid}
+          disabled={markingPaid}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
+        >
+          {markingPaid ? "Processing..." : "Confirm"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
     </div>
   );
 }
@@ -1634,6 +1772,8 @@ const getAbsoluteUrl = (path) => {
   if (path.startsWith("http")) return path;
   return `https://convertscantocad.in${path}`;
 };
+
+
 
 const capitalize = (str) =>
   str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
