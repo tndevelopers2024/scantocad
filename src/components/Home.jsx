@@ -12,7 +12,7 @@ export default function HomePage() {
   return (
     <div className="overflow-x-hidden ">
       {/* Header */}
-      <header className="bg-[linear-gradient(18.16deg,_#424242_30.16%,_#A8A8A8_284.6%)] flex justify-between items-center px-10 py-5 bg-gradient-to-r from-neutral-700 to-neutral-400 rounded-b-[50px] w-[98%] mx-auto max-sm:justify-center flex-wrap">
+      <header className="bg-[linear-gradient(18.16deg,_#424242_30.16%,_#A8A8A8_284.6%)] flex justify-between items-center px-10 py-2 bg-gradient-to-r from-neutral-700 to-neutral-400 rounded-b-[50px] w-[98%] mx-auto max-sm:justify-center flex-wrap">
         <img
           src="/img/website/home/new-logo.png"
           alt="Logo"

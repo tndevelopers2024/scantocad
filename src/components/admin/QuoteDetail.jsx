@@ -8,8 +8,9 @@ import {
   updatePoStatus,
   updateEstimatedHours,
   uploadIssuedFiles,
-  markLeadAsPaid,
-  getCurrentRateByCountry, getUserDetailsById ,
+  updateAdminPaymentStatus,
+  getCurrentRateByCountry,
+  getUserDetailsById,
 } from "../../api";
 import Notification from "../../contexts/Notification";
 import STLViewer from "../../contexts/STLViewer";
@@ -33,6 +34,7 @@ import {
   FiSave,
   FiArrowLeft,
   FiArrowRight,
+  FiDollarSign,
 } from "react-icons/fi";
 import FileCompletionSection from "./QuoteDetails/FileCompletionSection";
 
@@ -108,11 +110,15 @@ export default function QuoteDetail() {
   const [tempFileHour, setTempFileHour] = useState("");
   const [activeTab, setActiveTab] = useState("original");
   const [previewingFileIndex, setPreviewingFileIndex] = useState(null);
-const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
-const [manualAmount, setManualAmount] = useState("");
-const [calculatedAmount, setCalculatedAmount] = useState(null);
-const [currency, setCurrency] = useState("USD");
-const [markingPaid, setMarkingPaid] = useState(false);
+  const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
+  const [manualAmount, setManualAmount] = useState("");
+  const [calculatedAmount, setCalculatedAmount] = useState(null);
+  const [currency, setCurrency] = useState("USD");
+  const [markingPaid, setMarkingPaid] = useState(false);
+  const [adminStatus, setAdminStatus] = useState(
+    quote?.payment?.adminStatus || "not_yet_received"
+  );
+  const [partialAmount, setPartialAmount] = useState("");
 
   const fetchQuote = async () => {
     try {
@@ -367,57 +373,72 @@ const [markingPaid, setMarkingPaid] = useState(false);
     return storedUser ? JSON.parse(storedUser) : null;
   };
 
- const calculateAmount = async () => {
-  try {
-    const userId = quote.user?._id;
-    const userRes = await getUserDetailsById(userId);
-    const user = userRes.data;
-    const countryCode = user.country;
+  const calculateAmount = async () => {
+    try {
+      const userId = quote.user?._id;
+      const userRes = await getUserDetailsById(userId);
+      const user = userRes.data;
+      const countryCode = user.country;
 
-    const rateRes = await getCurrentRateByCountry(countryCode);
+      const rateRes = await getCurrentRateByCountry(countryCode);
 
-    const rate =  rateRes.data.ratePerHour;
-    setCurrency(rateRes.currency || "USD");
-    console.log("Fetched rate:", rateRes.data.ratePerHour, "for country:", countryCode);
-    const amount = (quote.requiredHour || 0) * rate;
-    setCalculatedAmount(amount.toFixed(2));
-  } catch (err) {
-    console.error("Failed to calculate amount:", err);
-    setCalculatedAmount(null);
-  }
-};
+      const rate = rateRes.data.ratePerHour;
+      setCurrency(rateRes.currency || "USD");
+      console.log(
+        "Fetched rate:",
+        rateRes.data.ratePerHour,
+        "for country:",
+        countryCode
+      );
+      const amount = (quote.requiredHour || 0) * rate;
+      setCalculatedAmount(amount.toFixed(2));
+    } catch (err) {
+      console.error("Failed to calculate amount:", err);
+      setCalculatedAmount(null);
+    }
+  };
 
-useEffect(() => {
-  if (showMarkPaidModal) {
-    calculateAmount();
-  }
-}, [showMarkPaidModal]);
+  useEffect(() => {
+    if (showMarkPaidModal) {
+      calculateAmount();
+    }
+  }, [showMarkPaidModal]);
+  // keep adminStatus in sync when quote changes
+  useEffect(() => {
+    if (quote?.payment?.adminStatus) {
+      setAdminStatus(quote.payment.adminStatus);
+    }
+  }, [quote?.payment?.adminStatus]);
+  useEffect(() => {
+    if (quote?.payment?.adminStatus === "partial_payment_received") {
+      setPartialAmount(quote.payment?.amount || "");
+    }
+  }, [quote?.payment?.adminStatus, quote?.payment?.amount]);
 
-const handleConfirmMarkAsPaid = async () => {
-  setMarkingPaid(true);
-  try {
-    const finalAmount = manualAmount || calculatedAmount || 0;
+  const handleConfirmMarkAsPaid = async () => {
+    setMarkingPaid(true);
+    try {
+      const finalAmount = manualAmount || calculatedAmount || 0;
 
-    await markLeadAsPaid({
-      quotationId: quote._id,
-      amount: finalAmount,
-      hours: quote.requiredHour || 0,
-    });
+      await markLeadAsPaid({
+        quotationId: quote._id,
+        amount: finalAmount,
+        hours: quote.requiredHour || 0,
+      });
 
-    // 🔄 Re-fetch the updated quote
-    await fetchQuote();
+      // 🔄 Re-fetch the updated quote
+      await fetchQuote();
 
-    showNotification("Quotation marked as paid successfully!", "success");
-    setShowMarkPaidModal(false);
-    setManualAmount("");
-  } catch (err) {
-    console.error(err);
-    showNotification("Failed to mark as paid", "error");
-  } finally {
-    setMarkingPaid(false);
-  }
-};
-
+      showNotification("Quotation marked as paid successfully!", "success");
+      setShowMarkPaidModal(false);
+      setManualAmount("");
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to mark as paid", "error");
+    } finally {
+      setMarkingPaid(false);
+    }
+  };
 
   const userDetails = getUserDetailsFromStorage();
   const isSTLFile = (filename) => {
@@ -513,51 +534,65 @@ const handleConfirmMarkAsPaid = async () => {
         {/* Main Content */}
         <div className="p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-           <DetailCard
-  icon={<FiInfo className="text-indigo-500" />}
-  title="Project Details"
-  items={[
-    {
-      label: "Description",
-      value: quote.description || "Not provided",
-    },
-    {
-      label: "Technical Details",
-      value: quote.technicalInfo || "Not specified",
-    },
-    {
-      label: "Live Transfer Format",
-      value: quote.deliverables ? (
-        <ul>
-          {quote.deliverables.split(",").map((item, index) => (
-            <li key={index}>{item.trim()}</li>
-          ))}
-        </ul>
-      ) : (
-        "Not specified"
-      ),
-    },
-    {
-      label: "Required Hours",
-      value: quote.requiredHour || "Not estimated yet",
-    },
-    ...(quote.payment
-      ? [
-          {
-            label: "Payment Gateway",
-            value: quote.payment.gateway || "Not specified",
-          },
-          {
-            label: "Paid Amount",
-            value: quote.payment.amount
-              ? `${quote.payment.amount} ${quote.payment.currency || "USD"}`
-              : "N/A",
-          },
-        ]
-      : []),
-  ]}
-/>
-
+            <DetailCard
+              icon={<FiInfo className="text-indigo-500" />}
+              title="Project Details"
+              items={[
+                {
+                  label: "Description",
+                  value: quote.description || "Not provided",
+                },
+                {
+                  label: "Technical Details",
+                  value: quote.technicalInfo || "Not specified",
+                },
+                {
+                  label: "Live Transfer Format",
+                  value: quote.deliverables ? (
+                    <ul>
+                      {quote.deliverables.split(",").map((item, index) => (
+                        <li key={index}>{item.trim()}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    "Not specified"
+                  ),
+                },
+                {
+                  label: "Required Hours",
+                  value: quote.requiredHour || "Not estimated yet",
+                },
+                ...(quote.payment
+                  ? [
+                      {
+                        label: "Payment Gateway",
+                        value: quote.payment.gateway || "Not specified",
+                      },
+                      {
+                        label: "Paid Amount",
+                        value: quote.payment.amount
+                          ? `${quote.payment.amount} ${
+                              quote.payment.currency || "USD"
+                            }`
+                          : "N/A",
+                      },
+                      {
+                        label: "Last Updated By",
+                        value:
+                          quote.payment.adminUpdates?.length > 0
+                            ? `${
+                                quote.payment.adminUpdates.slice(-1)[0].admin
+                                  ?.name
+                              } (${
+                                quote.payment.adminUpdates.slice(-1)[0].admin
+                                  ?.email
+                              })`
+                            : "N/A",
+                      },
+                    ]
+                  : []),
+              ]}
+            />
 
             <DetailCard
               icon={<FiUser className="text-indigo-500" />}
@@ -572,21 +607,106 @@ const handleConfirmMarkAsPaid = async () => {
               ]}
             />
           </div>
-{(quote.poStatus === "approved" || 
-  quote.status === "completed" || 
-  quote.status === "reported" || 
-  quote.status === "ongoing") && 
-  quote.payment?.gateway === "purchase_order" && (
-    <div className="mt-4 flex justify-end">
-      <button
-        onClick={() => setShowMarkPaidModal(true)}
-        className="px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
-      >
-        Mark as Paid
-      </button>
-    </div>
-)}
+          {quote.status !== "requested" && (
+            <div className="mt-6 bg-white shadow-md rounded-lg p-6 border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <FiDollarSign className="text-green-600 mr-2" />
+                Admin Payment Status
+              </h3>
 
+              <div className="space-y-4">
+                {/* Status Select */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Choose Status
+                  </label>
+                  <select
+                    value={adminStatus}
+                    onChange={(e) => setAdminStatus(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                  >
+                    <option value="not_yet_received">
+                      ⏳ Not Yet Received
+                    </option>
+                    <option value="partial_payment_received">
+                      💵 Partial Payment Received
+                    </option>
+                    <option value="received">✅ Fully Received</option>
+                  </select>
+                </div>
+
+                {/* Partial Payment Input */}
+                {adminStatus === "partial_payment_received" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Enter Partial Payment Amount
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Enter amount"
+                      value={partialAmount}
+                      onChange={(e) => setPartialAmount(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    />
+                  </div>
+                )}
+
+                {/* Received Note */}
+                {adminStatus === "received" && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center">
+                    <FiCheckCircle className="text-green-600 mr-2" />
+                    <p className="text-sm text-green-700">
+                      Full payment will be marked as <b>received</b> for{" "}
+                      <b>{quote.requiredHour || 0} hours</b>.
+                    </p>
+                  </div>
+                )}
+
+                {/* Not Yet Received Note */}
+                {adminStatus === "not_yet_received" && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center">
+                    <FiClock className="text-yellow-600 mr-2" />
+                    <p className="text-sm text-yellow-700">
+                      No payment has been received yet. This status is
+                      informational only.
+                    </p>
+                  </div>
+                )}
+
+                {/* Save Button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={async () => {
+                      try {
+                        await updateAdminPaymentStatus({
+                          quotationId: quote._id,
+                          adminStatus,
+                          amount:
+                            adminStatus === "partial_payment_received"
+                              ? partialAmount
+                              : undefined,
+                          hours: quote.requiredHour || 0,
+                        });
+                        await fetchQuote();
+                        showNotification(
+                          "Admin status updated successfully!",
+                          "success"
+                        );
+                      } catch (err) {
+                        showNotification(
+                          "Failed to update admin status",
+                          "error"
+                        );
+                      }
+                    }}
+                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition disabled:opacity-50"
+                  >
+                    Update Status
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-6 mb-8">
             {/* Tabs */}
@@ -630,21 +750,22 @@ const handleConfirmMarkAsPaid = async () => {
                     Supporting Documents ({quote.infoFiles.length})
                   </button>
                 )}
-               {(quote.quotationFile?.length > 0 || quote.completedQuotationFile?.length > 0) && (
-  <button
-    onClick={() => setActiveTab("quotationFile")}
-    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-      activeTab === "quotationFile"
-        ? "border-[#155DFC] text-[#155DFC]"
-        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-    }`}
-  >
-    Quotation & Invoice Files (
-    {(quote.quotationFile ? 1 : 0) + (quote.completedQuotationFile ? 1 : 0)}
-    )
-  </button>
-)}
-
+                {(quote.quotationFile?.length > 0 ||
+                  quote.completedQuotationFile?.length > 0) && (
+                  <button
+                    onClick={() => setActiveTab("quotationFile")}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === "quotationFile"
+                        ? "border-[#155DFC] text-[#155DFC]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    Quotation & Invoice Files (
+                    {(quote.quotationFile ? 1 : 0) +
+                      (quote.completedQuotationFile ? 1 : 0)}
+                    )
+                  </button>
+                )}
               </nav>
             </div>
 
@@ -718,39 +839,38 @@ const handleConfirmMarkAsPaid = async () => {
 
                             {/* Actions */}
                             <div className="col-span-3 flex items-center justify-end space-x-3">
-                            {file.fileSourceType === "upload" ? (
-  <>
-    {isSTLFile(file.originalFile) && (
-      <button
-        onClick={() => {
-          setCurrentFileIndex(index);
-          setPreviewingFileIndex(index);
-        }}
-        className="text-blue-600 text-sm hover:underline"
-      >
-        Preview
-      </button>
-    )}
-    <a
-      href={getAbsoluteUrl(file.originalFile)}
-      download
-      className="text-gray-700 hover:text-gray-900 ml-2"
-      title="Download"
-    >
-      <FiDownload size={16} />
-    </a>
-  </>
-) : (
-  <a
-    href={file.originalFile}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-blue-600 text-sm hover:underline"
-  >
-    Get Link
-  </a>
-)}
-
+                              {file.fileSourceType === "upload" ? (
+                                <>
+                                  {isSTLFile(file.originalFile) && (
+                                    <button
+                                      onClick={() => {
+                                        setCurrentFileIndex(index);
+                                        setPreviewingFileIndex(index);
+                                      }}
+                                      className="text-blue-600 text-sm hover:underline"
+                                    >
+                                      Preview
+                                    </button>
+                                  )}
+                                  <a
+                                    href={getAbsoluteUrl(file.originalFile)}
+                                    download
+                                    className="text-gray-700 hover:text-gray-900 ml-2"
+                                    title="Download"
+                                  >
+                                    <FiDownload size={16} />
+                                  </a>
+                                </>
+                              ) : (
+                                <a
+                                  href={file.originalFile}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 text-sm hover:underline"
+                                >
+                                  Get Link
+                                </a>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -768,26 +888,29 @@ const handleConfirmMarkAsPaid = async () => {
                       )}
                       <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         {/* File Upload */}
-                         {(quote.status === "quoted" || quote.status === "requested") && (
-                        <div className="w-full sm:w-auto">
-                          <label
-                            htmlFor="quotationFile"
-                            className="cursor-pointer flex items-center gap-3 border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 hover:border-blue-500 hover:bg-blue-50 transition text-sm text-gray-700"
-                          >
-                            <FiUpload className="text-blue-600 text-lg" />
-                            <span>
-                              {quotationFile?.name || "Upload Quotation"}
-                            </span>
-                          </label>
-                         <input
-  id="quotationFile"
-  type="file"
-  accept=".pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  onChange={(e) => setQuotationFile(e.target.files[0])}
-  className="hidden"
-/>
-                        </div>
-                         )}
+                        {(quote.status === "quoted" ||
+                          quote.status === "requested") && (
+                          <div className="w-full sm:w-auto">
+                            <label
+                              htmlFor="quotationFile"
+                              className="cursor-pointer flex items-center gap-3 border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 hover:border-blue-500 hover:bg-blue-50 transition text-sm text-gray-700"
+                            >
+                              <FiUpload className="text-blue-600 text-lg" />
+                              <span>
+                                {quotationFile?.name || "Upload Quotation"}
+                              </span>
+                            </label>
+                            <input
+                              id="quotationFile"
+                              type="file"
+                              accept=".pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                              onChange={(e) =>
+                                setQuotationFile(e.target.files[0])
+                              }
+                              className="hidden"
+                            />
+                          </div>
+                        )}
                         {/* Update Button */}
                         {quote.status === "quoted" && (
                           <button
@@ -1306,53 +1429,53 @@ const handleConfirmMarkAsPaid = async () => {
       </AnimatePresence>
 
       {showMarkPaidModal && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-      <h2 className="text-xl font-semibold mb-4">Mark Quotation as Paid</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h2 className="text-xl font-semibold mb-4">
+              Mark Quotation as Paid
+            </h2>
 
-      <p className="text-sm text-gray-600 mb-2">
-        Required Hours: <b>{quote.requiredHour || 0}</b>
-      </p>
+            <p className="text-sm text-gray-600 mb-2">
+              Required Hours: <b>{quote.requiredHour || 0}</b>
+            </p>
 
-      {calculatedAmount !== null ? (
-        <p className="text-sm text-gray-600 mb-4">
-          Auto-calculated Amount:{" "}
-          <b>
-            {calculatedAmount} {currency}
-          </b>
-        </p>
-      ) : (
-        <p className="text-red-600 mb-4">Could not fetch rate.</p>
+            {calculatedAmount !== null ? (
+              <p className="text-sm text-gray-600 mb-4">
+                Auto-calculated Amount:{" "}
+                <b>
+                  {calculatedAmount} {currency}
+                </b>
+              </p>
+            ) : (
+              <p className="text-red-600 mb-4">Could not fetch rate.</p>
+            )}
+
+            <input
+              type="number"
+              placeholder="Enter custom amount (optional)"
+              value={manualAmount}
+              onChange={(e) => setManualAmount(e.target.value)}
+              className="w-full border rounded px-3 py-2 mb-4"
+            />
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowMarkPaidModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmMarkAsPaid}
+                disabled={markingPaid}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
+              >
+                {markingPaid ? "Processing..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-
-      <input
-        type="number"
-        placeholder="Enter custom amount (optional)"
-        value={manualAmount}
-        onChange={(e) => setManualAmount(e.target.value)}
-        className="w-full border rounded px-3 py-2 mb-4"
-      />
-
-      <div className="flex justify-end space-x-3">
-        <button
-          onClick={() => setShowMarkPaidModal(false)}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleConfirmMarkAsPaid}
-          disabled={markingPaid}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
-        >
-          {markingPaid ? "Processing..." : "Confirm"}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-
     </div>
   );
 }
@@ -1772,8 +1895,6 @@ const getAbsoluteUrl = (path) => {
   if (path.startsWith("http")) return path;
   return `https://convertscantocad.in${path}`;
 };
-
-
 
 const capitalize = (str) =>
   str ? str.charAt(0).toUpperCase() + str.slice(1) : "";

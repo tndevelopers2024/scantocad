@@ -740,12 +740,12 @@ export const reportQuotationIssues = async (quotationId, { fileReports = [], mai
   }
 };
 
-// ✅ Admin: Mark Lead as Paid
-export const markLeadAsPaid = async ({ quotationId, amount, hours = 0 }) => {
+// ✅ Admin: Update Payment Status
+export const updateAdminPaymentStatus = async ({ quotationId, adminStatus, amount, hours, note }) => {
   try {
-    const response = await axios.post(
-      `${BASE_URL}/payments/mark-lead-paid`,
-      { quotationId, amount, hours },
+    const response = await axios.patch(
+      `${BASE_URL}/payments/update-admin-status`,
+      { quotationId, adminStatus, amount, hours, note }, // include note
       {
         headers: {
           'Content-Type': 'application/json',
@@ -755,10 +755,11 @@ export const markLeadAsPaid = async ({ quotationId, amount, hours = 0 }) => {
     );
     return response.data;
   } catch (error) {
-    console.error('Mark lead as paid failed:', error.response?.data || error.message);
+    console.error('Update admin status failed:', error.response?.data || error.message);
     throw error;
   }
 };
+
 
 // ✅ Get user details by ID (safer than getMe)
 export const getUserDetailsById = async (id) => {

@@ -1265,7 +1265,7 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
       onClick={() => setShowPayOnlyModal(true)}
       className="w-full px-4 py-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium hover:opacity-95"
     >
-      Pay Invoice / Pay Only
+      Pay Now
     </button>
   </div>
 )}

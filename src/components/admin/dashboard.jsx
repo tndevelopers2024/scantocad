@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getQuotations, getAllUsers } from "../../api";
+import { getQuotations, getAllUsers, updateAdminPaymentStatus } from "../../api";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useSocket } from "../../contexts/SocketProvider";
@@ -42,11 +42,9 @@ const statusConfig = {
 
 // --- NEW: payment gateway badge styles/icons
 const paymentConfig = {
-  paypal: { color: "bg-blue-100 text-blue-800", icon: "🅿️", label: "PayPal" },
-  razorpay: { color: "bg-green-100 text-green-800", icon: "💚", label: "Razorpay" },
-  purchase_order: { color: "bg-yellow-100 text-yellow-800", icon: "📄", label: "Purchase Order" },
-  admin_manual: { color: "bg-gray-100 text-gray-800", icon: "💵", label: "Admin Manual" },
-  unknown: { color: "bg-gray-100 text-gray-800", icon: "⏳", label: "Hours" },
+  not_yet_received: { color: "bg-blue-100 text-blue-800", icon: "🅿️", label: "Not Yet" },
+  partial_payment_received: { color: "bg-yellow-100 text-yellow-800", icon: "💚", label: "Partial" },
+  received: { color: "bg-green-100 text-green-800", icon: "✅", label: "Received" },
 };
 
 const statusList = ["all", "requested", "quoted", "approved", "rejected",  "ongoing", "reported" ,"completed"];
@@ -63,6 +61,7 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
   const { socket } = useSocket();
+const [partialPayments, setPartialPayments] = useState({});
 
   const QUOTATIONS_PER_PAGE = 10;
 
@@ -314,7 +313,7 @@ export default function Dashboard() {
 
                     {/* --- NEW: Payment Gateway column header --- */}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Payment Gateway
+                      Payment
                     </th>
 
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -329,7 +328,7 @@ export default function Dashboard() {
                   {currentQuotes.length > 0 ? (
                     currentQuotes.map((q, i) => {
                       // determine gateway safely
-                      const gwKey = (q.payment && q.payment.gateway) ? q.payment.gateway : "unknown";
+                      const gwKey = (q.payment && q.payment.adminStatus) ? q.payment.adminStatus : "unknown";
                       const gw = paymentConfig[gwKey] ? paymentConfig[gwKey] : { ...paymentConfig.unknown, label: gwKey };
 
                       return (
@@ -364,16 +363,94 @@ export default function Dashboard() {
                           </td>
 
                           {/* --- NEW: payment gateway cell --- */}
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                gw.color
-                              }`}
-                            >
-                              <span className="mr-1">{gw.icon}</span>
-                              <span>{gw.label}</span>
-                            </span>
-                          </td>
+                          {/* --- Payment gateway cell --- */}
+<td className="px-6 py-4 whitespace-nowrap">
+  <div className="flex flex-col space-y-2">
+    <select
+      value={partialPayments[q._id]?.status || q.payment?.adminStatus || "not_yet_received"}
+      onChange={(e) => {
+        const newStatus = e.target.value;
+
+        if (newStatus === "partial_payment_received") {
+          // store status locally and prepare amount field
+          setPartialPayments((prev) => ({
+            ...prev,
+            [q._id]: {
+              status: "partial_payment_received",
+              amount: q.payment?.amount || "",
+            },
+          }));
+        } else {
+          // clear any partial state and update backend
+          setPartialPayments((prev) => {
+            const updated = { ...prev };
+            delete updated[q._id];
+            return updated;
+          });
+
+          updateAdminPaymentStatus({
+            quotationId: q._id,
+            adminStatus: newStatus,
+            hours: q.requiredHour || 0,
+          })
+            .then(fetchQuotations)
+            .catch((err) => console.error("Failed to update admin status", err));
+        }
+      }}
+      className="border border-gray-300 rounded px-2 py-1 text-sm"
+    >
+      <option value="not_yet_received">⏳ Not Yet Received</option>
+      <option value="partial_payment_received">💵 Partial Payment</option>
+      <option value="received">✅ Received</option>
+    </select>
+
+    {/* Show partial payment input if selected */}
+    {(partialPayments[q._id]?.status === "partial_payment_received" ||
+      q.payment?.adminStatus === "partial_payment_received") && (
+      <div className="flex items-center space-x-2">
+        <input
+          type="number"
+          placeholder="Enter amount"
+          value={
+            partialPayments[q._id]?.amount ??
+            q.payment?.amount ??
+            ""
+          }
+          onChange={(e) =>
+            setPartialPayments((prev) => ({
+              ...prev,
+              [q._id]: {
+                status: "partial_payment_received",
+                amount: e.target.value,
+              },
+            }))
+          }
+          className="w-24 border border-gray-300 rounded px-2 py-1 text-sm"
+        />
+        <button
+          onClick={async () => {
+            try {
+              await updateAdminPaymentStatus({
+                quotationId: q._id,
+                adminStatus: "partial_payment_received",
+                amount: partialPayments[q._id]?.amount,
+                hours: q.requiredHour || 0,
+                  note: "Received advance of 50% as per agreement",
+              });
+              fetchQuotations();
+            } catch (err) {
+              console.error("Failed to update partial payment", err);
+            }
+          }}
+          className="px-3 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700 transition"
+        >
+          Save
+        </button>
+      </div>
+    )}
+  </div>
+</td>
+
 
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span

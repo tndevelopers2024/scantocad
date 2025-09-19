@@ -452,7 +452,7 @@ console.log('hidePOUpload:', hidePOUpload);
                   )}
                 </button>
               </div>
-              {!hidePOUpload && (
+         
               <div className="flex flex-col space-y-3">
                 <div className="relative flex items-center py-2">
                   <div className="flex-grow border-t border-gray-200"></div>
@@ -520,7 +520,6 @@ console.log('hidePOUpload:', hidePOUpload);
                   </button>
                 </div>
               </div>
-              )}
             </div>
           )}
 
