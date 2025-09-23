@@ -534,65 +534,71 @@ export default function QuoteDetail() {
         {/* Main Content */}
         <div className="p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <DetailCard
-              icon={<FiInfo className="text-indigo-500" />}
-              title="Project Details"
-              items={[
-                {
-                  label: "Description",
-                  value: quote.description || "Not provided",
-                },
-                {
-                  label: "Technical Details",
-                  value: quote.technicalInfo || "Not specified",
-                },
-                {
-                  label: "Live Transfer Format",
-                  value: quote.deliverables ? (
-                    <ul>
-                      {quote.deliverables.split(",").map((item, index) => (
-                        <li key={index}>{item.trim()}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    "Not specified"
-                  ),
-                },
-                {
-                  label: "Required Hours",
-                  value: quote.requiredHour || "Not estimated yet",
-                },
-                ...(quote.payment
-                  ? [
-                      {
-                        label: "Payment Gateway",
-                        value: quote.payment.gateway || "Not specified",
-                      },
-                      {
-                        label: "Paid Amount",
-                        value: quote.payment.amount
-                          ? `${quote.payment.amount} ${
-                              quote.payment.currency || "USD"
-                            }`
-                          : "N/A",
-                      },
-                      {
-                        label: "Last Updated By",
-                        value:
-                          quote.payment.adminUpdates?.length > 0
-                            ? `${
-                                quote.payment.adminUpdates.slice(-1)[0].admin
-                                  ?.name
-                              } (${
-                                quote.payment.adminUpdates.slice(-1)[0].admin
-                                  ?.email
-                              })`
-                            : "N/A",
-                      },
-                    ]
-                  : []),
-              ]}
-            />
+          <DetailCard
+  icon={<FiInfo className="text-indigo-500" />}
+  title="Project Details"
+  items={[
+    {
+      label: "Description",
+      value: quote.description || "Not provided",
+    },
+    {
+      label: "Technical Details",
+      value: quote.technicalInfo || "Not specified",
+    },
+    {
+      label: "Live Transfer Format",
+      value: quote.deliverables ? (
+        <ul>
+          {quote.deliverables.split(",").map((item, index) => (
+            <li key={index}>{item.trim()}</li>
+          ))}
+        </ul>
+      ) : (
+        "Not specified"
+      ),
+    },
+    {
+      label: "Required Hours",
+      value: quote.requiredHour || "Not estimated yet",
+    },
+
+    ...(quote.status === "approved" || quote.status === "ongoing"
+      ? [
+          {
+            label: "Dedicated Hours",
+            value: quote.deductedHours || "Not estimated yet",
+          },
+          {
+            label: "PO Hours",
+            value: quote.poHours || "Not estimated yet",
+          },
+        ]
+      : []),
+
+    ...(quote.payment
+      ? [
+          {
+            label: "Payment Gateway",
+            value: quote.payment.gateway || "Not specified",
+          },
+          {
+            label: "Paid Amount",
+            value: quote.payment.amount
+              ? `${quote.payment.amount} ${quote.payment.currency || "USD"}`
+              : "N/A",
+          },
+          {
+            label: "Last Updated By",
+            value:
+              quote.payment.adminUpdates?.length > 0
+                ? `${quote.payment.adminUpdates.slice(-1)[0].admin?.name} (${quote.payment.adminUpdates.slice(-1)[0].admin?.email})`
+                : "N/A",
+          },
+        ]
+      : []),
+  ]}
+/>
 
             <DetailCard
               icon={<FiUser className="text-indigo-500" />}

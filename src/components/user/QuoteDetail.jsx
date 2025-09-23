@@ -30,6 +30,7 @@ import {
   FiAlertTriangle,
   FiEdit2,
   FiSend,
+  FiFileText
 } from "react-icons/fi";
 import StatusBadge from "./QuoteDetail/StatusBadge";
 import DetailCard from "./QuoteDetail/DetailCard";
@@ -481,7 +482,7 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                     >
                       <DetailCard
                         title="Description"
-                        icon={<FiClock className="text-blue-500" />}
+                        icon={<FiFileText className="text-blue-500" />}
                       >
                         <p className="text-gray-700">
                           {quote.description || "No description provided"}
@@ -543,7 +544,21 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          
+                        </DetailCard>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <DetailCard
+                          title="Hour Summary"
+                          icon={<FiClock className="text-blue-500" />}
+                          className="mt-4"
+                        >
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                             {quote.requiredHour && (
                               <div>
                                 <h4 className="text-sm font-medium text-gray-500">
@@ -554,6 +569,27 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                                 </p>
                               </div>
                             )}
+                            {quote.deductedHours && (
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-500">
+                                  Dedicated Hours
+                                </h4>
+                                <p className="text-lg font-semibold">
+                                  {quote.deductedHours || 0}
+                                </p>
+                              </div>
+                            )}
+                            {quote.poHours && (
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-500">
+                                  PO Hours
+                                </h4>
+                                <p className="text-lg font-semibold">
+                                  {quote.poHours || 0}
+                                </p>
+                              </div>
+                            )}
+                            
                             {availableHours !== null && (
                               <div>
                                 <h4 className="text-sm font-medium text-gray-500">
@@ -571,6 +607,7 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                               </div>
                             )}
                           </div>
+                          
                         </DetailCard>
                       </motion.div>
                     </motion.div>
