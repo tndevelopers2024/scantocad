@@ -41,5 +41,15 @@ export const SOFTWARE_OPTIONS = {
 };
 
 export const ALLOWED_INFO_FILE_EXTENSIONS = [
-  "xls", "pdf", "ppt", "jpeg", "jpg", "png", "tif", "mp"
+  "xls",
+  "xlsx",
+  "docx",  
+  "ppt",
+  "pptx",   
+  "pdf",
+  "jpeg",
+  "jpg",
+  "png",
+  "tif",
+  "mp",
 ];

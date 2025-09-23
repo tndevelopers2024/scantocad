@@ -183,7 +183,7 @@ const handleRegister = async (e) => {
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-white">
         <div className="w-full max-w-md p-8">
           <div className="flex flex-col items-center mb-6">
-            <img src={logo} alt="Logo" className="mb-2" />
+            <img src={logo} alt="Logo" className="mb-2 w-62" />
             <h1 className="text-2xl font-bold text-gray-800 mt-4">
               {step === 1 ? 'Create an account' : 'Verify your email'}
             </h1>

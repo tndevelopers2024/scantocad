@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FiUploadCloud, FiArrowRight, FiTrash2 } from "react-icons/fi";
+import { FiUploadCloud, FiArrowRight, FiTrash2, FiX } from "react-icons/fi";
 import FileViewer from "./FileViewer";
 
 const UploadPopup = ({
@@ -14,6 +14,7 @@ const UploadPopup = ({
   onNavigateFile,
   onToggleFullScreen,
   onRemoveFile,
+  onClose, // ✅ Passed from parent
 }) => {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -61,7 +62,15 @@ const UploadPopup = ({
         }}
         className="fixed inset-0 bg-white m-0 bg-opacity-50 flex items-center justify-center p-4 z-50"
       >
-        <div className="bg-white shadow rounded-lg overflow-hidden w-full max-w-md">
+        <div className="bg-white shadow rounded-lg overflow-hidden w-full max-w-md relative">
+          {/* ✅ Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+          >
+            <FiX size={20} />
+          </button>
+
           <div className="p-12 text-center">
             <h3 className="text-3xl font-semibold text-gray-800 mb-4">
               Upload Files
@@ -136,7 +145,15 @@ const UploadPopup = ({
         }}
         className="fixed inset-0 overflow-y-scroll bg-white px-26 py-20 bg-opacity-50 flex gap-8 items-center justify-center z-50 m-0"
       >
-        <div className="bg-white shadow rounded-lg overflow-hidden w-[50%]">
+        <div className="bg-white shadow rounded-lg overflow-hidden w-[50%] relative">
+          {/* ✅ Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+          >
+            <FiX size={20} />
+          </button>
+
           <div className="p-8">
             <div className="flex mb-6 justify-center">
               <label
@@ -217,6 +234,7 @@ const UploadPopup = ({
             </div>
           </div>
         </div>
+
         <div className="w-[50%] h-full inline-grid gap-5 place-items-end ">
           <FileViewer
             files={selectedFiles}

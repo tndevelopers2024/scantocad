@@ -457,6 +457,7 @@ if (validLinks.length > 0) {
           onNavigateFile={navigateFile}
           onToggleFullScreen={toggleFullScreen}
           onRemoveFile={removeFile}
+          onClose={() => setShowUploadPopup(false)}
         />
       )}
 
