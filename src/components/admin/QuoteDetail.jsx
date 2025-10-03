@@ -409,11 +409,6 @@ export default function QuoteDetail() {
       setAdminStatus(quote.payment.adminStatus);
     }
   }, [quote?.payment?.adminStatus]);
-  useEffect(() => {
-    if (quote?.payment?.adminStatus === "partial_payment_received") {
-      setPartialAmount(quote.payment?.amount || "");
-    }
-  }, [quote?.payment?.adminStatus, quote?.payment?.amount]);
 
   const handleConfirmMarkAsPaid = async () => {
     setMarkingPaid(true);
@@ -627,35 +622,17 @@ export default function QuoteDetail() {
                     Choose Status
                   </label>
                   <select
-                    value={adminStatus}
-                    onChange={(e) => setAdminStatus(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                  >
-                    <option value="not_yet_received">
-                      ⏳ Not Yet Received
-                    </option>
-                    <option value="partial_payment_received">
-                      💵 Partial Payment Received
-                    </option>
-                    <option value="received">✅ Fully Received</option>
-                  </select>
+  value={adminStatus}
+  onChange={(e) => setAdminStatus(e.target.value)}
+  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+>
+  <option value="not_yet_received">⏳ Not Yet Received</option>
+  <option value="received">✅ Received</option>
+</select>
+
                 </div>
 
-                {/* Partial Payment Input */}
-                {adminStatus === "partial_payment_received" && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Enter Partial Payment Amount
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Enter amount"
-                      value={partialAmount}
-                      onChange={(e) => setPartialAmount(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                    />
-                  </div>
-                )}
+                
 
                 {/* Received Note */}
                 {adminStatus === "received" && (
@@ -684,15 +661,13 @@ export default function QuoteDetail() {
                   <button
                     onClick={async () => {
                       try {
-                        await updateAdminPaymentStatus({
-                          quotationId: quote._id,
-                          adminStatus,
-                          amount:
-                            adminStatus === "partial_payment_received"
-                              ? partialAmount
-                              : undefined,
-                          hours: quote.requiredHour || 0,
-                        });
+                       await updateAdminPaymentStatus({
+  quotationId: quote._id,
+  adminStatus,
+  amount: quote.payment?.amount || 0, // keep existing amount if any
+  hours: quote.requiredHour || 0,
+});
+
                         await fetchQuote();
                         showNotification(
                           "Admin status updated successfully!",

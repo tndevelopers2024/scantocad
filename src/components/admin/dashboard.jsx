@@ -1,53 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { getQuotations, getAllUsers, updateAdminPaymentStatus } from "../../api";
+import { getQuotations, updateAdminPaymentStatus } from "../../api";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useSocket } from "../../contexts/SocketProvider";
 
 // Enhanced status label styles with icons
 const statusConfig = {
-  requested: {
-    color: "bg-yellow-100 text-yellow-800",
-    icon: "⏳",
-  },
-  quoted: {
-    color: "bg-blue-100 text-blue-800",
-    icon: "📝",
-  },
-  approved: {
-    color: "bg-green-100 text-green-800",
-    icon: "✅",
-  },
-  rejected: {
-    color: "bg-red-100 text-red-800",
-    icon: "❌",
-  },
-  completed: {
-    color: "bg-purple-100 text-purple-800",
-    icon: "🏁",
-  },
-  ongoing: {
-    color: "bg-orange-100 text-orange-800",
-    icon: "🚧",
-  },
-  reported: {
-    color: "bg-pink-100 text-pink-800",
-    icon: "⚠️",
-  },
-  all: {
-    color: "bg-gray-100 text-gray-800",
-    icon: "📊",
-  },
+  requested: { color: "bg-yellow-100 text-yellow-800", icon: "⏳" },
+  quoted: { color: "bg-blue-100 text-blue-800", icon: "📝" },
+  approved: { color: "bg-green-100 text-green-800", icon: "✅" },
+  rejected: { color: "bg-red-100 text-red-800", icon: "❌" },
+  completed: { color: "bg-purple-100 text-purple-800", icon: "🏁" },
+  ongoing: { color: "bg-orange-100 text-orange-800", icon: "🚧" },
+  reported: { color: "bg-pink-100 text-pink-800", icon: "⚠️" },
+  all: { color: "bg-gray-100 text-gray-800", icon: "📊" },
 };
 
-// --- NEW: payment gateway badge styles/icons
+// --- Payment gateway badge styles/icons (only 2 options now)
 const paymentConfig = {
   not_yet_received: { color: "bg-blue-100 text-blue-800", icon: "🅿️", label: "Not Yet" },
-  partial_payment_received: { color: "bg-yellow-100 text-yellow-800", icon: "💚", label: "Partial" },
   received: { color: "bg-green-100 text-green-800", icon: "✅", label: "Received" },
 };
 
-const statusList = ["all", "requested", "quoted", "approved", "rejected",  "ongoing", "reported" ,"completed"];
+const statusList = ["all", "requested", "quoted", "approved", "rejected", "ongoing", "reported", "completed"];
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
@@ -61,7 +36,6 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
   const { socket } = useSocket();
-const [partialPayments, setPartialPayments] = useState({});
 
   const QUOTATIONS_PER_PAGE = 10;
 
@@ -138,7 +112,6 @@ const [partialPayments, setPartialPayments] = useState({});
   const currentQuotes = filteredQuotes.slice(indexOfFirstQuote, indexOfLastQuote);
 
   useEffect(() => {
-    // if current page becomes out of range due to filtering, clamp it
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
@@ -147,7 +120,6 @@ const [partialPayments, setPartialPayments] = useState({});
   const paginate = (pageNumber) => {
     if (pageNumber < 1 || pageNumber > totalPages) return;
     setCurrentPage(pageNumber);
-    // optional: scroll into view or focus top of table
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -163,10 +135,7 @@ const [partialPayments, setPartialPayments] = useState({});
     }
   };
 
-  // Build compact page items (numbers and "..." strings)
   const getPageItems = (total, current, neighbors = 2) => {
-    // neighbors = how many pages to show on each side of current
-    // always show first and last
     const pages = [];
 
     if (total <= 1) return [1];
@@ -241,7 +210,7 @@ const [partialPayments, setPartialPayments] = useState({});
                 key={status}
                 onClick={() => {
                   setStatusFilter(status);
-                  setCurrentPage(1); // Reset to first page when filter changes
+                  setCurrentPage(1);
                 }}
                 className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
                   statusFilter === status
@@ -278,7 +247,7 @@ const [partialPayments, setPartialPayments] = useState({});
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setCurrentPage(1); // Reset to first page when search changes
+                setCurrentPage(1);
               }}
             />
           </div>
@@ -301,35 +270,19 @@ const [partialPayments, setPartialPayments] = useState({});
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Project
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact
-                    </th>
-
-                    {/* --- NEW: Payment Gateway column header --- */}
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Payment
-                    </th>
-
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentQuotes.length > 0 ? (
                     currentQuotes.map((q, i) => {
-                      // determine gateway safely
-                      const gwKey = (q.payment && q.payment.adminStatus) ? q.payment.adminStatus : "unknown";
-                      const gw = paymentConfig[gwKey] ? paymentConfig[gwKey] : { ...paymentConfig.unknown, label: gwKey };
+                      const gwKey = q.payment?.adminStatus || "not_yet_received";
+                      const gw = paymentConfig[gwKey] || { color: "bg-gray-100 text-gray-800", icon: "❔", label: gwKey };
 
                       return (
                         <motion.tr
@@ -345,12 +298,8 @@ const [partialPayments, setPartialPayments] = useState({});
                                 {indexOfFirstQuote + i + 1}
                               </div>
                               <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {q.projectName}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  {new Date(q.createdAt).toLocaleDateString()}
-                                </div>
+                                <div className="text-sm font-medium text-gray-900">{q.projectName}</div>
+                                <div className="text-sm text-gray-500">{new Date(q.createdAt).toLocaleDateString()}</div>
                               </div>
                             </div>
                           </td>
@@ -362,107 +311,36 @@ const [partialPayments, setPartialPayments] = useState({});
                             <div className="text-sm text-gray-500">{q.user?.phone}</div>
                           </td>
 
-                          {/* --- NEW: payment gateway cell --- */}
-                          {/* --- Payment gateway cell --- */}
-<td className="px-6 py-4 whitespace-nowrap">
-  <div className="flex flex-col space-y-2">
-    <select
-      value={partialPayments[q._id]?.status || q.payment?.adminStatus || "not_yet_received"}
-      onChange={(e) => {
-        const newStatus = e.target.value;
-
-        if (newStatus === "partial_payment_received") {
-          // store status locally and prepare amount field
-          setPartialPayments((prev) => ({
-            ...prev,
-            [q._id]: {
-              status: "partial_payment_received",
-              amount: q.payment?.amount || "",
-            },
-          }));
-        } else {
-          // clear any partial state and update backend
-          setPartialPayments((prev) => {
-            const updated = { ...prev };
-            delete updated[q._id];
-            return updated;
-          });
-
-          updateAdminPaymentStatus({
-            quotationId: q._id,
-            adminStatus: newStatus,
-            hours: q.requiredHour || 0,
-          })
-            .then(fetchQuotations)
-            .catch((err) => console.error("Failed to update admin status", err));
-        }
-      }}
-      className="border border-gray-300 rounded px-2 py-1 text-sm"
-    >
-      <option value="not_yet_received">⏳ Not Yet Received</option>
-      <option value="partial_payment_received">💵 Partial Payment</option>
-      <option value="received">✅ Received</option>
-    </select>
-
-    {/* Show partial payment input if selected */}
-    {(partialPayments[q._id]?.status === "partial_payment_received" ||
-      q.payment?.adminStatus === "partial_payment_received") && (
-      <div className="flex items-center space-x-2">
-        <input
-          type="number"
-          placeholder="Enter amount"
-          value={
-            partialPayments[q._id]?.amount ??
-            q.payment?.amount ??
-            ""
-          }
-          onChange={(e) =>
-            setPartialPayments((prev) => ({
-              ...prev,
-              [q._id]: {
-                status: "partial_payment_received",
-                amount: e.target.value,
-              },
-            }))
-          }
-          className="w-24 border border-gray-300 rounded px-2 py-1 text-sm"
-        />
-        <button
-          onClick={async () => {
-            try {
-              await updateAdminPaymentStatus({
-                quotationId: q._id,
-                adminStatus: "partial_payment_received",
-                amount: partialPayments[q._id]?.amount,
-                hours: q.requiredHour || 0,
-                  note: "Received advance of 50% as per agreement",
-              });
-              fetchQuotations();
-            } catch (err) {
-              console.error("Failed to update partial payment", err);
-            }
-          }}
-          className="px-3 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700 transition"
-        >
-          Save
-        </button>
-      </div>
-    )}
-  </div>
-</td>
-
+                          {/* Payment dropdown */}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <select
+                              value={q.payment?.adminStatus || "not_yet_received"}
+                              onChange={(e) => {
+                                const newStatus = e.target.value;
+                                updateAdminPaymentStatus({
+                                  quotationId: q._id,
+                                  adminStatus: newStatus,
+                                })
+                                  .then(fetchQuotations)
+                                  .catch((err) => console.error("Failed to update admin status", err));
+                              }}
+                              className="border border-gray-300 rounded px-2 py-1 text-sm"
+                            >
+                              <option value="not_yet_received">⏳ Not Yet Received</option>
+                              <option value="received">✅ Received</option>
+                            </select>
+                          </td>
 
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
                               className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                statusConfig[q.status?.toLowerCase()]?.color ||
-                                "bg-gray-100 text-gray-800"
+                                statusConfig[q.status?.toLowerCase()]?.color || "bg-gray-100 text-gray-800"
                               }`}
                             >
-                              {statusConfig[q.status?.toLowerCase()]?.icon || "📄"}{" "}
-                              {capitalize(q.status)}
+                              {statusConfig[q.status?.toLowerCase()]?.icon || "📄"} {capitalize(q.status)}
                             </span>
                           </td>
+
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
                               onClick={() => navigate(`/app/admin/quotes/${q._id}`)}
@@ -471,9 +349,7 @@ const [partialPayments, setPartialPayments] = useState({});
                               {q.status === "requested" ? "Prepare Quote" : "View Details"}
                             </button>
                             {q.status === "quoted" && (
-                              <button className="text-green-600 hover:text-green-900">
-                                Send Reminder
-                              </button>
+                              <button className="text-green-600 hover:text-green-900">Send Reminder</button>
                             )}
                           </td>
                         </motion.tr>
@@ -551,7 +427,6 @@ const [partialPayments, setPartialPayments] = useState({});
                         );
                       }
 
-                      // ellipsis items
                       return (
                         <span
                           key={item + "-" + idx}
@@ -605,5 +480,4 @@ const InfoCard = ({ title, count, active, onClick, config }) => (
   </motion.div>
 );
 
-const capitalize = (str) =>
-  str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
+const capitalize = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(1) : "");

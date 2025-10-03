@@ -1361,7 +1361,7 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
   isOpen={showPayOnlyModal}
   onClose={() => setShowPayOnlyModal(false)}
   quotationId={id}
-  requiredHours={quote.requiredHour || 1}
+  requiredHours={Math.max((quote.poHours || 0) , 0)} 
   onSuccess={() => {
     setShowPayOnlyModal(false);
     showTempNotification("Payment recorded successfully", "success");
