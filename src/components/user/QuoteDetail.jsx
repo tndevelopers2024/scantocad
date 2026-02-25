@@ -73,7 +73,7 @@ export default function QuoteDetail() {
   const [mainNote, setMainNote] = useState("");
   const [showIssueReportModal, setShowIssueReportModal] = useState(false);
   const [previewingFileIndex, setPreviewingFileIndex] = useState(null);
-const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
+  const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
 
   const fetchQuote = async () => {
     try {
@@ -407,45 +407,41 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
               <div className="flex border-b border-gray-200">
                 <button
                   onClick={() => setActiveTab("details")}
-                  className={`px-3 py-3 font-medium text-sm ${
-                    activeTab === "details"
+                  className={`px-3 py-3 font-medium text-sm ${activeTab === "details"
                       ? "text-blue-600 border-b-2 border-blue-600"
                       : "text-gray-500 hover:text-gray-700"
-                  }`}
+                    }`}
                 >
                   Project Details
                 </button>
                 <button
                   onClick={() => setActiveTab("originalFiles")}
-                  className={`px-3 py-3 font-medium text-sm ${
-                    activeTab === "originalFiles"
+                  className={`px-3 py-3 font-medium text-sm ${activeTab === "originalFiles"
                       ? "text-blue-600 border-b-2 border-blue-600"
                       : "text-gray-500 hover:text-gray-700"
-                  }`}
+                    }`}
                 >
                   Original Files ({quote.files?.length || 0})
                 </button>
                 <button
                   onClick={() => setActiveTab("supportingDocuments")}
-                  className={`px-3 py-3 font-medium text-sm ${
-                    activeTab === "supportingDocuments"
+                  className={`px-3 py-3 font-medium text-sm ${activeTab === "supportingDocuments"
                       ? "text-blue-600 border-b-2 border-blue-600"
                       : "text-gray-500 hover:text-gray-700"
-                  }`}
+                    }`}
                 >
                   Supporting Docs ({quote.infoFiles?.length || 0})
                 </button>
 
-                  
+
 
                 {quote.status === "completed" && (
                   <button
                     onClick={() => setActiveTab("completedFiles")}
-                    className={`px-3 py-3 font-medium text-sm ${
-                      activeTab === "completedFiles"
+                    className={`px-3 py-3 font-medium text-sm ${activeTab === "completedFiles"
                         ? "text-blue-600 border-b-2 border-blue-600"
                         : "text-gray-500 hover:text-gray-700"
-                    }`}
+                      }`}
                   >
                     Completed Files (
                     {quote.files?.filter((file) => file.status === "completed")
@@ -454,20 +450,19 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                   </button>
                 )}
 
-                 {(quote.quotationFile?.length > 0 || quote.completedQuotationFile?.length > 0) && (
-  <button
-    onClick={() => setActiveTab("quotationFile")}
-    className={`whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm ${
-      activeTab === "quotationFile"
-        ? "border-[#155DFC] text-[#155DFC]"
-        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-    }`}
-  >
-    Quotation & invoice Docs (
-    {(quote.quotationFile ? 1 : 0) + (quote.completedQuotationFile ? 1 : 0)}
-    )
-  </button>
-)}
+                {(quote.quotationFile?.length > 0 || quote.completedQuotationFile?.length > 0) && (
+                  <button
+                    onClick={() => setActiveTab("quotationFile")}
+                    className={`whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm ${activeTab === "quotationFile"
+                        ? "border-[#155DFC] text-[#155DFC]"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      }`}
+                  >
+                    Quotation & invoice Docs (
+                    {(quote.quotationFile ? 1 : 0) + (quote.completedQuotationFile ? 1 : 0)}
+                    )
+                  </button>
+                )}
 
               </div>
 
@@ -544,7 +539,7 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                             </div>
                           </div>
 
-                          
+
                         </DetailCard>
                       </motion.div>
 
@@ -589,25 +584,24 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                                 </p>
                               </div>
                             )}
-                            
+
                             {availableHours !== null && (
                               <div>
                                 <h4 className="text-sm font-medium text-gray-500">
                                   Your Available Hours
                                 </h4>
                                 <p
-                                  className={`text-lg font-semibold ${
-                                    availableHours >= quote.requiredHour
+                                  className={`text-lg font-semibold ${availableHours >= quote.requiredHour
                                       ? "text-green-600"
                                       : "text-red-600"
-                                  }`}
+                                    }`}
                                 >
                                   {availableHours}
                                 </p>
                               </div>
                             )}
                           </div>
-                          
+
                         </DetailCard>
                       </motion.div>
                     </motion.div>
@@ -628,44 +622,44 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                           <div className="grid grid-cols-12 gap-3 bg-gray-100 px-2 py-2 text-sm font-semibold text-gray-700">
                             <div className="col-span-1 text-center">#</div>
                             <div className="col-span-4">File</div>
-                            {quote.status !=="requested" &&
-                            <div className="col-span-2 text-center">
-                              Required Hours
-                            </div>
+                            {quote.status !== "requested" &&
+                              <div className="col-span-2 text-center">
+                                Required Hours
+                              </div>
                             }
-                            <div className={`${quote.status !=="requested"? "col-span-5" : "col-span-7"} text-right`}>Actions</div>
+                            <div className={`${quote.status !== "requested" ? "col-span-5" : "col-span-7"} text-right`}>Actions</div>
                           </div>
                           {quote.files?.length > 0 ? (
-  <>
-    {quote.files.map((file, index) => (
-      <FileCard
-        key={file._id}
-        index={index}
-        title={
-          file.fileSourceType === 'cloud_link'
-            ? `Cloud File ${index + 1}`
-            : `File ${index + 1}`
-        }
-        requiredHour={file.requiredHour}
-        fileUrl={file.originalFile}
-        fileSourceType={file.fileSourceType}
-        onPreview={() => {
-          setCurrentFileIndex(index);
-          setPreviewingFileIndex(index);
-        }}
-        previewable={isSTLFile(file.originalFile)}
-        status={file.status}
-        uploadedAt={file.uploadedAt}
-        onDelete={() => confirmDelete(file._id)}
-        deletable={quote.status === "quoted"}
-      />
-    ))}
-  </>
-) : (
-  <p className="text-gray-500 text-center py-4">
-    No original files uploaded
-  </p>
-)}
+                            <>
+                              {quote.files.map((file, index) => (
+                                <FileCard
+                                  key={file._id}
+                                  index={index}
+                                  title={
+                                    file.fileSourceType === 'cloud_link'
+                                      ? `Cloud File ${index + 1}`
+                                      : `File ${index + 1}`
+                                  }
+                                  requiredHour={file.requiredHour}
+                                  fileUrl={file.originalFile}
+                                  fileSourceType={file.fileSourceType}
+                                  onPreview={() => {
+                                    setCurrentFileIndex(index);
+                                    setPreviewingFileIndex(index);
+                                  }}
+                                  previewable={isSTLFile(file.originalFile)}
+                                  status={file.status}
+                                  uploadedAt={file.uploadedAt}
+                                  onDelete={() => confirmDelete(file._id)}
+                                  deletable={quote.status === "quoted"}
+                                />
+                              ))}
+                            </>
+                          ) : (
+                            <p className="text-gray-500 text-center py-4">
+                              No original files uploaded
+                            </p>
+                          )}
 
                         </div>
                       </div>
@@ -752,7 +746,7 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                     </motion.div>
                   )}
 
-                   {activeTab === "quotationFile" && (
+                  {activeTab === "quotationFile" && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -770,18 +764,18 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                               <div className="col-span-4 text-start">File</div>
                               <div className="col-span-5 text-end">Actions</div>
                             </div>
-                             {quote.quotationFile && (
+                            {quote.quotationFile && (
                               <FileCard
                                 index={'1'}
-                             
+
                                 title={`Document`}
                                 fileUrl={quote.quotationFile}
                               />
                             )}
-                             {quote.completedQuotationFile && (
+                            {quote.completedQuotationFile && (
                               <FileCard
                                 index={'2'}
-                                
+
                                 title={`Document `}
                                 fileUrl={quote.completedQuotationFile}
                               />
@@ -826,7 +820,7 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                     </h3>
 
                     {availableHours >= quote.requiredHour ||
-                    quote.poStatus === "approved" ? (
+                      quote.poStatus === "approved" ? (
                       <div className="space-y-4">
                         <p className="text-gray-600">
                           You have enough hours to approve this quote.
@@ -1101,11 +1095,10 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                   <button
                     onClick={handleSubmitIssues}
                     disabled={selectedFiles.length === 0}
-                    className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                      selectedFiles.length > 0
+                    className={`px-6 py-3 rounded-lg font-medium transition-all ${selectedFiles.length > 0
                         ? "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg"
                         : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    } flex items-center`}
+                      } flex items-center`}
                   >
                     <FiSend className="mr-2" />
                     Submit Issues
@@ -1280,11 +1273,10 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
                         setActiveTab("completedFiles");
                         window.scrollTo({ top: 0, behavior: "smooth" }); // 👈 scrolls to top smoothly
                       }}
-                      className={`px-4 py-3 font-medium text-sm ${
-                        activeTab === "completedFiles"
+                      className={`px-4 py-3 font-medium text-sm ${activeTab === "completedFiles"
                           ? "text-green-600 border-b-2 border-green-600"
                           : "w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-7000"
-                      }`}
+                        }`}
                     >
                       View Completed Files
                     </button>
@@ -1293,19 +1285,19 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
               </motion.div>
             )}
 
-         {quote.payment?.gateway === "purchase_order" && (
-  <div className="mt-4">
-    <p className="text-sm text-gray-600 mb-2">
-      Pay your invoice amount here.
-    </p>
-    <button
-      onClick={() => setShowPayOnlyModal(true)}
-      className="w-full px-4 py-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium hover:opacity-95"
-    >
-      Pay Now
-    </button>
-  </div>
-)}
+            {quote.payment?.gateway === "purchase_order" && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-600 mb-2">
+                  Pay your invoice amount here.
+                </p>
+                <button
+                  onClick={() => setShowPayOnlyModal(true)}
+                  className="w-full px-4 py-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium hover:opacity-95"
+                >
+                  Pay Now
+                </button>
+              </div>
+            )}
 
 
           </div>
@@ -1357,18 +1349,18 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
         }}
       />
 
-<PayOnlyModal
-  isOpen={showPayOnlyModal}
-  onClose={() => setShowPayOnlyModal(false)}
-  quotationId={id}
-  requiredHours={Math.max((quote.poHours || 0) , 0)} 
-  onSuccess={() => {
-    setShowPayOnlyModal(false);
-    showTempNotification("Payment recorded successfully", "success");
-    fetchQuote(); // refresh
-  }}
-  showNotification={showTempNotification}
-/>
+      <PayOnlyModal
+        isOpen={showPayOnlyModal}
+        onClose={() => setShowPayOnlyModal(false)}
+        quotationId={id}
+        requiredHours={Math.max((quote.poHours || 0), 0)}
+        onSuccess={() => {
+          setShowPayOnlyModal(false);
+          showTempNotification("Payment recorded successfully", "success");
+          fetchQuote(); // refresh
+        }}
+        showNotification={showTempNotification}
+      />
 
       <AnimatePresence>
         {showSTLViewerFullscreen && quote.files?.length > 0 && (
@@ -1478,5 +1470,6 @@ const [showPayOnlyModal, setShowPayOnlyModal] = useState(false);
 const getAbsoluteUrl = (path) => {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  return `https://ardpgimerchd.org${path}`;
+  const base = import.meta.env.DEV ? '' : 'https://api.convertscantocad.com';
+  return `${base}${path}`;
 };

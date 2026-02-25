@@ -15,12 +15,12 @@ function PurchaseOrderUploadForm() {
 
     try {
       const response = await fetch(
-        'https://convertscantocad.in/api/v1/payments/upload-po',
+        import.meta.env.DEV ? '/api/v1/payments/upload-po' : 'https://api.convertscantocad.com/api/v1/payments/upload-po',
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${yourAuthToken}`,
-            
+
           },
           body: formData,
         }

@@ -1,17 +1,17 @@
-import React, { useState, useEffect,useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { countries } from 'country-data';
-import { 
+import {
   FiX, FiPlus, FiMinus, FiCheck, FiDollarSign,
   FiLoader, FiArrowRight, FiCheckCircle, FiAlertCircle, FiArrowLeft
 } from 'react-icons/fi';
 import { FaPaypal } from 'react-icons/fa';
 import { getCurrentRateByCountry, getMe } from '../../api';
 
-const StepPaymentModal = ({ 
-  isOpen, 
-  onClose, 
-  onPaymentSuccess, 
+const StepPaymentModal = ({
+  isOpen,
+  onClose,
+  onPaymentSuccess,
   requiredHours = 1,
 }) => {
   const [step, setStep] = useState(1);
@@ -25,10 +25,10 @@ const StepPaymentModal = ({
   const [userCountry, setUserCountry] = useState('US');
   const [countryName, setCountryName] = useState('United States');
   const [paypalSdkLoaded, setPaypalSdkLoaded] = useState(false);
-const paypalButtonContainerRef = useRef(null);
+  const paypalButtonContainerRef = useRef(null);
 
   // Strict 2-decimal-place calculation
-    const calculateTotalPrice = () => {
+  const calculateTotalPrice = () => {
     const rawPrice = hours * ratePerHour;
     // Round to exactly 2 decimal places
     const rounded = Math.round((rawPrice + Number.EPSILON) * 100) / 100;
@@ -39,7 +39,7 @@ const paypalButtonContainerRef = useRef(null);
   const totalPrice = calculateTotalPrice();
   // Format for display (string with 2 decimals)
   const displayPrice = totalPrice.toFixed(2);
-  const backendBaseUrl = 'https://convertscantocad.in/api/v1/payments';
+  const backendBaseUrl = import.meta.env.DEV ? '/api/v1/payments' : 'https://api.convertscantocad.com/api/v1/payments';
   const token = localStorage.getItem('token');
 
   // Get country name from country code
@@ -66,18 +66,18 @@ const paypalButtonContainerRef = useRef(null);
         try {
           setLoadingRate(true);
           setRateError(null);
-          
+
           // Get user's country from API
           const userResponse = await getMe();
           let detectedCountry = 'US';
-          
+
           if (userResponse?.success && userResponse.data?.country) {
             detectedCountry = userResponse.data.country.toUpperCase();
           }
-          
+
           setUserCountry(detectedCountry);
           setCountryName(getCountryName(detectedCountry));
-          
+
           // Try to fetch rate for user's country
           try {
             const response = await getCurrentRateByCountry(detectedCountry);
@@ -91,16 +91,22 @@ const paypalButtonContainerRef = useRef(null);
           } catch (error) {
             console.log(`No rate found for ${detectedCountry}, falling back to US`);
           }
-          
+
           // Fall back to US rate
-          const usResponse = await getCurrentRateByCountry('US');
-          if (usResponse.success && usResponse.data) {
-            const rate = parseFloat(usResponse.data.ratePerHour).toFixed(2);
-            setRatePerHour(parseFloat(rate));
-          } else {
-            throw new Error('Failed to load default US rate');
+          try {
+            const usResponse = await getCurrentRateByCountry('US');
+            if (usResponse.success && usResponse.data) {
+              const rate = parseFloat(usResponse.data.ratePerHour).toFixed(2);
+              setRatePerHour(parseFloat(rate));
+            } else {
+              console.warn('Failed to load default US rate from API, using hardcoded fallback');
+              setRatePerHour(50); // Hardcoded fallback to avoid crash
+            }
+          } catch (err) {
+            console.warn('Error fetching US rate, using hardcoded fallback:', err);
+            setRatePerHour(50);
           }
-          
+
           setLoadingRate(false);
         } catch (error) {
           console.error('Failed to fetch rate:', error);
@@ -117,7 +123,7 @@ const paypalButtonContainerRef = useRef(null);
   const handleIncrement = () => setHours(prev => prev + 1);
   const handleDecrement = () => setHours(prev => (prev > 1 ? prev - 1 : 1));
 
-  
+
   const loadPaypalSdk = () => {
     setLoadingScript(true);
     return new Promise((resolve, reject) => {
@@ -145,13 +151,13 @@ const paypalButtonContainerRef = useRef(null);
   const handlePaymentError = (error) => {
     console.error('Payment error:', error);
     let errorMessage = 'Payment processing failed. Please try again.';
-    
-    if (typeof error === 'string' || 
-        error.message?.includes('DECIMAL_PRECISION') || 
-        error.message?.includes('UNPROCESSABLE_ENTITY')) {
+
+    if (typeof error === 'string' ||
+      error.message?.includes('DECIMAL_PRECISION') ||
+      error.message?.includes('UNPROCESSABLE_ENTITY')) {
       errorMessage = 'Invalid amount format. Amount must have exactly 2 decimal places (e.g., 10.00)';
     }
-    
+
     alert(errorMessage);
     setIsProcessing(false);
   };
@@ -159,7 +165,7 @@ const paypalButtonContainerRef = useRef(null);
   const validateAmount = (amount) => {
     // Convert to string if it's a number
     const amountStr = typeof amount === 'number' ? amount.toFixed(2) : amount.toString();
-    
+
     // Verify the amount has exactly 2 decimal places
     const decimalParts = amountStr.split('.');
     return decimalParts.length === 2 && decimalParts[1].length === 2;
@@ -168,7 +174,7 @@ const paypalButtonContainerRef = useRef(null);
   const verifyPayment = async (gateway, verificationData) => {
     try {
       setIsProcessing(true);
-      
+
       // Strict amount validation
       if (!validateAmount(totalPrice)) {
         throw new Error('Invalid amount format');
@@ -207,13 +213,13 @@ const paypalButtonContainerRef = useRef(null);
     }
   };
 
-    const initializePaypal = async () => {
+  const initializePaypal = async () => {
     try {
       const container = document.getElementById('paypal-button-container');
       if (!container) return;
-      
+
       container.innerHTML = '';
-      
+
       // Strict amount validation before PayPal initialization
       if (totalPrice < 0.5) {
         throw new Error('Minimum payment amount is $0.50');
@@ -231,21 +237,21 @@ const paypalButtonContainerRef = useRef(null);
             // Log the amount being sent for debugging
             const amountInCents = Math.round(totalPrice * 100);
             console.log('Creating PayPal order for amount:', totalPrice);
-            
+
             const orderRes = await fetch(`${backendBaseUrl}/order`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
               },
-              body: JSON.stringify({ 
+              body: JSON.stringify({
                 amount: amountInCents, // Send the full amount in cents
-                hours, 
+                hours,
                 gateway: 'paypal',
                 country: userCountry
               })
             });
-            
+
             const orderData = await orderRes.json();
             if (!orderData.success) {
               throw new Error(orderData.message || "Failed to create order");
@@ -322,7 +328,7 @@ const paypalButtonContainerRef = useRef(null);
     <div className="fixed inset-0 m-0 bg-black/50 bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl relative">
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 to-white-600"></div>
-        
+
         <button
           onClick={onClose}
           className="absolute top-[-5px] right-[-5px] bg-[#2563eb] rounded-4xl text-white p-1 hover:text-black transition-colors"
@@ -336,33 +342,31 @@ const paypalButtonContainerRef = useRef(null);
             const index = idx + 1;
             const isActive = step === index;
             const isCompleted = step > index;
-            
+
             return (
               <div key={label} className="flex flex-col items-center relative z-10">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
-                    isActive 
-                      ? 'bg-blue-600 text-white border-2 border-blue-600'
-                      : isCompleted
-                        ? 'bg-green-100 text-green-600 border-2 border-green-500'
-                        : 'bg-gray-100 text-gray-500 border-2 border-gray-300'
-                  }`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${isActive
+                    ? 'bg-blue-600 text-white border-2 border-blue-600'
+                    : isCompleted
+                      ? 'bg-green-100 text-green-600 border-2 border-green-500'
+                      : 'bg-gray-100 text-gray-500 border-2 border-gray-300'
+                    }`}
                 >
                   {isCompleted ? <FiCheck size={18} /> : index}
                 </div>
-                <span className={`text-xs font-medium ${
-                  isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'
-                }`}>
+                <span className={`text-xs font-medium ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'
+                  }`}>
                   {label}
                 </span>
               </div>
             );
           })}
           <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200 -z-0">
-            <div 
-              className="h-full bg-blue-600 transition-all duration-300" 
-              style={{ 
-                width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' 
+            <div
+              className="h-full bg-blue-600 transition-all duration-300"
+              style={{
+                width: step === 1 ? '0%' : step === 2 ? '50%' : '100%'
               }}
             ></div>
           </div>
@@ -439,14 +443,13 @@ const paypalButtonContainerRef = useRef(null);
               <h3 className="text-lg font-semibold text-gray-800 mb-1">Payment Method</h3>
               <p className="text-sm text-gray-500">Select your preferred payment gateway</p>
             </div>
-            
+
             <div className="space-y-3">
               <button
                 onClick={() => setActiveGateway('paypal')}
                 disabled={isProcessing || loadingScript}
-                className={`w-full bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-lg font-medium flex items-center justify-center hover:bg-blue-100 hover:border-blue-200 transition-all ${
-                  activeGateway === 'paypal' ? 'ring-2 ring-blue-500' : ''
-                }`}
+                className={`w-full bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-lg font-medium flex items-center justify-center hover:bg-blue-100 hover:border-blue-200 transition-all ${activeGateway === 'paypal' ? 'ring-2 ring-blue-500' : ''
+                  }`}
               >
                 <FaPaypal className="mr-2 text-xl" /> Pay with PayPal
                 {loadingScript && <FiLoader className="animate-spin ml-2" />}

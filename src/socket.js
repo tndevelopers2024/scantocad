@@ -1,18 +1,20 @@
 // src/utils/socket.js
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'https://convertscantocad.in';
+const SOCKET_URL = import.meta.env.DEV
+  ? 'http://localhost:5173'  // Vite will proxy this to the backend
+  : 'https://api.convertscantocad.com';
 
 let socket;
 
 export const initializeSocket = () => {
   const token = localStorage.getItem('token');
-  
+
   socket = io(SOCKET_URL, {
     path: '/socket.io',
     auth: { token },
-    transports: ['websocket'],
-    autoConnect: false
+    autoConnect: false,
+    transports: import.meta.env.DEV ? ['polling'] : ['websocket', 'polling'],
   });
 
   return socket;

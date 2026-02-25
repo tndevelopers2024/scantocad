@@ -1,15 +1,17 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://convertscantocad.in/api/v1';
+const BASE_URL = import.meta.env.DEV
+  ? '/api/v1'  // Proxied by Vite in development
+  : 'https://api.convertscantocad.com/api/v1'; // Direct in production
 
-export { 
-  initializeSocket, 
-  getSocket, 
-  connectSocket, 
-  disconnectSocket 
+export {
+  initializeSocket,
+  getSocket,
+  connectSocket,
+  disconnectSocket
 } from './socket';
 
-export const register = async ({ name, email, password, phone, country, currency,role, company }) => {
+export const register = async ({ name, email, password, phone, country, currency, role, company }) => {
   try {
     const response = await axios.post(`${BASE_URL}/auth/register`, {
       name,
@@ -19,7 +21,7 @@ export const register = async ({ name, email, password, phone, country, currency
       country,
       currency,
       role,
-      company 
+      company
     });
     return response.data;
   } catch (error) {
@@ -263,8 +265,8 @@ export const raiseQuote = async (id, totalHours, files, quotationFile) => {
     formData.append('files', JSON.stringify(files));
 
 
-      formData.append('quotationFile', quotationFile);
-    
+    formData.append('quotationFile', quotationFile);
+
 
     const response = await axios.post(
       `${BASE_URL}/quotations/${id}/quote`,
@@ -382,7 +384,7 @@ export const getUserHours = async () => {
 // Update quote decision (approve or reject)
 export const updateUserDecision = async (id, status) => {
   try {
-    
+
     const response = await axios.put(
       `${BASE_URL}/quotations/${id}/decision`,
       { status },
@@ -402,7 +404,7 @@ export const updateUserDecision = async (id, status) => {
 
 export const updateUserDecisionPO = async (id, status) => {
   try {
-    
+
     const response = await axios.put(
       `${BASE_URL}/quotations/${id}/decisionpo`,
       { status },
@@ -576,7 +578,7 @@ export const getUserNotifications = async () => {
 export const markNotificationAsRead = async (id) => {
   try {
     const response = await axios.put(
-      `${BASE_URL}/notifications/${id}/read`, 
+      `${BASE_URL}/notifications/${id}/read`,
       {},
       {
         headers: {
@@ -612,18 +614,18 @@ export const deleteUserNotification = async (id) => {
 // Add this new function for updating PO status
 export const updatePoStatus = async (quotationId, poStatus) => {
   try {
- 
+
 
     const response = await axios.put(
       `${BASE_URL}/quotations/${quotationId}/po-status`,
       { poStatus },
       {
-                headers: {
+        headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       }
     );
-    
+
     return response.data;
   } catch (error) {
     console.error('Update PO status failed:', error.response?.data || error.message);
@@ -813,15 +815,15 @@ export const uploadIssuedFiles = async (quotationId, filesToReupload, fileIds, {
     return response.data;
   } catch (error) {
     console.error('Uploading issued files failed:', error);
-    
+
     // Extract meaningful error message
     let userMessage = 'Failed to upload replacement files';
     let details = '';
-    
+
     if (error.response) {
       userMessage = error.response.data?.message || userMessage;
-      details = error.response.data?.details || 
-               `Server responded with ${error.response.status}`;
+      details = error.response.data?.details ||
+        `Server responded with ${error.response.status}`;
     }
 
     throw {

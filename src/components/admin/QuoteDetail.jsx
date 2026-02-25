@@ -504,10 +504,9 @@ export default function QuoteDetail() {
               </h1>
               <div className="flex items-center mt-2">
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center ${
-                    statusConfig[quote.status?.toLowerCase()]?.color ||
+                  className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center ${statusConfig[quote.status?.toLowerCase()]?.color ||
                     "bg-gray-100 text-gray-800"
-                  }`}
+                    }`}
                 >
                   {statusConfig[quote.status?.toLowerCase()]?.icon}
                   {capitalize(quote.status)}
@@ -529,71 +528,71 @@ export default function QuoteDetail() {
         {/* Main Content */}
         <div className="p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <DetailCard
-  icon={<FiInfo className="text-indigo-500" />}
-  title="Project Details"
-  items={[
-    {
-      label: "Description",
-      value: quote.description || "Not provided",
-    },
-    {
-      label: "Technical Details",
-      value: quote.technicalInfo || "Not specified",
-    },
-    {
-      label: "Live Transfer Format",
-      value: quote.deliverables ? (
-        <ul>
-          {quote.deliverables.split(",").map((item, index) => (
-            <li key={index}>{item.trim()}</li>
-          ))}
-        </ul>
-      ) : (
-        "Not specified"
-      ),
-    },
-    {
-      label: "Required Hours",
-      value: quote.requiredHour || "Not estimated yet",
-    },
+            <DetailCard
+              icon={<FiInfo className="text-indigo-500" />}
+              title="Project Details"
+              items={[
+                {
+                  label: "Description",
+                  value: quote.description || "Not provided",
+                },
+                {
+                  label: "Technical Details",
+                  value: quote.technicalInfo || "Not specified",
+                },
+                {
+                  label: "Live Transfer Format",
+                  value: quote.deliverables ? (
+                    <ul>
+                      {quote.deliverables.split(",").map((item, index) => (
+                        <li key={index}>{item.trim()}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    "Not specified"
+                  ),
+                },
+                {
+                  label: "Required Hours",
+                  value: quote.requiredHour || "Not estimated yet",
+                },
 
-    ...(quote.status === "approved" || quote.status === "ongoing"
-      ? [
-          {
-            label: "Dedicated Hours",
-            value: quote.deductedHours || "Not estimated yet",
-          },
-          {
-            label: "PO Hours",
-            value: quote.poHours || "Not estimated yet",
-          },
-        ]
-      : []),
+                ...(quote.status === "approved" || quote.status === "ongoing"
+                  ? [
+                    {
+                      label: "Dedicated Hours",
+                      value: quote.deductedHours || "Not estimated yet",
+                    },
+                    {
+                      label: "PO Hours",
+                      value: quote.poHours || "Not estimated yet",
+                    },
+                  ]
+                  : []),
 
-    ...(quote.payment
-      ? [
-          {
-            label: "Payment Gateway",
-            value: quote.payment.gateway || "Not specified",
-          },
-          {
-            label: "Paid Amount",
-            value: quote.payment.amount
-              ? `${quote.payment.amount} ${quote.payment.currency || "USD"}`
-              : "N/A",
-          },
-          {
-            label: "Last Updated By",
-            value:
-              quote.payment.adminUpdates?.length > 0
-                ? `${quote.payment.adminUpdates.slice(-1)[0].admin?.name} (${quote.payment.adminUpdates.slice(-1)[0].admin?.email})`
-                : "N/A",
-          },
-        ]
-      : []),
-  ]}
-/>
+                ...(quote.payment
+                  ? [
+                    {
+                      label: "Payment Gateway",
+                      value: quote.payment.gateway || "Not specified",
+                    },
+                    {
+                      label: "Paid Amount",
+                      value: quote.payment.amount
+                        ? `${quote.payment.amount} ${quote.payment.currency || "USD"}`
+                        : "N/A",
+                    },
+                    {
+                      label: "Last Updated By",
+                      value:
+                        quote.payment.adminUpdates?.length > 0
+                          ? `${quote.payment.adminUpdates.slice(-1)[0].admin?.name} (${quote.payment.adminUpdates.slice(-1)[0].admin?.email})`
+                          : "N/A",
+                    },
+                  ]
+                  : []),
+              ]}
+            />
 
             <DetailCard
               icon={<FiUser className="text-indigo-500" />}
@@ -622,17 +621,17 @@ export default function QuoteDetail() {
                     Choose Status
                   </label>
                   <select
-  value={adminStatus}
-  onChange={(e) => setAdminStatus(e.target.value)}
-  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
->
-  <option value="not_yet_received">⏳ Not Yet Received</option>
-  <option value="received">✅ Received</option>
-</select>
+                    value={adminStatus}
+                    onChange={(e) => setAdminStatus(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                  >
+                    <option value="not_yet_received">⏳ Not Yet Received</option>
+                    <option value="received">✅ Received</option>
+                  </select>
 
                 </div>
 
-                
+
 
                 {/* Received Note */}
                 {adminStatus === "received" && (
@@ -661,12 +660,12 @@ export default function QuoteDetail() {
                   <button
                     onClick={async () => {
                       try {
-                       await updateAdminPaymentStatus({
-  quotationId: quote._id,
-  adminStatus,
-  amount: quote.payment?.amount || 0, // keep existing amount if any
-  hours: quote.requiredHour || 0,
-});
+                        await updateAdminPaymentStatus({
+                          quotationId: quote._id,
+                          adminStatus,
+                          amount: quote.payment?.amount || 0, // keep existing amount if any
+                          hours: quote.requiredHour || 0,
+                        });
 
                         await fetchQuote();
                         showNotification(
@@ -695,58 +694,54 @@ export default function QuoteDetail() {
               <nav className="-mb-px flex space-x-8">
                 <button
                   onClick={() => setActiveTab("original")}
-                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === "original"
-                      ? "border-[#155DFC] text-[#155DFC]"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "original"
+                    ? "border-[#155DFC] text-[#155DFC]"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
                 >
                   Original Files ({quote.files?.length || 0})
                 </button>
                 {(quote.status === "completed" ||
                   quote.status === "reported") && (
-                  <button
-                    onClick={() => setActiveTab("completed")}
-                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "completed"
+                    <button
+                      onClick={() => setActiveTab("completed")}
+                      className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "completed"
                         ? "border-[#155DFC] text-[#155DFC]"
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    Completed Files (
-                    {quote.files?.filter((file) => file.status === "completed")
-                      .length || 0}
-                    )
-                  </button>
-                )}
+                        }`}
+                    >
+                      Completed Files (
+                      {quote.files?.filter((file) => file.status === "completed")
+                        .length || 0}
+                      )
+                    </button>
+                  )}
                 {quote.infoFiles?.length > 0 && (
                   <button
                     onClick={() => setActiveTab("supporting")}
-                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "supporting"
-                        ? "border-[#155DFC] text-[#155DFC]"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "supporting"
+                      ? "border-[#155DFC] text-[#155DFC]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      }`}
                   >
                     Supporting Documents ({quote.infoFiles.length})
                   </button>
                 )}
                 {(quote.quotationFile?.length > 0 ||
                   quote.completedQuotationFile?.length > 0) && (
-                  <button
-                    onClick={() => setActiveTab("quotationFile")}
-                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "quotationFile"
+                    <button
+                      onClick={() => setActiveTab("quotationFile")}
+                      className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "quotationFile"
                         ? "border-[#155DFC] text-[#155DFC]"
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    Quotation & Invoice Files (
-                    {(quote.quotationFile ? 1 : 0) +
-                      (quote.completedQuotationFile ? 1 : 0)}
-                    )
-                  </button>
-                )}
+                        }`}
+                    >
+                      Quotation & Invoice Files (
+                      {(quote.quotationFile ? 1 : 0) +
+                        (quote.completedQuotationFile ? 1 : 0)}
+                      )
+                    </button>
+                  )}
               </nav>
             </div>
 
@@ -786,7 +781,7 @@ export default function QuoteDetail() {
                             {/* Estimated Hours Counter */}
                             <div className="col-span-3 flex items-center justify-center space-x-2">
                               {quote.status === "quoted" ||
-                              quote.status === "requested" ? (
+                                quote.status === "requested" ? (
                                 <>
                                   <button
                                     className="px-2 py-1 text-orange-500 border border-orange-200 rounded hover:bg-orange-50"
@@ -871,27 +866,27 @@ export default function QuoteDetail() {
                         {/* File Upload */}
                         {(quote.status === "quoted" ||
                           quote.status === "requested") && (
-                          <div className="w-full sm:w-auto">
-                            <label
-                              htmlFor="quotationFile"
-                              className="cursor-pointer flex items-center gap-3 border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 hover:border-blue-500 hover:bg-blue-50 transition text-sm text-gray-700"
-                            >
-                              <FiUpload className="text-blue-600 text-lg" />
-                              <span>
-                                {quotationFile?.name || "Upload Quotation"}
-                              </span>
-                            </label>
-                            <input
-                              id="quotationFile"
-                              type="file"
-                              accept=".pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                              onChange={(e) =>
-                                setQuotationFile(e.target.files[0])
-                              }
-                              className="hidden"
-                            />
-                          </div>
-                        )}
+                            <div className="w-full sm:w-auto">
+                              <label
+                                htmlFor="quotationFile"
+                                className="cursor-pointer flex items-center gap-3 border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 hover:border-blue-500 hover:bg-blue-50 transition text-sm text-gray-700"
+                              >
+                                <FiUpload className="text-blue-600 text-lg" />
+                                <span>
+                                  {quotationFile?.name || "Upload Quotation"}
+                                </span>
+                              </label>
+                              <input
+                                id="quotationFile"
+                                type="file"
+                                accept=".pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                onChange={(e) =>
+                                  setQuotationFile(e.target.files[0])
+                                }
+                                className="hidden"
+                              />
+                            </div>
+                          )}
                         {/* Update Button */}
                         {quote.status === "quoted" && (
                           <button
@@ -1100,13 +1095,12 @@ export default function QuoteDetail() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className={`rounded-lg p-6 mb-6 border ${
-                quote.poStatus === "requested"
-                  ? "bg-yellow-50 border-yellow-100"
-                  : quote.poStatus === "approved"
+              className={`rounded-lg p-6 mb-6 border ${quote.poStatus === "requested"
+                ? "bg-yellow-50 border-yellow-100"
+                : quote.poStatus === "approved"
                   ? "bg-green-50 border-green-100"
                   : "bg-red-50 border-red-100"
-              }`}
+                }`}
             >
               <div className="flex justify-between items-start">
                 <div>
@@ -1114,15 +1108,14 @@ export default function QuoteDetail() {
                     {quote.poStatus === "requested"
                       ? "Purchase Order Approval"
                       : quote.poStatus === "approved"
-                      ? "Purchase Order"
-                      : "Purchase Order Rejected"}
+                        ? "Purchase Order"
+                        : "Purchase Order Rejected"}
                   </h3>
                   <div className="flex items-center">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center ${
-                        poStatusConfig[quote.poStatus?.toLowerCase()]?.color ||
+                      className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center ${poStatusConfig[quote.poStatus?.toLowerCase()]?.color ||
                         "bg-gray-100 text-gray-800"
-                      }`}
+                        }`}
                     >
                       {poStatusConfig[quote.poStatus?.toLowerCase()]?.icon}
                       {capitalize(quote.poStatus)}
@@ -1478,24 +1471,16 @@ const DetailCard = ({ icon, title, items }) => (
   </div>
 );
 
-const forceDownload = async (url, filename = "file") => {
-  try {
-    const response = await fetch(url, { mode: "cors" });
-    const blob = await response.blob();
-
-    const blobUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
-  } catch (err) {
-    console.error("Download failed", err);
-    alert("Failed to download the file.");
-  }
+const forceDownload = (url, filename = "file") => {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.target = "_blank"; // fallback: open in new tab if download is blocked
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
+
 
 const FileCard = ({
   title,
@@ -1517,19 +1502,18 @@ const FileCard = ({
         <div className="text-gray-900 font-medium">{filename}</div>
         {status && (
           <span
-            className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
-              status === "completed"
-                ? "bg-green-100 text-green-800"
-                : status === "reported"
+            className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${status === "completed"
+              ? "bg-green-100 text-green-800"
+              : status === "reported"
                 ? "bg-red-100 text-red-800"
                 : "bg-blue-100 text-blue-800"
-            }`}
+              }`}
           >
             {status === "completed"
               ? "Completed"
               : status === "reported"
-              ? "Issues Reported"
-              : status}
+                ? "Issues Reported"
+                : status}
           </span>
         )}
         {uploadedAt && (
@@ -1683,13 +1667,12 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
 
       {notification.show && (
         <div
-          className={`mb-4 p-3 rounded ${
-            notification.type === "success"
-              ? "bg-green-100 text-green-800"
-              : notification.type === "error"
+          className={`mb-4 p-3 rounded ${notification.type === "success"
+            ? "bg-green-100 text-green-800"
+            : notification.type === "error"
               ? "bg-red-100 text-red-800"
               : "bg-blue-100 text-blue-800"
-          }`}
+            }`}
         >
           {notification.message}
         </div>
@@ -1705,11 +1688,10 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
                 </h4>
                 <div className="mt-1 flex items-center">
                   <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      file.userReportedStatus === "ok"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
+                    className={`px-2 py-1 text-xs rounded-full ${file.userReportedStatus === "ok"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                      }`}
                   >
                     {file.userReportedStatus === "ok"
                       ? "No Issues"
@@ -1810,13 +1792,12 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
           <button
             onClick={handleReupload}
             disabled={uploading || !allReportedFilesSelected}
-            className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center w-full md:w-auto ${
-              uploading
-                ? "bg-blue-400 cursor-wait"
-                : !allReportedFilesSelected
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center w-full md:w-auto ${uploading
+              ? "bg-blue-400 cursor-wait"
+              : !allReportedFilesSelected
                 ? "bg-gray-300 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}
+              }`}
           >
             {uploading ? (
               <>
@@ -1843,16 +1824,13 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
                 Uploading {progress}%
               </>
             ) : allReportedFilesSelected ? (
-              `Reupload ${reportedFiles.length} File${
-                reportedFiles.length > 1 ? "s" : ""
+              `Reupload ${reportedFiles.length} File${reportedFiles.length > 1 ? "s" : ""
               }`
             ) : (
-              `Select ${
-                reportedFiles.length - Object.keys(filesToReupload).length
-              } More File${
-                reportedFiles.length - Object.keys(filesToReupload).length !== 1
-                  ? "s"
-                  : ""
+              `Select ${reportedFiles.length - Object.keys(filesToReupload).length
+              } More File${reportedFiles.length - Object.keys(filesToReupload).length !== 1
+                ? "s"
+                : ""
               }`
             )}
           </button>
@@ -1874,7 +1852,9 @@ const AdminIssuedFilesSection = ({ files, quotationId }) => {
 const getAbsoluteUrl = (path) => {
   if (!path) return "#";
   if (path.startsWith("http")) return path;
-  return `https://convertscantocad.in${path}`;
+  // In dev, use relative path so Vite proxy handles it (no CORS). In prod, use absolute URL.
+  const base = import.meta.env.DEV ? '' : 'https://api.convertscantocad.com';
+  return `${base}${path}`;
 };
 
 const capitalize = (str) =>

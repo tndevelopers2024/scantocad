@@ -20,9 +20,9 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024 * 1024) {
-  setError(`File ${file.name} exceeds 5GB limit`);
-  return;
-}
+      setError(`File ${file.name} exceeds 5GB limit`);
+      return;
+    }
 
 
     setSelectedFiles((prev) => ({
@@ -70,8 +70,8 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
       console.error("Bulk upload failed:", err);
       setError(
         err.details ||
-          err.userMessage ||
-          "Failed to upload files. Please try again."
+        err.userMessage ||
+        "Failed to upload files. Please try again."
       );
     } finally {
       setIsUploading(false);
@@ -81,7 +81,7 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
   const getAbsoluteUrl = (path) => {
     if (!path) return "#";
     if (path.startsWith("http")) return path;
-    return `https://convertscantocad.in${path}`;
+    return `https://api.convertscantocad.com${path}`;
   };
 
   return (
@@ -135,11 +135,10 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        file.status === "completed"
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${file.status === "completed"
                           ? "bg-green-100 text-green-800"
                           : "bg-yellow-100 text-yellow-800"
-                      }`}
+                        }`}
                     >
                       {file.status === "completed" ? "Completed" : "Pending"}
                     </span>
@@ -201,12 +200,12 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
           <span>{completedQuotationFile?.name || "Upload Invoice"}</span>
         </label>
         <input
-  id="completedQuotationFile"
-  type="file"
-  accept=".pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  onChange={(e) => setCompletedQuotationFile(e.target.files[0])}
-  className="hidden"
-/>
+          id="completedQuotationFile"
+          type="file"
+          accept=".pdf, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          onChange={(e) => setCompletedQuotationFile(e.target.files[0])}
+          className="hidden"
+        />
 
       </div>
 
@@ -221,13 +220,12 @@ const FileCompletionSection = ({ files, quotationId, onUploadSuccess }) => {
             disabled={
               isUploading || Object.keys(selectedFiles).length !== files.length
             }
-            className={`px-4 py-2 rounded-md flex items-center ${
-              isUploading
+            className={`px-4 py-2 rounded-md flex items-center ${isUploading
                 ? "bg-blue-400 text-white"
                 : Object.keys(selectedFiles).length === files.length
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-200 text-gray-500 cursor-not-allowed"
-            }`}
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              }`}
           >
             {isUploading ? (
               <>

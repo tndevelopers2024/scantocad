@@ -7,6 +7,32 @@ export default defineConfig({
     tailwindcss(),
     react()
   ],
- 
-  base: '/'
+
+  base: '/',
+
+  server: {
+    proxy: {
+      '/api/v1': {
+        target: 'https://api.convertscantocad.com',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/socket.io': {
+        target: 'https://api.convertscantocad.com',
+        changeOrigin: true,
+        secure: true,
+        ws: true,
+      },
+      '/uploads': {
+        target: 'https://api.convertscantocad.com',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/completed_files': {
+        target: 'https://api.convertscantocad.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    }
+  }
 })

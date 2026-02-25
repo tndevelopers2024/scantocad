@@ -106,9 +106,7 @@ const STLViewer = ({ file }) => {
         fileUrlToLoad = blobUrl;
         ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
       } else if (typeof file === "string") {
-        fileUrlToLoad = file.startsWith("http") || file.startsWith("blob")
-          ? file
-          : getAbsoluteUrl(file);
+        fileUrlToLoad = getAbsoluteUrl(file);
         ext = fileUrlToLoad.slice(fileUrlToLoad.lastIndexOf(".")).toLowerCase();
       }
 
@@ -200,6 +198,12 @@ const STLViewer = ({ file }) => {
 
 const getAbsoluteUrl = (path) => {
   if (!path) return "";
+
+  // If in development and path is an absolute production URL, make it relative
+  if (import.meta.env.DEV && typeof path === "string" && path.startsWith("https://api.convertscantocad.com")) {
+    return path.replace("https://api.convertscantocad.com", "");
+  }
+
   if (path.startsWith("http") || path.startsWith("blob")) return path;
   return `${window.location.origin}${path.startsWith("/") ? "" : "/"}${path}`;
 };

@@ -53,7 +53,7 @@ const EditQuoteRequest = () => {
     setNotificationMessage(message);
     setNotificationType(type);
     setShowNotification(true);
-    
+
     setTimeout(() => {
       setShowNotification(false);
     }, 5000);
@@ -64,10 +64,10 @@ const EditQuoteRequest = () => {
       try {
         const response = await getQuotationById(id);
         const quote = response.data;
-        
+
         setProjectName(quote.projectName || '');
         setDescription(quote.description || '');
-        
+
         // Parse technical info
         const techInfo = {
           designIntent: quote.technicalInfo?.includes('designIntent') || false,
@@ -76,21 +76,21 @@ const EditQuoteRequest = () => {
           asBuildModelling: quote.technicalInfo?.includes('asBuildModelling') || false,
         };
         setTechnicalInfo(techInfo);
-        
+
         // Parse deliverables
         const deliverableInfo = {
-          liveTransferFormat: quote.deliverables?.includes('solidworks') ? 'solidworks' : 
-                            quote.deliverables?.includes('creo') ? 'creo' :
-                            quote.deliverables?.includes('inventor') ? 'inventor' : 'others',
+          liveTransferFormat: quote.deliverables?.includes('solidworks') ? 'solidworks' :
+            quote.deliverables?.includes('creo') ? 'creo' :
+              quote.deliverables?.includes('inventor') ? 'inventor' : 'others',
           cadNeutralFiles: quote.deliverables?.includes('CAD Neutral Files: Yes') || false,
         };
         setDeliverables(deliverableInfo);
-        
+
         // Set file URL if exists
         if (quote.file) {
-          setFileUrl(`https://convertscantocad.in${quote.file}`);
+          setFileUrl(`https://api.convertscantocad.com${quote.file}`);
         }
-        
+
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching quote:', error);
@@ -326,9 +326,9 @@ const EditQuoteRequest = () => {
                 {fileUrl && !selectedFile && (
                   <div className="mt-2 flex items-center text-sm text-gray-600">
                     <span className="font-medium mr-2">Current file:</span>
-                    <a 
-                      href={fileUrl} 
-                      target="_blank" 
+                    <a
+                      href={fileUrl}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-500 hover:underline truncate max-w-xs"
                     >
@@ -373,7 +373,7 @@ const EditQuoteRequest = () => {
             <div className="w-full border-t-2 border-dashed border-blue-200" />
           </div>
 
-           <div className="relative flex justify-between space-x-4">
+          <div className="relative flex justify-between space-x-4">
             {steps.map(({ label, icon }, idx) => (
               <div key={idx} className="flex time-lines flex-col items-center text-sm text-gray-700">
                 <div className="bg-white p-3 first-line rounded-full shadow-md text-blue-600 text-xl">
@@ -389,7 +389,7 @@ const EditQuoteRequest = () => {
       {/* STL Preview Modal */}
       <AnimatePresence>
         {showModal && (selectedFile || fileUrl) && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -407,9 +407,9 @@ const EditQuoteRequest = () => {
                 </button>
               </div>
               <div className="flex-1">
-<STLViewer 
-  file={ fileUrl ? fileUrl : URL.createObjectURL(selectedFile) } 
-/>
+                <STLViewer
+                  file={fileUrl ? fileUrl : URL.createObjectURL(selectedFile)}
+                />
               </div>
             </div>
           </motion.div>

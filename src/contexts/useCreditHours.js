@@ -13,13 +13,14 @@ const useCreditHours = () => {
       try {
         const token = localStorage.getItem('token');
         const userId = localStorage.getItem('userId');
-        
+
         if (!token || !userId) {
           throw new Error('Authentication required');
         }
 
+        const BASE = import.meta.env.DEV ? '' : 'https://api.convertscantocad.com';
         const response = await fetch(
-          `https://convertscantocad.in/api/v1/users/${userId}/hours`,
+          `${BASE}/api/v1/users/${userId}/hours`,
           {
             method: 'GET',
             headers: {
@@ -34,7 +35,7 @@ const useCreditHours = () => {
         }
 
         const { data } = await response.json();
-        
+
         if (!data || typeof data.hours !== 'number') {
           throw new Error('Invalid response format');
         }

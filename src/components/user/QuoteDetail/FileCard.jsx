@@ -18,18 +18,14 @@ const FileCard = ({
 }) => {
   const fileName = fileUrl?.split("/").pop() || "No file";
 
-  const forceDownload = async (url, filename) => {
-    const response = await fetch(url, { mode: "cors" });
-    const blob = await response.blob();
-
-    const blobUrl = window.URL.createObjectURL(blob);
+  const forceDownload = (url, filename) => {
     const link = document.createElement("a");
-    link.href = blobUrl;
+    link.href = url;
     link.download = filename;
+    link.target = "_blank"; // fallback: open in new tab if download is blocked
     document.body.appendChild(link);
     link.click();
     link.remove();
-    window.URL.revokeObjectURL(blobUrl);
   };
 
   return (
@@ -57,9 +53,8 @@ const FileCard = ({
 
         {/* Actions */}
         <div
-          className={`${
-            quote.status === "completed" ? "col-span-6" : "col-span-5"
-          } flex justify-end items-center gap-4`}
+          className={`${quote.status === "completed" ? "col-span-6" : "col-span-5"
+            } flex justify-end items-center gap-4`}
         >
           {previewable && (
             <button
@@ -70,8 +65,8 @@ const FileCard = ({
               Preview
             </button>
           )}
-         {fileSourceType === "cloud_link" ? (
-          <a
+          {fileSourceType === "cloud_link" ? (
+            <a
               href={fileUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -80,7 +75,7 @@ const FileCard = ({
               Get Drive/Cloud Link
             </a>
           ) : (
-              <button
+            <button
               onClick={() => forceDownload(getAbsoluteUrl(fileUrl), fileName)}
               className="bg-blue-600 text-white p-1 rounded-sm hover:underline"
             >
@@ -105,11 +100,10 @@ const FileCard = ({
             <button
               style={{ textDecoration: "none" }}
               onClick={onReportIssue}
-              className={`text-sm ${
-                isReported
-                  ? "bg-red-500 text-white p-1 rounded-sm"
-                  : "bg-blue-600 text-white p-1 rounded-sm"
-              } hover:underline`}
+              className={`text-sm ${isReported
+                ? "bg-red-500 text-white p-1 rounded-sm"
+                : "bg-blue-600 text-white p-1 rounded-sm"
+                } hover:underline`}
             >
               {isReported ? "Reported" : "Report Issue"}
             </button>
@@ -122,8 +116,15 @@ const FileCard = ({
 
 const getAbsoluteUrl = (path) => {
   if (!path) return "";
+
+  // If in development and path is an absolute production URL, make it relative
+  if (import.meta.env.DEV && typeof path === "string" && path.startsWith("https://api.convertscantocad.com")) {
+    return path.replace("https://api.convertscantocad.com", "");
+  }
+
   if (path.startsWith("http")) return path;
-  return `https://convertscantocad.in${path}`;
+  const base = import.meta.env.DEV ? '' : 'https://api.convertscantocad.com';
+  return `${base}${path}`;
 };
 
 export default FileCard;
