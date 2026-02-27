@@ -64,7 +64,7 @@ const NewQuoteRequest = () => {
   const [progress, setProgress] = useState(0);
   const [fileInputType, setFileInputType] = useState("upload");
   const [fileLinks, setFileLinks] = useState([""]);
-const [isLinkReviewing, setIsLinkReviewing] = useState(false);
+  const [isLinkReviewing, setIsLinkReviewing] = useState(false);
 
   // Notification state
   const [notification, setNotification] = useState({
@@ -167,36 +167,36 @@ const [isLinkReviewing, setIsLinkReviewing] = useState(false);
     }
 
     // Files validation
-if (fileInputType === "upload") {
-  if (selectedFiles.length === 0) {
-    newErrors.files = "At least one file is required";
-    isValid = false;
-  } else {
-    for (const file of selectedFiles) {
-      const MAX_SIZE = 5 * 1024 * 1024 * 1024; // 5GB in bytes
-      const allowedExtensions = ["stl", "ply", "obj"];
-
-      if (file.size > MAX_SIZE) {
-        newErrors.files = `File ${file.name} exceeds 5GB size limit`;
+    if (fileInputType === "upload") {
+      if (selectedFiles.length === 0) {
+        newErrors.files = "At least one file is required";
         isValid = false;
-        break;
+      } else {
+        for (const file of selectedFiles) {
+          const MAX_SIZE = 5 * 1024 * 1024 * 1024; // 5GB in bytes
+          const allowedExtensions = ["stl", "ply", "obj"];
+
+          if (file.size > MAX_SIZE) {
+            newErrors.files = `File ${file.name} exceeds 5GB size limit`;
+            isValid = false;
+            break;
+          }
+
+          const ext = file.name.split(".").pop().toLowerCase();
+          if (!allowedExtensions.includes(ext)) {
+            newErrors.files = `File ${file.name} has invalid extension. Allowed: .${allowedExtensions.join(", .")}`;
+            isValid = false;
+            break;
+          }
+        }
       }
-
-      const ext = file.name.split(".").pop().toLowerCase();
-      if (!allowedExtensions.includes(ext)) {
-        newErrors.files = `File ${file.name} has invalid extension. Allowed: .${allowedExtensions.join(", .")}`;
+    } else if (fileInputType === "link") {
+      const hasValidLink = fileLinks.some((link) => link.trim() !== "");
+      if (!hasValidLink) {
+        newErrors.files = "Please provide at least one valid cloud/drive link";
         isValid = false;
-        break;
       }
     }
-  }
-} else if (fileInputType === "link") {
-  const hasValidLink = fileLinks.some((link) => link.trim() !== "");
-  if (!hasValidLink) {
-    newErrors.files = "Please provide at least one valid cloud/drive link";
-    isValid = false;
-  }
-}
 
 
 
@@ -206,11 +206,10 @@ if (fileInputType === "upload") {
         const ext = file.name.split(".").pop().toLowerCase();
 
         if (!ALLOWED_INFO_FILE_EXTENSIONS.includes(ext)) {
-          newErrors.infoFiles = `File ${
-            file.name
-          } has invalid extension. Allowed: ${ALLOWED_INFO_FILE_EXTENSIONS.join(
-            ", "
-          )}`;
+          newErrors.infoFiles = `File ${file.name
+            } has invalid extension. Allowed: ${ALLOWED_INFO_FILE_EXTENSIONS.join(
+              ", "
+            )}`;
           isValid = false;
           break;
         }
@@ -302,13 +301,7 @@ if (fileInputType === "upload") {
     }
 
     setIsSubmitting(true);
-    let progress = 0;
-
-    // Update progress every 500ms to simulate progress
-    const progressInterval = setInterval(() => {
-      progress = Math.min(progress + 5, 90); // Stop at 90% to wait for actual submission
-      setProgress(progress);
-    }, 500);
+    setProgress(0);
 
     const formDataToSend = new FormData();
     formDataToSend.append("projectName", formData.projectName);
@@ -328,28 +321,27 @@ if (fileInputType === "upload") {
     if (technicalInfo.designIntent) {
       deliverablesString = `Software: ${selectedSoftware}, Version: ${selectedVersion}, `;
     }
-    deliverablesString += `CAD Neutral Files: ${
-      deliverables.cadNeutralFiles ? "Yes" : "No"
-    }, 2D Drafting: ${deliverables.caddraftfiles ? "Yes" : "No"}`;
+    deliverablesString += `CAD Neutral Files: ${deliverables.cadNeutralFiles ? "Yes" : "No"
+      }, 2D Drafting: ${deliverables.caddraftfiles ? "Yes" : "No"}`;
 
     formDataToSend.append("technicalInfo", technicalInfoString);
     formDataToSend.append("deliverables", deliverablesString);
 
- // Always add uploaded files if present
-if (selectedFiles.length > 0) {
-  selectedFiles.forEach((file) => {
-    formDataToSend.append("originalFiles", file);
-  });
-}
+    // Always add uploaded files if present
+    if (selectedFiles.length > 0) {
+      selectedFiles.forEach((file) => {
+        formDataToSend.append("originalFiles", file);
+      });
+    }
 
-// Always add links if present
-const validLinks = fileLinks
-  .map((link) => link.trim())
-  .filter((link) => link !== "");
+    // Always add links if present
+    const validLinks = fileLinks
+      .map((link) => link.trim())
+      .filter((link) => link !== "");
 
-if (validLinks.length > 0) {
-  formDataToSend.append("originalLinks", JSON.stringify(validLinks));
-}
+    if (validLinks.length > 0) {
+      formDataToSend.append("originalLinks", JSON.stringify(validLinks));
+    }
 
 
     infoFiles.forEach((file) => {
@@ -357,7 +349,12 @@ if (validLinks.length > 0) {
     });
 
     try {
-      await requestQuote(formDataToSend);
+      await requestQuote(formDataToSend, {
+        onUploadProgress: (percent) => {
+          // Reserve last 5% for server processing
+          setProgress(Math.min(percent, 95));
+        },
+      });
 
       // Complete the progress bar
       setProgress(100);
@@ -369,12 +366,22 @@ if (validLinks.length > 0) {
       }, 4000);
     } catch (err) {
       console.error(err);
-      showTempNotification(
-        "Failed to submit quote request. Please try again.",
-        "error"
-      );
+
+      // Specific error messages based on error type
+      let errorMessage = "Failed to submit quote request. Please try again.";
+      if (err?.code === "ERR_NETWORK" || err?.message === "Network Error") {
+        errorMessage =
+          "Upload failed: File may be too large or the connection was interrupted. Please try again or use a cloud/drive link instead.";
+      } else if (err?.response?.status === 413) {
+        errorMessage =
+          "File size exceeds the server limit. Please use a cloud/drive link for very large files.";
+      } else if (err?.code === "ECONNABORTED") {
+        errorMessage =
+          "Upload timed out. Please check your internet connection and try again.";
+      }
+
+      showTempNotification(errorMessage, "error");
     } finally {
-      clearInterval(progressInterval);
       setIsSubmitting(false);
     }
   };
@@ -513,7 +520,7 @@ if (validLinks.length > 0) {
             {/* Right Column - Files Section */}
             <div className="space-y-6 flex flex-col justify-between">
               {(fileInputType === "upload" && selectedFiles.length === 0) ||
- (fileInputType === "link" && !isLinkReviewing) ? (
+                (fileInputType === "link" && !isLinkReviewing) ? (
                 <UploadSection
                   setShowUploadPopup={() => {
                     setUploadStep(0);
@@ -529,7 +536,7 @@ if (validLinks.length > 0) {
                   setFileInputType={setFileInputType}
                   fileLinks={fileLinks}
                   setFileLinks={setFileLinks}
-                   onLinkReviewComplete={() => setIsLinkReviewing(true)}
+                  onLinkReviewComplete={() => setIsLinkReviewing(true)}
                 />
               ) : (
                 <>
@@ -541,45 +548,44 @@ if (validLinks.length > 0) {
                     fullScreen={false}
                   />
 
-                <UploadSummary
-  selectedFiles={selectedFiles}
-  fileLinks={fileLinks}
-  setFileLinks={setFileLinks} 
-  setUploadStep={setUploadStep}
-  setShowUploadPopup={setShowUploadPopup}
-  setCurrentFile={setCurrentFile}
-  removeFile={removeFile}
-  removeFileLink={(index) => {
-    const newLinks = [...fileLinks];
-    newLinks.splice(index, 1);
-    setFileLinks(newLinks);
-  }}
-/>
+                  <UploadSummary
+                    selectedFiles={selectedFiles}
+                    fileLinks={fileLinks}
+                    setFileLinks={setFileLinks}
+                    setUploadStep={setUploadStep}
+                    setShowUploadPopup={setShowUploadPopup}
+                    setCurrentFile={setCurrentFile}
+                    removeFile={removeFile}
+                    removeFileLink={(index) => {
+                      const newLinks = [...fileLinks];
+                      newLinks.splice(index, 1);
+                      setFileLinks(newLinks);
+                    }}
+                  />
                 </>
               )}
 
               {/* Submit Button */}
               <div className="pt-4">
                 <button
-  type="submit"
-  disabled={
-    isSubmitting ||
-    (fileInputType === "upload" && selectedFiles.length === 0) ||
-    (fileInputType === "link" &&
-      fileLinks.every((link) => link.trim() === ""))
-  }
-  className={`w-full px-6 py-3 bg-blue-600 text-white rounded-md font-medium
-    ${
-      isSubmitting ||
-      (fileInputType === "upload" && selectedFiles.length === 0) ||
-      (fileInputType === "link" &&
-        fileLinks.every((link) => link.trim() === ""))
-        ? "opacity-70 cursor-not-allowed"
-        : "hover:bg-blue-700"
-    }`}
->
-  {isSubmitting ? "Submitting..." : "Submit Quote Request"}
-</button>
+                  type="submit"
+                  disabled={
+                    isSubmitting ||
+                    (fileInputType === "upload" && selectedFiles.length === 0) ||
+                    (fileInputType === "link" &&
+                      fileLinks.every((link) => link.trim() === ""))
+                  }
+                  className={`w-full px-6 py-3 bg-blue-600 text-white rounded-md font-medium
+    ${isSubmitting ||
+                      (fileInputType === "upload" && selectedFiles.length === 0) ||
+                      (fileInputType === "link" &&
+                        fileLinks.every((link) => link.trim() === ""))
+                      ? "opacity-70 cursor-not-allowed"
+                      : "hover:bg-blue-700"
+                    }`}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Quote Request"}
+                </button>
 
               </div>
             </div>

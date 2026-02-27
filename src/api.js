@@ -180,7 +180,7 @@ export const logout = async () => {
   }
 };
 
-export const requestQuote = async (formData) => {
+export const requestQuote = async (formData, { onUploadProgress } = {}) => {
   try {
     const response = await axios.post(`${BASE_URL}/quotations`, formData, {
       headers: {
@@ -190,6 +190,14 @@ export const requestQuote = async (formData) => {
       timeout: 30 * 60 * 1000, // 30 minutes for large file uploads
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
+      onUploadProgress: onUploadProgress
+        ? (progressEvent) => {
+          const percentCompleted = progressEvent.total
+            ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            : 0;
+          onUploadProgress(percentCompleted);
+        }
+        : undefined,
     });
     return response.data;
   } catch (error) {
