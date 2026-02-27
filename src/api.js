@@ -187,6 +187,9 @@ export const requestQuote = async (formData) => {
         // Content-Type is automatically set to multipart/form-data when using FormData
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
+      timeout: 30 * 60 * 1000, // 30 minutes for large file uploads
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
     });
     return response.data;
   } catch (error) {
@@ -276,6 +279,9 @@ export const raiseQuote = async (id, totalHours, files, quotationFile) => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           // DO NOT manually set 'Content-Type' – let Axios handle it for multipart
         },
+        timeout: 30 * 60 * 1000,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
       }
     );
 
@@ -335,6 +341,9 @@ export const updateEstimatedHours = async (id, files, totalHours = null, quotati
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           // Let axios set 'Content-Type' automatically for multipart
         },
+        timeout: 30 * 60 * 1000,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
       }
     );
 
@@ -475,6 +484,9 @@ export const completeQuotation = async (
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
+        timeout: 30 * 60 * 1000,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
         onUploadProgress: (progressEvent) => {
           if (onUploadProgress) {
             const percentCompleted = Math.round(
@@ -548,6 +560,9 @@ export const updateQuote = async (formData, id) => {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
+      timeout: 30 * 60 * 1000,
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
     });
     return response.data;
   } catch (error) {
@@ -801,6 +816,9 @@ export const uploadIssuedFiles = async (quotationId, filesToReupload, fileIds, {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
+        timeout: 30 * 60 * 1000,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
         onUploadProgress: (progressEvent) => {
           if (onUploadProgress && progressEvent.total) {
             const percentCompleted = Math.round(
